@@ -1,0 +1,170 @@
+use crate::{
+    config::{Context, Profile},
+    error::AppError,
+};
+
+pub(crate) trait CtxProfile {
+    fn profile(&self) -> &Profile;
+}
+
+impl CtxProfile for Context {
+    fn profile(&self) -> &Profile {
+        &self.profile
+    }
+}
+
+pub(crate) fn site_url(
+    profile: &Profile,
+    service: &'static str,
+    operation: &'static str,
+) -> Result<String, AppError> {
+    profile
+        .site_url
+        .as_deref()
+        .or(profile.base_url.as_deref())
+        .map(trim_url)
+        .ok_or_else(|| {
+            AppError::service_config(
+                service,
+                operation,
+                format!("{service}.{operation} requires profile.site_url or profile.base_url"),
+            )
+        })
+}
+
+pub(crate) fn provider<'a>(
+    profile: &'a Profile,
+    service: &'static str,
+    operation: &'static str,
+) -> Result<&'a str, AppError> {
+    profile.provider.as_deref().ok_or_else(|| {
+        AppError::service_config(
+            service,
+            operation,
+            format!("{service}.{operation} requires profile.provider"),
+        )
+    })
+}
+
+pub(crate) fn workspace<'a>(
+    profile: &'a Profile,
+    operation: &'static str,
+) -> Result<&'a str, AppError> {
+    profile.workspace.as_deref().ok_or_else(|| {
+        AppError::service_config(
+            "bitbucket",
+            operation,
+            format!("bitbucket.{operation} requires profile.workspace"),
+        )
+    })
+}
+
+pub(crate) fn account_id<'a>(
+    profile: &'a Profile,
+    service: &'static str,
+    operation: &'static str,
+) -> Result<&'a str, AppError> {
+    profile.account_id.as_deref().ok_or_else(|| {
+        AppError::service_config(
+            service,
+            operation,
+            format!("{service}.{operation} requires profile.account_id"),
+        )
+    })
+}
+
+pub(crate) fn bitbucket_repo<'a>(
+    profile: &'a Profile,
+    repo_arg: Option<&'a str>,
+    operation: &'static str,
+) -> Result<(&'a str, &'a str), AppError> {
+    let repo = repo_arg.or(profile.repo.as_deref()).ok_or_else(|| {
+        AppError::service_config(
+            "bitbucket",
+            operation,
+            format!("bitbucket.{operation} requires --repo or profile.repo"),
+        )
+    })?;
+    if let Some((workspace, repo_name)) = repo.split_once('/') {
+        if !workspace.is_empty() && !repo_name.is_empty() {
+            return Ok((workspace, repo_name));
+        }
+    }
+    let workspace = workspace(profile, operation)?;
+    Ok((workspace, repo))
+}
+
+pub(crate) fn github_repo<'a>(
+    profile: &'a Profile,
+    owner_arg: Option<&'a str>,
+    repo_arg: Option<&'a str>,
+    operation: &'static str,
+) -> Result<(&'a str, &'a str), AppError> {
+    let owner = owner_arg.or(profile.owner.as_deref()).ok_or_else(|| {
+        AppError::service_config(
+            "github",
+            operation,
+            format!("github.{operation} requires --owner or profile.owner"),
+        )
+    })?;
+    let repo = repo_arg.or(profile.repo.as_deref()).ok_or_else(|| {
+        AppError::service_config(
+            "github",
+            operation,
+            format!("github.{operation} requires --repo or profile.repo"),
+        )
+    })?;
+    Ok((owner, repo))
+}
+
+pub(crate) fn calendar_id<'a>(profile: &'a Profile, arg: Option<&'a str>) -> &'a str {
+    arg.or(profile.calendar_id.as_deref()).unwrap_or("primary")
+}
+
+pub(crate) fn github_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://api.github.com".to_string())
+}
+
+pub(crate) fn bitbucket_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://api.bitbucket.org/2.0".to_string())
+}
+
+pub(crate) fn google_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://www.googleapis.com".to_string())
+}
+
+pub(crate) fn zoho_mail_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://mail.zoho.com".to_string())
+}
+
+pub(crate) fn zoho_calendar_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://calendar.zoho.com".to_string())
+}
+
+pub(crate) fn trim_url(value: &str) -> String {
+    value.trim_end_matches('/').to_string()
+}
+
+pub(crate) fn enc(value: &str) -> String {
+    urlencoding::encode(value).into_owned()
+}

@@ -1,0 +1,5798 @@
+
+
+
+
+
+
+
+
+
+<!doctype html>
+<html 
+      lang="en"
+      dir="ltr">
+  <head>
+    <meta name="google-signin-client-id" content="721724668570-nbkv1cfusk7kk4eni4pjvepaus73b13t.apps.googleusercontent.com"><meta name="google-signin-scope"
+          content="profile email https://www.googleapis.com/auth/developerprofiles https://www.googleapis.com/auth/developerprofiles.award https://www.googleapis.com/auth/devprofiles.full_control.firstparty"><meta property="og:site_name" content="Google Workspace Help">
+    <meta property="og:type" content="website"><meta name="theme-color" content="#f1f3f4"><meta charset="utf-8">
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <link rel="manifest" href="/_pwa/workspace/manifest.json"
+          crossorigin="use-credentials">
+    <link rel="preconnect" href="//www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="//fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="//www.google-analytics.com" crossorigin><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Google+Sans:400,500|Roboto:400,400italic,500,500italic,700,700italic|Roboto+Mono:400,500,700&display=swap">
+      <link rel="stylesheet"
+            href="//fonts.googleapis.com/css2?family=Material+Icons&family=Material+Symbols+Outlined&display=block"><link rel="stylesheet" href="https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/css/app.css">
+      <link rel="shortcut icon" href="https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/images/favicon.png">
+    <link rel="apple-touch-icon" href="https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/images/touchicon-180.png"><link rel="canonical" href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation"><link rel="search" type="application/opensearchdescription+xml"
+            title="Google Workspace Help" href="https://knowledge.workspace.google.com/s/opensearch.xml">
+      <link rel="alternate" hreflang="en"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation" /><link rel="alternate" hreflang="x-default" href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation" /><link rel="alternate" hreflang="ar"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=ar" /><link rel="alternate" hreflang="bn"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=bn" /><link rel="alternate" hreflang="zh-Hans"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=zh-cn" /><link rel="alternate" hreflang="zh-Hant"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=zh-tw" /><link rel="alternate" hreflang="fa"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=fa" /><link rel="alternate" hreflang="fr"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=fr" /><link rel="alternate" hreflang="de"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=de" /><link rel="alternate" hreflang="he"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=he" /><link rel="alternate" hreflang="hi"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=hi" /><link rel="alternate" hreflang="id"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=id" /><link rel="alternate" hreflang="it"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=it" /><link rel="alternate" hreflang="ja"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=ja" /><link rel="alternate" hreflang="ko"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=ko" /><link rel="alternate" hreflang="pl"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=pl" /><link rel="alternate" hreflang="pt-BR"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=pt-br" /><link rel="alternate" hreflang="ru"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=ru" /><link rel="alternate" hreflang="es-419"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=es-419" /><link rel="alternate" hreflang="th"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=th" /><link rel="alternate" hreflang="tr"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=tr" /><link rel="alternate" hreflang="vi"
+          href="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation?hl=vi" /><title>Control API access with domain-wide delegation &nbsp;|&nbsp; Apps & integrations &nbsp;|&nbsp; Google Workspace Help</title>
+
+<meta property="og:title" content="Control API access with domain-wide delegation &nbsp;|&nbsp; Apps & integrations &nbsp;|&nbsp; Google Workspace Help"><meta property="og:url" content="https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation"><meta property="og:locale" content="en"><script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    
+    "headline": "Control API access with domain-wide delegation"
+  }
+</script><script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Administrators",
+      "item": "https://knowledge.workspace.google.com/admin"
+    },{
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Apps &amp; integrations",
+      "item": "https://knowledge.workspace.google.com/admin/apps"
+    },{
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Control API access with domain-wide delegation",
+      "item": "https://knowledge.workspace.google.com/admin/apps/control-api-access-with-domain-wide-delegation"
+    }]
+  }
+  </script>
+  
+
+  
+
+  
+
+
+    </head>
+  <body class="color-scheme--light"
+        template="page"
+        theme="workspace-theme"
+        type="article"
+        
+        
+        
+        layout="docs"
+        
+        
+        
+        
+        
+        display-toc
+        pending>
+  
+    <devsite-progress type="indeterminate" id="app-progress"></devsite-progress>
+  
+  
+    <a href="#main-content" class="skip-link button">
+      
+      Skip to main content
+    </a>
+    <section class="devsite-wrapper">
+      <devsite-cookie-notification-bar></devsite-cookie-notification-bar>
+        <devsite-header role="banner">
+  
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="devsite-header--inner" data-nosnippet>
+  <div class="devsite-top-logo-row-wrapper-wrapper">
+    <div class="devsite-top-logo-row-wrapper">
+      <div class="devsite-top-logo-row">
+        <button type="button" id="devsite-hamburger-menu"
+          class="devsite-header-icon-button button-flat material-icons gc-analytics-event"
+          data-category="Site-Wide Custom Events"
+          data-label="Navigation menu button"
+          visually-hidden
+          aria-label="Open menu">
+        </button>
+        
+<div class="devsite-product-name-wrapper">
+
+  <a href="/" class="devsite-site-logo-link gc-analytics-event"
+   data-category="Site-Wide Custom Events" data-label="Site logo" track-type="globalNav"
+   track-name="googleWorkspaceHelp" track-metadata-position="nav"
+   track-metadata-eventDetail="nav">
+  
+  <picture>
+    
+    <img src="https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/images/lockup.svg" class="devsite-site-logo" alt="Google Workspace Help">
+  </picture>
+  
+</a>
+
+
+
+</div>
+        <div class="devsite-top-logo-row-middle">
+          <div class="devsite-header-upper-tabs">
+            
+              
+              
+  <devsite-tabs class="upper-tabs">
+
+    <nav class="devsite-tabs-wrapper" aria-label="Upper tabs">
+      
+        
+          <tab  class="devsite-active">
+            
+    <a href="https://knowledge.workspace.google.com/admin/apps"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/apps"
+    
+       track-type="nav"
+       track-metadata-position="nav - apps &amp; integrations"
+       track-metadata-module="primary nav"
+       aria-label="Apps &amp; integrations, selected" 
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Apps &amp; integrations"
+         
+           track-name="apps &amp; integrations"
+         
+           style="display:none;"
+         
+       >
+    Apps &amp; integrations
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+        
+          <tab class="devsite-dropdown
+    devsite-dropdown-full
+    
+    
+    ">
+  
+    <button
+      class="devsite-tabs-content devsite-tabs-dropdown-only gc-analytics-event  devsite-icon devsite-icon-arrow-drop-down"
+  
+       track-type="nav"
+       track-metadata-position="nav - documentation"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Documentation"
+         
+           track-name="documentation"
+         
+       >
+    Documentation
+  
+  </button>
+  
+  <div class="devsite-tabs-dropdown" role="menu" aria-label="submenu" hidden>
+    <div class="devsite-tabs-dropdown-content">
+      
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+                <li class="devsite-nav-title" role="heading" tooltip>Administrators</li>
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/getting-started"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/getting-started"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="administrators"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Getting started
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/apps"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/apps"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="administrators"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Apps and integrations
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/services"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/services"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="administrators"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Set up and manage services
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/billing"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/billing"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="administrators"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Billing and subscriptions
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/migrate"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/migrate"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="administrators"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Data migration
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/sync"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/sync"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="administrators"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Data synchronization
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/devices"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/devices"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="administrators"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Device management
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+                <li class="devsite-nav-title" role="heading" tooltip> </li>
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/domains"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/domains"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  
+                    
+                     style="padding-top:24px;"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Domain management
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/reports"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/reports"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Reports and monitoring
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/security"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/security"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Security and data protection
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/users"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/users"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      User management
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/a/answer/10209882"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/a/answer/10209882"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Legal and compliance
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/admin/support"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/support"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Support and troubleshooting
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+                <li class="devsite-nav-title" role="heading" tooltip>Users</li>
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/calendar"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/calendar"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="users"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Calendar
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/chat"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/chat"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="users"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Chat
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://knowledge.workspace.google.com/cloud-search"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://knowledge.workspace.google.com/cloud-search"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="users"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Cloud Search
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/mail"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/mail"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="users"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Gmail
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/groups"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/groups"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="users"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Groups
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/docs"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/docs"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="users"
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Docs, Forms, Sheets, and Slides
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+                <li class="devsite-nav-title" role="heading" tooltip> </li>
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/drive"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/drive"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  
+                    
+                     style="padding-top:24px;"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Drive
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/keep"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/keep"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Keep
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/meet"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/meet"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Meet
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/meethardware"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/meethardware"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Meet Hardware
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/sites"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/sites"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Sites
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/vids"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/vids"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline=" "
+                     
+                     tooltip
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Vids
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+                <li class="devsite-nav-title" role="heading" tooltip>Developers</li>
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/apps-script"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/apps-script"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="developers"
+                     
+                     tooltip
+                  
+                    
+                     data-category="Top nav menu"
+                    
+                     data-label="Tab menu: Resources - Apps Script"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Apps Script
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/workspace/marketplace"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/workspace/marketplace"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="developers"
+                     
+                     tooltip
+                  
+                    
+                     data-category="Top nav menu"
+                    
+                     data-label="Tab menu: Resources - Marketplace"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Marketplace
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://developers.google.com/workspace"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://developers.google.com/workspace"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="developers"
+                     
+                     tooltip
+                  
+                    
+                     data-label="Tab menu: Resources - More (Developer guides)"
+                    
+                     data-category="Top nav menu"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Workspace APIs
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+                <li class="devsite-nav-title" role="heading" tooltip>Training &amp; business user guides</li>
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/a/users"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/a/users"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="developers"
+                     
+                     tooltip
+                  
+                    
+                     data-category="Top nav menu"
+                    
+                     data-label="Tab menu: Resources - Learning Center"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Workspace Learning Center
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://www.skills.google/catalog?keywords=workspace"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://www.skills.google/catalog?keywords=workspace"
+                     track-metadata-position="nav - documentation"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="developers"
+                     
+                     tooltip
+                  
+                    
+                     data-label="Tab menu: Resources - Google Skills"
+                    
+                     data-category="Top nav menu"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Google Skills
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+    </div>
+  </div>
+</tab>
+        
+      
+        
+          <tab class="devsite-dropdown
+    
+    
+    
+    ">
+  
+    <button
+      class="devsite-tabs-content devsite-tabs-dropdown-only gc-analytics-event  devsite-icon devsite-icon-arrow-drop-down"
+  
+       track-type="nav"
+       track-metadata-position="nav - community"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Community"
+         
+           track-name="community"
+         
+       >
+    Community
+  
+  </button>
+  
+  <div class="devsite-tabs-dropdown" role="menu" aria-label="submenu" hidden>
+    <div class="devsite-tabs-dropdown-content">
+      
+      
+        <div class="devsite-tabs-dropdown-column
+                    ">
+          
+            <ul class="devsite-tabs-dropdown-section
+                       ">
+              
+                <li class="devsite-nav-title" role="heading" tooltip>Communities</li>
+              
+              
+              
+                <li class="devsite-nav-item">
+                  <a href="https://support.google.com/a/community"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://support.google.com/a/community"
+                     track-metadata-position="nav - community"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="communities"
+                     
+                     tooltip
+                  
+                    
+                     data-category="Top nav menu"
+                    
+                     data-label="Tab menu: Resources - Admin Community"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Workspace Admin Community
+                    </div>
+                    
+                  </a>
+                </li>
+              
+                <li class="devsite-nav-item">
+                  <a href="https://discuss.google.dev/c/google-workspace/20"
+                    
+                     track-type="nav"
+                     track-metadata-eventdetail="https://discuss.google.dev/c/google-workspace/20"
+                     track-metadata-position="nav - community"
+                     track-metadata-module="tertiary nav"
+                     
+                       track-metadata-module_headline="communities"
+                     
+                     tooltip
+                  
+                    
+                     data-label="Tab menu: Resources - Workspace Developers Community"
+                    
+                     data-category="Top nav menu"
+                    
+                  >
+                    
+                    <div class="devsite-nav-item-title">
+                      Workspace Developers Community
+                    </div>
+                    
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </div>
+      
+    </div>
+  </div>
+</tab>
+        
+      
+        
+          <tab  >
+            
+    <a href="https://knowledge.workspace.google.com/admin/support-tab"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/support-tab"
+    
+       track-type="nav"
+       track-metadata-position="nav - support"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Support"
+         
+           track-name="support"
+         
+       >
+    Support
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+    </nav>
+
+  </devsite-tabs>
+
+            
+           </div>
+          
+<devsite-search
+    enable-signin
+    enable-search
+    enable-suggestions
+      enable-query-completion
+    
+    enable-search-summaries
+    project-name="Apps &amp; integrations"
+    tenant-name="Google Workspace Help"
+    
+    
+    
+    
+    
+    >
+  <form class="devsite-search-form" action="https://knowledge.workspace.google.com/s/results" method="GET">
+    <div class="devsite-search-container">
+      <button type="button"
+              search-open
+              class="devsite-search-button devsite-header-icon-button button-flat material-icons"
+              
+              aria-label="Open search"></button>
+      <div class="devsite-searchbox">
+        <input
+          aria-activedescendant=""
+          aria-autocomplete="list"
+          
+          aria-label="Search"
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          autocomplete="off"
+          class="devsite-search-field devsite-search-query"
+          name="q"
+          
+          placeholder="Search"
+          role="combobox"
+          type="text"
+          value=""
+          >
+          <div class="devsite-search-image material-icons" aria-hidden="true">
+            
+              <svg class="devsite-search-ai-image" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g clip-path="url(#clip0_6641_386)">
+                    <path d="M19.6 21L13.3 14.7C12.8 15.1 12.225 15.4167 11.575 15.65C10.925 15.8833 10.2333 16 9.5 16C7.68333 16 6.14167 15.375 4.875 14.125C3.625 12.8583 3 11.3167 3 9.5C3 7.68333 3.625 6.15 4.875 4.9C6.14167 3.63333 7.68333 3 9.5 3C10.0167 3 10.5167 3.05833 11 3.175C11.4833 3.275 11.9417 3.43333 12.375 3.65L10.825 5.2C10.6083 5.13333 10.3917 5.08333 10.175 5.05C9.95833 5.01667 9.73333 5 9.5 5C8.25 5 7.18333 5.44167 6.3 6.325C5.43333 7.19167 5 8.25 5 9.5C5 10.75 5.43333 11.8167 6.3 12.7C7.18333 13.5667 8.25 14 9.5 14C10.6667 14 11.6667 13.625 12.5 12.875C13.35 12.1083 13.8417 11.15 13.975 10H15.975C15.925 10.6333 15.7833 11.2333 15.55 11.8C15.3333 12.3667 15.05 12.8667 14.7 13.3L21 19.6L19.6 21ZM17.5 12C17.5 10.4667 16.9667 9.16667 15.9 8.1C14.8333 7.03333 13.5333 6.5 12 6.5C13.5333 6.5 14.8333 5.96667 15.9 4.9C16.9667 3.83333 17.5 2.53333 17.5 0.999999C17.5 2.53333 18.0333 3.83333 19.1 4.9C20.1667 5.96667 21.4667 6.5 23 6.5C21.4667 6.5 20.1667 7.03333 19.1 8.1C18.0333 9.16667 17.5 10.4667 17.5 12Z" fill="#5F6368"/>
+                  </g>
+                <defs>
+                <clipPath id="clip0_6641_386">
+                <rect width="24" height="24" fill="white"/>
+                </clipPath>
+                </defs>
+              </svg>
+            
+          </div>
+          <div class="devsite-search-shortcut-icon-container" aria-hidden="true">
+            <kbd class="devsite-search-shortcut-icon">/</kbd>
+          </div>
+      </div>
+    </div>
+  </form>
+  <button type="button"
+          search-close
+          class="devsite-search-button devsite-header-icon-button button-flat material-icons"
+          
+          aria-label="Close search"></button>
+</devsite-search>
+
+        </div>
+
+        
+
+          
+
+          
+
+          
+
+          
+
+          
+<devsite-language-selector>
+  <ul role="presentation">
+    
+    
+    <li role="presentation">
+      <a role="menuitem" lang="en"
+        >English</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="de"
+        >Deutsch</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="es_419"
+        >Español – América Latina</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="fr"
+        >Français</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="id"
+        >Indonesia</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="it"
+        >Italiano</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="pl"
+        >Polski</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="pt_br"
+        >Português – Brasil</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="vi"
+        >Tiếng Việt</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="tr"
+        >Türkçe</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ru"
+        >Русский</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="he"
+        >עברית</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ar"
+        >العربيّة</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="fa"
+        >فارسی</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="hi"
+        >हिंदी</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="bn"
+        >বাংলা</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="th"
+        >ภาษาไทย</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="zh_cn"
+        >中文 – 简体</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="zh_tw"
+        >中文 – 繁體</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ja"
+        >日本語</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ko"
+        >한국어</a>
+    </li>
+    
+  </ul>
+</devsite-language-selector>
+
+
+          
+
+        
+
+        
+          <devsite-user 
+                        
+                        
+                          enable-profiles
+                        
+                        
+                          fp-auth
+                        
+                        id="devsite-user">
+            
+              
+              <span class="button devsite-top-button" aria-hidden="true" visually-hidden>Sign in</span>
+            
+          </devsite-user>
+        
+        
+        
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="devsite-collapsible-section
+    ">
+    <div class="devsite-header-background">
+      
+        
+          <div class="devsite-product-id-row"
+           >
+            <div class="devsite-product-description-row">
+              
+                
+                <div class="devsite-product-id">
+                  
+                  
+                  
+                    <ul class="devsite-breadcrumb-list"
+  
+    aria-label="Lower header breadcrumb">
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+    
+    
+      
+        
+  <a href="https://knowledge.workspace.google.com/admin"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Lower Header"
+      
+        data-value="1"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="1"
+      
+        track-metadata-eventdetail="Administrators"
+      
+    >
+    
+          Administrators
+        
+  </a>
+  
+      
+    
+  </li>
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+      
+      <div class="devsite-breadcrumb-guillemet material-icons" aria-hidden="true"></div>
+    
+    
+    
+      
+        
+  <a href="https://knowledge.workspace.google.com/admin/apps"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Lower Header"
+      
+        data-value="2"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="2"
+      
+        track-metadata-eventdetail="Apps &amp; integrations"
+      
+    >
+    
+          Apps &amp; integrations
+        
+  </a>
+  
+      
+    
+  </li>
+  
+</ul>
+                </div>
+                
+              
+              
+            </div>
+            
+              <div class="devsite-product-button-row">
+  
+
+  
+  <a href="https://admin.google.com/"
+  
+    
+      class="button
+             
+             "
+    
+    
+    >Admin console</a>
+
+  
+  <a href="https://workspace.google.com/contact/?utm_source=knowledgecenter&amp;utm_medium=support&amp;utm_campaign=nav"
+  
+    
+      class="button
+             
+             "
+    
+    
+    >Contact us</a>
+
+</div>
+            
+          </div>
+          
+        
+      
+      
+        <div class="devsite-doc-set-nav-row">
+          
+          
+            
+            
+  <devsite-tabs class="lower-tabs">
+
+    <nav class="devsite-tabs-wrapper" aria-label="Lower tabs">
+      
+        
+          <tab  >
+            
+    <a href="https://knowledge.workspace.google.com/admin/apps"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/apps"
+    
+       track-type="nav"
+       track-metadata-position="nav - overview"
+       track-metadata-module="primary nav"
+       
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Overview"
+         
+           track-name="overview"
+         
+       >
+    Overview
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+        
+          <tab  class="devsite-active">
+            
+    <a href="https://knowledge.workspace.google.com/admin/apps/overview-integrate-3rd-party-apps-with-google-workspace"
+    class="devsite-tabs-content gc-analytics-event "
+      track-metadata-eventdetail="https://knowledge.workspace.google.com/admin/apps/overview-integrate-3rd-party-apps-with-google-workspace"
+    
+       track-type="nav"
+       track-metadata-position="nav - guides"
+       track-metadata-module="primary nav"
+       aria-label="Guides, selected" 
+       
+         
+           data-category="Site-Wide Custom Events"
+         
+           data-label="Tab: Guides"
+         
+           track-name="guides"
+         
+       >
+    Guides
+  
+    </a>
+    
+  
+          </tab>
+        
+      
+    </nav>
+
+  </devsite-tabs>
+
+          
+          
+        </div>
+      
+    </div>
+  </div>
+
+</div>
+
+
+
+  
+
+  
+</devsite-header>
+        <devsite-book-nav scrollbars >
+          
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="devsite-book-nav-filter"
+     >
+  <span class="filter-list-icon material-icons" aria-hidden="true"></span>
+  <input type="text"
+         placeholder="Filter"
+         
+         aria-label="Type to filter"
+         role="searchbox">
+  
+  <span class="filter-clear-button hidden"
+        data-title="Clear filter"
+        aria-label="Clear filter"
+        role="button"
+        tabindex="0"></span>
+</div>
+
+<nav class="devsite-book-nav devsite-nav nocontent" data-nosnippet
+     aria-label="Side menu">
+  <div class="devsite-mobile-header">
+    <button type="button"
+            id="devsite-close-nav"
+            class="devsite-header-icon-button button-flat material-icons gc-analytics-event"
+            data-category="Site-Wide Custom Events"
+            data-label="Close navigation"
+            aria-label="Close navigation">
+    </button>
+    <div class="devsite-product-name-wrapper">
+
+  <a href="/" class="devsite-site-logo-link gc-analytics-event"
+   data-category="Site-Wide Custom Events" data-label="Site logo" track-type="globalNav"
+   track-name="googleWorkspaceHelp" track-metadata-position="nav"
+   track-metadata-eventDetail="nav">
+  
+  <picture>
+    
+    <img src="https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/images/lockup.svg" class="devsite-site-logo" alt="Google Workspace Help">
+  </picture>
+  
+</a>
+
+
+</div>
+  </div>
+
+  <div class="devsite-book-nav-wrapper">
+    <div class="devsite-mobile-nav-top">
+      
+        <ul class="devsite-nav-list">
+          
+            <li class="devsite-nav-item">
+              
+  
+  <a href="/admin/apps"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              devsite-nav-active"
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Apps &amp; integrations"
+      
+        track-name="apps &amp; integrations"
+      
+        style="display:none;"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Apps &amp; integrations"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Apps &amp; integrations
+   </span>
+    
+  
+  </a>
+  
+
+  
+              
+                <ul class="devsite-nav-responsive-tabs">
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="/admin/apps"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Overview"
+      
+        track-name="overview"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Overview"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Overview
+   </span>
+    
+  
+  </a>
+  
+
+  
+                    </li>
+                  
+                    
+                    
+                    
+                    <li class="devsite-nav-item">
+                      
+  
+  <a href="/admin/apps/overview-integrate-3rd-party-apps-with-google-workspace"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              devsite-nav-active"
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Guides"
+      
+        track-name="guides"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Guides"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip menu="_book">
+      Guides
+   </span>
+    
+  
+  </a>
+  
+
+  
+                    </li>
+                  
+                </ul>
+              
+            </li>
+          
+            <li class="devsite-nav-item">
+              
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Documentation"
+      
+        track-name="documentation"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Documentation
+   </span>
+    
+  
+  </span>
+  
+
+  
+    <ul class="devsite-nav-responsive-tabs devsite-nav-has-menu
+               ">
+      
+<li class="devsite-nav-item">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Documentation"
+      
+        track-name="documentation"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip menu="Documentation">
+      More
+   </span>
+    
+    <span class="devsite-nav-icon material-icons" data-icon="forward"
+          menu="Documentation">
+    </span>
+    
+  
+  </span>
+  
+
+</li>
+
+    </ul>
+  
+              
+            </li>
+          
+            <li class="devsite-nav-item">
+              
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Community"
+      
+        track-name="community"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Community
+   </span>
+    
+  
+  </span>
+  
+
+  
+    <ul class="devsite-nav-responsive-tabs devsite-nav-has-menu
+               ">
+      
+<li class="devsite-nav-item">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Community"
+      
+        track-name="community"
+      
+    >
+  
+    <span class="devsite-nav-text" tooltip menu="Community">
+      More
+   </span>
+    
+    <span class="devsite-nav-icon material-icons" data-icon="forward"
+          menu="Community">
+    </span>
+    
+  
+  </span>
+  
+
+</li>
+
+    </ul>
+  
+              
+            </li>
+          
+            <li class="devsite-nav-item">
+              
+  
+  <a href="/admin/support-tab"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Tab: Support"
+      
+        track-name="support"
+      
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Support"
+     track-type="globalNav"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Support
+   </span>
+    
+  
+  </a>
+  
+
+  
+              
+            </li>
+          
+          
+          
+        </ul>
+      
+    </div>
+    
+      <div class="devsite-mobile-nav-bottom">
+        
+          
+          <ul class="devsite-nav-list" menu="_book">
+            <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Get started</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/overview-integrate-3rd-party-apps-with-google-workspace"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Overview</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/how-authorized-access-works"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>How authorized access works</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Manage access to apps &amp; services</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/control-which-apps-access-google-workspace-data"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Control which apps access Google Workspace data</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/control-which-third-party-and-internal-apps-access-google-workspace-data"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Control which third-party &amp; internal apps access Google Workspace data</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/add-and-configure-third-party-apps-in-bulk"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Add &amp; configure apps in bulk</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/review-and-manage-third-party-app-access-requests"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Review &amp; manage app access requests</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/authorize-unverified-third-party-apps"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Authorize unverified third-party apps</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/what-is-a-verified-third-party-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>What is a verified third-party app?</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/control-access-to-less-secure-apps"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Control access to less secure apps</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/automatic-oauth-20-token-revocation-upon-password-change"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Automatic OAuth 2.0 token revocation upon password change</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Marketplace apps</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/get-started-as-a-marketplace-app-admin"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Get started with Marketplace apps</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/set-whether-users-can-install-marketplace-apps"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Set whether users can install Marketplace apps</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/manage-the-marketplace-app-allowlist-for-your-organization"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Manage Marketplace app allowlist</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/manage-data-access-for-admin-installed-marketplace-apps"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Manage data access for admin-installed Marketplace apps</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/uninstall-a-marketplace-app-for-your-organization"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Uninstall a Marketplace app</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/manage-marketplace-apps-access-for-users-designated-as-under-18"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Manage Marketplace apps access for users under 18</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Set up SSO</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/about-sso"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>About SSO</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/setting-up-sso"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Set up SSO</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/technical-overview-of-saml-based-sso"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Technical overview of SAML-based SSO</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/sso-assertion-requirements"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SSO assertion requirements</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/sso-sign-in-flow-when-using-login-hints"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SSO sign-in flow when using login hints</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/migrating-from-legacy-sso-to-sso-profiles"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Migrate from legacy SSO to SSO profiles</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/optional-sso-settings-and-maintenance"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Optional SSO settings &amp; maintenance</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/maintain-saml-certificates"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Maintain SAML certificates</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/super-administrator-sso"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Super administrator SSO</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/best-practices-for-third-party-idp-and-google-workspace-configuration"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Third-party IdP best practices</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/about-the-sso-identity-confirmation-screen"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>About the SSO identity confirmation screen</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/saml-app-error-messages"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Troubleshoot SAML app errors</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Set up SSO with Google as IdP</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/set-up-your-own-custom-saml-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Set up your own custom SAML app</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/creating-custom-attributes-using-the-user-schema"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Create custom attributes</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-expandable"><div class="devsite-expandable-nav">
+      <a class="devsite-nav-toggle" aria-hidden="true"></a><div class="devsite-nav-title devsite-nav-title-no-path" tabindex="0" role="button">
+        <span class="devsite-nav-text" tooltip>Use pre-integrated SAML apps</span>
+      </div><ul class="devsite-nav-section"><li class="devsite-nav-item"><a href="/admin/apps/integrations/15five-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>15Five</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/4me-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>4me</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/7geese-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>7Geese</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/adaptive-insights-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Adaptive Insights</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/adobe-acrobat-sign-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Adobe Acrobat Sign</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/adobe-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Adobe</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/agileapps-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>AgileApps</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/aha-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Aha!</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/amazon-business-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Amazon Business</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/amazon-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Amazon</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/amazon-web-services-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Amazon Web Services</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/andfrankly-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>&amp;frankly</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/appdynamics-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>AppDynamics</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/artifactory-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Artifactory</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/asana-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Asana</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/atlassian-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Atlassian Cloud</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/automox-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Automox</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/autotask-workplace-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>AutoTask Workplace</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/bamboohr-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>BambooHR</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/betterworks-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Betterworks</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/bime-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Bime</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/bonusly-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Bonusly</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/boomi-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Boomi</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/box-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Box</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/brightcove-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Brightcove</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/bugcrowd-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Bugcrowd</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/bugsnag-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>BugSnag</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/buildkite-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Buildkite</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/canva-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Canva</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/canvas-lms-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Canvas LMS</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/carbonite-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Carbonite</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/cigna-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Cigna</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/cisco-umbrella-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Cisco Umbrella</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/clarizen-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Clarizen</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/clear-review-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Clear Review</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/clearslide-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>ClearSlide</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/cloudbees-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>CloudBees</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/clubhouse-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Clubhouse</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/comeet-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Comeet</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/componentspace-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>ComponentSpace</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/concur-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Concur</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/coralogix-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Coralogix</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/coupa-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Coupa</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/crashplan-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>CrashPlan</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/cyberark-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>CyberArk</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/dashlane-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Dashlane</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/datadog-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Datadog</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/deskpro-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Deskpro</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/dialpad-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Dialpad</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/dialpad-sandbox-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Dialpad Sandbox</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/digicert-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Digicert</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/digitalai-formerly-versionone-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Digital.ai (formerly VersionOne)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/docebo-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Docebo</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/docusign-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Docusign</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/domo-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Domo</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/drift-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Drift</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/dropbox-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Dropbox</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/duo-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Duo</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/egencia-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Egencia</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/egnyte-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Egnyte</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/elastica-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Elastica</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/emburse-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Emburse</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/engagedly-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Engagedly</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/envoy-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Envoy</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/eptura-visitor-formerly-proxyclick-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Eptura Visitor (formerly Proxyclick)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/evernote-business-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Evernote Business</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/expensify-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Expensify</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/federated-directory-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Federated Directory</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/figma-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Figma</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/firstbird-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Firstbird</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/flexera-formerly-rightscale-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Flexera (formerly RightScale)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/foodee-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Foodee</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/forma-formerly-twic-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Forma (formerly Twic)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/freshservice-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Freshservice</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/freshworks-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Freshworks</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/front-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Front</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/fuze-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Fuze</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/genea-formerly-sequr-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Genea (formerly Sequr)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/gooddata-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>GoodData</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/gotomeeting-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>GoToMeeting</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/gototraining-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>GoToTraining</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/gotowebinar-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>GoToWebinar</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/greenhouse-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Greenhouse</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/hackerone-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>HackerOne</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/happyfox-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>HappyFox</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/hellosign-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>HelloSign</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/heroku-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Heroku</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/hightail-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Hightail</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/hive-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Hive</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/hootsuite-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Hootsuite</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/hubspot-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>HubSpot</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/huddle-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Huddle</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/humanity-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Humanity</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/image-relay-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Image Relay</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/imeet-central-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>iMeet Central</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/incontact-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>InContact</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/invision-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>InVision</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/it-glue-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>IT Glue</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/itslearning-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>itslearning</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/jenkins-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Jenkins</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/jitbit-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Jitbit</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/jive-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Jive</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/jobvite-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Jobvite</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/joinme-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Join.Me</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/jostle-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Jostle</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/kantata-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Kantata</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/kapost-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Kapost</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/keeper-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Keeper</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/kintone-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Kintone</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/klipfolio-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Klipfolio</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/knowbe4-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>KnowBe4</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/kudos-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Kudos</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/launchdarkly-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>LaunchDarkly</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/learncore-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>LearnCore</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/lifesize-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Lifesize</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/linkedin-learning-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>LinkedIn Learning</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/liquidfiles-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>LiquidFiles</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/looker-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Looker</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/lucidchart-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Lucidchart</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/lumapps-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>LumApps</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/mangoapps-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>MangoApps</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/marketo-engage-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Marketo Engage</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/medallia-agent-connect-formerly-stella-connect-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Medallia Agent Connect (formerly Stella Connect)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/meraki-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Meraki</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/mimecast-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Mimecast</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/mingle-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Mingle</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/miro-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Miro</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/mixpanel-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Mixpanel</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/monday-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Monday</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/moxtra-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Moxtra</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/mozy-enterprise-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Mozy Enterprise</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/namely-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Namely</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/netskope-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Netskope</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/netsuite-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>NetSuite</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/new-relic-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>New Relic</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/notion-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Notion</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/office-365-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Office 365</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/officespace-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>OfficeSpace</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/omnissa-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Omnissa</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/oomnitza-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Oomnitza</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/pagerduty-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>PagerDuty</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/panorama9-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Panorama9</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/paypal-honey-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>PayPal Honey</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/peoplehr-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>PeopleHR</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/pipedrive-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Pipedrive</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/pivotal-tracker-cloud-application"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Pivotal Tracker</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/pritunl-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Pritunl</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/purelyhr-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>PurelyHR</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/qmarkets-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Qmarkets</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/qualtrics-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Qualtrics</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/qubole-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Qubole</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/recog-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>RECOG</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/reflektive-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Reflektive</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/remedyforce-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Remedyforce</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/replicon-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Replicon</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/ringcentral-office-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>RingCentral Office</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/robin-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Robin</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/rollbar-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Rollbar</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/runscope-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Runscope</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/saba-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Saba</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/salesforce-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Salesforce</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/salesforce-sandbox-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Salesforce Sandbox</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/salsify-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Salsify</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/samanage-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Samanage</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sap-cloud-platform-identity-authentication-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SAP Cloud Platform Identity Authentication</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/screensteps-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>ScreenSteps</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sentry-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Sentry</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/servicenow-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>ServiceNow</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sharefile-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>ShareFile</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/shareworks-formerly-solium-shareworks-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Shareworks (formerly Solium Shareworks)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sigma-computing-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Sigma Computing</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sisense-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Sisense</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/skyhigh-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Skyhigh</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/slack-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Slack</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/small-improvements-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Small Improvements</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/smartsheet-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Smartsheet</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/spaceiq-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SpaceIQ</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/spoke-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Spoke</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/splunk-observability-cloud-cloud-formerly-signalfx-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Splunk Observability Cloud</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/spot-formerly-spotinst-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Spot (formerly Spotinst)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/springer-nature-link-formerly-springerlink-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Springer Nature Link (formerly SpringerLink)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/springer-nature-link-test-formerly-springerlink-test-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Springer Nature Link Test (formerly SpringerLink Test)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/statushub-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>StatusHub</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/statuspage-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Statuspage</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/successfactors-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SuccessFactors</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sugarcrm-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SugarCRM</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sumo-logic-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Sumo Logic</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/sumtotal-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SumTotal</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/surveymonkey-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>SurveyMonkey</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/swrve-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Swrve</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/symantec-wss-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Symantec WSS</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/tableau-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Tableau</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/talentlms-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>TalentLMS</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/targetprocess-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Targetprocess</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/textexpander-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>TextExpander</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/textmagic-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Textmagic</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/thousandeyes-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>ThousandEyes</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/trello-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Trello</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/userecho-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>UserEcho</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/usertesting-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>UserTesting</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/uservoice-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>UserVoice</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/veracode-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Veracode</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/vmware-formerly-apteligent-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>VMware (formerly Apteligent)</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/vmware-tanzu-cloudhealth-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>VMware Tanzu CloudHealth</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/wdesk-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Wdesk</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/webex-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Webex</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/weekdone-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Weekdone</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/workable-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Workable</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/workday-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Workday</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/workfront-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Workfront</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/workplace-from-meta-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Workplace from Meta</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/wrike-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Wrike</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/xmatters-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>xMatters</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/zendesk-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Zendesk</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/zimbra-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Zimbra</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/zinc-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Zinc</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/zoho-crm-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Zoho CRM</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/zoom-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Zoom</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/zscaler-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Zscaler</span></a></li><li class="devsite-nav-item"><a href="/admin/apps/integrations/zuora-cloud-app"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Zuora</span></a></li></ul></div></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Secure LDAP</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/about-the-secure-ldap-service"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>About Secure LDAP</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/add-ldap-clients"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Add LDAP clients</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/configure-access-permissions"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Configure access permissions</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/download-the-generated-certificate"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Download LDAP client certificate</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/connect-ldap-clients-to-the-secure-ldap-service"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Connect LDAP clients</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/switch-ldap-clients-to-on"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Turn on LDAP clients</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/manage-ldap-clients"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Manage LDAP clients</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/secure-ldap-schema"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Secure LDAP schema</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/secure-ldap-connectivity-testing"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Test Secure LDAP connectivity</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/troubleshooting-the-secure-ldap-service"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Troubleshoot Secure LDAP</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/secure-ldap-service-error-code-descriptions"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Secure LDAP error descriptions</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/faqs-secure-ldap-service"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Secure LDAP FAQs</span></a></li>
+
+  <li class="devsite-nav-item
+           devsite-nav-heading"><div class="devsite-nav-title devsite-nav-title-no-path">
+        <span class="devsite-nav-text" tooltip>Domain-wide delegation</span>
+      </div></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/control-api-access-with-domain-wide-delegation"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Control API access with domain-wide delegation</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/domain-wide-delegation-best-practices"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Domain-wide delegation best practices</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/assign-admin-privileges-for-the-password-vaulted-apps-service"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Assign admin privileges</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/view-audit-logs-for-password-vaulted-apps"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>View audit logs</span></a></li>
+
+  <li class="devsite-nav-item"><a href="/admin/apps/password-vaulted-apps-will-shut-down-on-june-21-2023"
+        class="devsite-nav-title"
+      ><span class="devsite-nav-text" tooltip>Service availability</span></a></li>
+          </ul>
+        
+        
+          
+    
+  
+    
+      
+      <ul class="devsite-nav-list" menu="Documentation"
+          aria-label="Side menu" hidden>
+        
+          
+            
+              
+<li class="devsite-nav-item devsite-nav-heading">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Administrators
+   </span>
+    
+  
+  </span>
+  
+
+</li>
+
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/getting-started"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Getting started"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Getting started
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/apps"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Apps and integrations"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Apps and integrations
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/services"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Set up and manage services"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Set up and manage services
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/billing"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Billing and subscriptions"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Billing and subscriptions
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/migrate"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Data migration"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Data migration
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/sync"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Data synchronization"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Data synchronization
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/devices"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Device management"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Device management
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+          
+            
+              
+<li class="devsite-nav-item devsite-nav-heading">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+       
+   </span>
+    
+  
+  </span>
+  
+
+</li>
+
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/domains"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Domain management"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Domain management
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/reports"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Reports and monitoring"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Reports and monitoring
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/security"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Security and data protection"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Security and data protection
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/users"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: User management"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      User management
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/a/answer/10209882"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Legal and compliance"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Legal and compliance
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/admin/support"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Support and troubleshooting"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Support and troubleshooting
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+          
+            
+              
+<li class="devsite-nav-item devsite-nav-heading">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Users
+   </span>
+    
+  
+  </span>
+  
+
+</li>
+
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/calendar"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Calendar"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Calendar
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/chat"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Chat"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Chat
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="/cloud-search"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Cloud Search"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Cloud Search
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/mail"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Gmail"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Gmail
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/groups"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Groups"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Groups
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/docs"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Docs, Forms, Sheets, and Slides"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Docs, Forms, Sheets, and Slides
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+          
+            
+              
+<li class="devsite-nav-item devsite-nav-heading">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+       
+   </span>
+    
+  
+  </span>
+  
+
+</li>
+
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/drive"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Drive"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Drive
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/keep"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Keep"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Keep
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/meet"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Meet"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Meet
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/meethardware"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Meet Hardware"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Meet Hardware
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/sites"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Sites"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Sites
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/vids"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Vids"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Vids
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+          
+            
+              
+<li class="devsite-nav-item devsite-nav-heading">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Developers
+   </span>
+    
+  
+  </span>
+  
+
+</li>
+
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/apps-script"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Apps Script"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Apps Script
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/workspace/marketplace"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Marketplace"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Marketplace
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://developers.google.com/workspace"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Workspace APIs"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Workspace APIs
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+            
+              
+<li class="devsite-nav-item devsite-nav-heading">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Training &amp; business user guides
+   </span>
+    
+  
+  </span>
+  
+
+</li>
+
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/a/users"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Workspace Learning Center"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Workspace Learning Center
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://www.skills.google/catalog?keywords=workspace"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Google Skills"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Google Skills
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+      </ul>
+    
+  
+    
+      
+      <ul class="devsite-nav-list" menu="Community"
+          aria-label="Side menu" hidden>
+        
+          
+            
+              
+<li class="devsite-nav-item devsite-nav-heading">
+
+  
+  <span
+    
+       class="devsite-nav-title"
+       tooltip
+    
+    >
+  
+    <span class="devsite-nav-text" tooltip >
+      Communities
+   </span>
+    
+  
+  </span>
+  
+
+</li>
+
+            
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://support.google.com/a/community"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Workspace Admin Community"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Workspace Admin Community
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+              
+<li class="devsite-nav-item">
+
+  
+  <a href="https://discuss.google.dev/c/google-workspace/20"
+    
+       class="devsite-nav-title gc-analytics-event
+              
+              "
+    
+
+    
+     data-category="Site-Wide Custom Events"
+     data-label="Responsive Tab: Workspace Developers Community"
+     track-type="navMenu"
+     track-metadata-eventDetail="globalMenu"
+     track-metadata-position="nav">
+  
+    <span class="devsite-nav-text" tooltip >
+      Workspace Developers Community
+   </span>
+    
+  
+  </a>
+  
+
+</li>
+
+            
+          
+        
+      </ul>
+    
+  
+    
+  
+        
+        
+          
+    
+  
+    
+  
+        
+      </div>
+    
+  </div>
+</nav>
+          
+        </devsite-book-nav>
+      
+      <section id="gc-wrapper">
+        <main role="main" id="main-content" class="devsite-main-content"
+            
+              has-book-nav
+              has-sidebar
+            >
+          <div class="devsite-sidebar">
+            <div class="devsite-sidebar-content">
+                
+                <devsite-toc class="devsite-nav"
+                            role="navigation"
+                            aria-label="On this page"
+                            depth="2"
+                            scrollbars
+                            data-nosnippet
+                  ></devsite-toc>
+                <devsite-recommendations-sidebar class="nocontent devsite-nav" data-nosnippet>
+                </devsite-recommendations-sidebar>
+            </div>
+          </div>
+          <devsite-content>
+            
+              
+
+
+
+
+
+
+
+
+
+
+<article class="devsite-article">
+  
+  
+  
+  
+  
+
+  <div class="devsite-article-meta nocontent" role="navigation" data-nosnippet>
+    
+    
+    <ul class="devsite-breadcrumb-list"
+  
+    aria-label="Breadcrumb">
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+    
+    
+      
+        
+  <a href="https://knowledge.workspace.google.com/"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="1"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="1"
+      
+        track-metadata-eventdetail="Google Workspace Help"
+      
+    >
+    
+          Google Workspace Help
+        
+  </a>
+  
+      
+    
+  </li>
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+      
+      <div class="devsite-breadcrumb-guillemet material-icons" aria-hidden="true"></div>
+    
+    
+    
+      
+        
+  <a href="https://knowledge.workspace.google.com/admin"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="2"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="2"
+      
+        track-metadata-eventdetail="Administrators"
+      
+    >
+    
+          Administrators
+        
+  </a>
+  
+      
+    
+  </li>
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+      
+      <div class="devsite-breadcrumb-guillemet material-icons" aria-hidden="true"></div>
+    
+    
+    
+      
+        
+  <a href="https://knowledge.workspace.google.com/admin/apps"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="3"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="3"
+      
+        track-metadata-eventdetail="Apps &amp; integrations"
+      
+    >
+    
+          Apps &amp; integrations
+        
+  </a>
+  
+      
+    
+  </li>
+  
+  <li class="devsite-breadcrumb-item
+             ">
+    
+      
+      <div class="devsite-breadcrumb-guillemet material-icons" aria-hidden="true"></div>
+    
+    
+    
+      
+        
+  <a href="https://knowledge.workspace.google.com/admin/apps/overview-integrate-3rd-party-apps-with-google-workspace"
+      
+        class="devsite-breadcrumb-link gc-analytics-event"
+      
+        data-category="Site-Wide Custom Events"
+      
+        data-label="Breadcrumbs"
+      
+        data-value="4"
+      
+        track-type="globalNav"
+      
+        track-name="breadcrumb"
+      
+        track-metadata-position="4"
+      
+        track-metadata-eventdetail=""
+      
+    >
+    
+          Guides
+        
+  </a>
+  
+      
+    
+  </li>
+  
+</ul>
+    
+      
+    <devsite-thumb-rating position="header">
+    </devsite-thumb-rating>
+  
+    
+  </div>
+  
+    <devsite-feedback
+  position="header"
+  project-name="Apps &amp; integrations"
+  product-id="716453"
+  bucket="workspace-help"
+  context=""
+  version="t-devsite-webserver-20260428-r00-rc01.477318040238770238"
+  data-label="Send Feedback Button"
+  track-type="feedback"
+  track-name="sendFeedbackLink"
+  track-metadata-position="header"
+  class="nocontent"
+  data-nosnippet
+  
+    disable-product-feedback
+  
+  
+  
+    
+      project-icon="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-64dp/logo_googleg_color_2x_web_64dp.png"
+    
+  
+  
+    project-support-url="https://workspace.google.com/support/?utm_source=knowledgecenter&amp;utm_medium=support&amp;utm_campaign=sharefeedback"
+  
+  
+  >
+
+  <button>
+  
+    
+    Send feedback
+  
+  </button>
+</devsite-feedback>
+  
+    <h1 class="devsite-page-title" tabindex="-1">
+      Control API access with domain-wide delegation<devsite-actions hidden data-nosnippet><devsite-feature-tooltip
+      ack-key="AckCollectionsBookmarkTooltipDismiss"
+      analytics-category="Site-Wide Custom Events"
+      analytics-action-show="Callout Profile displayed"
+      analytics-action-close="Callout Profile dismissed"
+      analytics-label="Create Collection Callout"
+      class="devsite-page-bookmark-tooltip nocontent"
+      data-nosnippet
+      dismiss-button="true"
+      id="devsite-collections-dropdown"
+      
+      dismiss-button-text="Dismiss"
+
+      
+      close-button-text="Got it">
+
+    
+    
+      <devsite-bookmark></devsite-bookmark>
+    
+
+    <span slot="popout-heading">
+      
+      Stay organized with collections
+    </span>
+    <span slot="popout-contents">
+      
+      Save and categorize content based on your preferences.
+    </span>
+  </devsite-feature-tooltip></devsite-actions>
+  
+      
+    </h1>
+  <div class="devsite-page-title-meta"><devsite-view-release-notes></devsite-view-release-notes></div>
+  
+
+  <devsite-toc class="devsite-nav"
+    depth="2"
+    devsite-toc-embedded
+    >
+  </devsite-toc>
+  
+    
+  <div class="devsite-article-body clearfix
+  ">
+
+  
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<p><em>Domain-wide delegation</em> is a powerful feature that lets you grant client
+applications permission to access your Workspace users&#39; data without requiring
+their consent. You can use domain-wide delegation in two ways:</p>
+
+<ol>
+<li><strong>Authorize a service account to access data on behalf of a user.</strong> A
+<a href="https://developers.google.com/identity/protocols/OAuth2#serviceaccount">service
+account</a>
+might use the following types of apps:
+<ul>
+<li>Migration and sync tools that duplicate user content from another
+service to Google Workspace.</li>
+<li>Internal apps (for example, automation apps) that developers create for
+your organization. For example, you can delegate access to an
+application that uses the Calendar API to add events to your users&#39;
+calendars.</li>
+</ul></li>
+<li><strong>Allow users to use OAuth client apps without seeing a consent screen</strong>.
+Users can access apps without being prompted for consent, and you can
+specify the user data that the apps can access.</li>
+</ol>
+
+<p>You can also manage domain-wide installation and view API scopes for Google
+Workspace Marketplace apps. Learn about Marketplace apps <a href="https://support.google.com/marketplace/answer/180490">data
+access</a> and
+<a href="/admin/apps/install-marketplace-apps-for-your-organization">installation</a>.</p>
+
+<div>
+  <devsite-expandable class="arrow-icon" id="start">
+    <h4 class="showalways" id="before-you-begin" data-text="Before you begin" tabindex="-1">Before you begin</h4>
+    <div>
+      <ul class="spaced-list">
+        <li>Ensure you have super admin privileges for your Google Workspace account.</li>
+        <li>Review the <a href="/admin/apps/domain-wide-delegation-best-practices">domain-wide delegation best practices</a> and <a href="https://cloud.google.com/iam/docs/best-practices-service-accounts" target="_blank">best practices for using service accounts</a>.</li>
+        <li>Verify the list of <a href="https://developers.google.com/identity/protocols/googlescopes" target="_blank">API scopes</a> needed by the app or service account. Check that the app or service account has an appropriately small scope of access.</li>
+        <li>(If delegating an OAuth app) Get the OAuth client ID from the app developer.</li>
+        <li>(If delegating a service account) Get the client ID of the service account. If you're the owner of the service account, you can find the ID as follows:
+          <ol>
+            <li>Sign in to <a href="https://console.developers.google.com/" target="_blank">Google Cloud</a> as a super administrator.</li>
+            <li>Click <b>IAM &amp; Admin</b> <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <b>Service accounts</b> <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> [<i>name of your service account</i>].</li>
+            <li>Expand <b>Advanced settings</b> and copy the <b>Client ID</b>.</li>
+          </ol>
+        </li>
+        <li>With domain-wide delegation, the app has access to the data belonging to <i>all of your users</i>. We recommend setting up a regular review of service accounts and deleting any accounts no longer in use.</li>
+      </ul>
+    </div>
+  </devsite-expandable>
+</div>
+
+<div>
+  <devsite-expandable class="arrow-icon" id="setup">
+    <h4 class="showalways" id="set-up-domain-wide-delegation-for-a-client" data-text="Set up domain-wide delegation for a client" tabindex="-1">Set up domain-wide delegation for a client</h4>
+    <div>
+      <ol>
+        <li>
+
+
+<p>In the Google Admin console, go to Menu <img src="/static/images/icons/standard/menu.svg" class="instructions-icon" style="max-height:18px;">
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <img src="/static/images/icons/gmail/gmail-classification-security-gray-shield.svg" class="instructions-icon" style="max-height:18px;"> <b>Security</b>
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <b>Access and data control</b>
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <b>API controls</b>
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <b>Manage Domain Wide Delegation</b>.</p>
+
+<div><a class="button button-primary"
+        href="https://admin.google.com/ac/owl/domainwidedelegation"
+        data-category="Magic step"
+        data-label="Go to Manage Domain Wide Delegation"
+        target="_blank">Go to Manage Domain Wide Delegation</a></div>
+
+<p>
+
+<i>You must be signed in as a <a href="/admin/users/prebuilt-administrator-roles#super_admin" target="_blank">super administrator</a> for this task.</i></p></li>
+        <li>Click <b>Add new</b>.</li>
+        <li>Enter the <b>Client ID</b> for either the service account or the OAuth2 client.</li>
+        <li>In <b>OAuth Scopes,</b> add each scope that the application can access (should be appropriately narrow). You can use any of the <a href="https://developers.google.com/identity/protocols/googlescopes" target="_blank">OAuth 2.0 Scopes for Google APIs</a>. For example, if the application needs domain-wide access to the Google Drive API and the Google Calendar API, enter <b>https://www.googleapis.com/auth/drive</b> and <b>https://www.googleapis.com/auth/calendar</b>.</li>
+        <li>Click <b>Authorize</b>. If you get an error, the client ID might not be registered with Google or there might be duplicate or unsupported scopes.
+          <p><b>Note</b>: If <a href="/admin/security/multi-party-approval-for-sensitive-actions" target="_blank">Multi-party approval</a> is enabled for your organization, authorizing domain-wide delegation for a client app requires approval from another super admin.</p>
+        </li>
+        <li>
+
+Point to the new client ID, click <b>View details</b>, and make sure that every scope is listed.
+<p>If a scope is not listed, click <b>Edit</b>, enter the missing scope, and click <b>Authorize</b>. You can't edit the client ID.</p></li>
+      </ol>
+      
+
+Changes can take up to 24 hours but typically happen more quickly. <a href="/admin/support/troubleshooting/how-changes-propagate-to-google-services" target="_blank">Learn more</a>
+    </div>
+  </devsite-expandable>
+</div>
+
+<div>
+  <devsite-expandable class="arrow-icon" id="view">
+    <h4 class="showalways" id="view,-edit,-or-delete-clients-and-scopes" data-text="View, edit, or delete clients and scopes" tabindex="-1">View, edit, or delete clients and scopes</h4>
+    <div>
+      <p>As a best practice, periodically check your app's scopes and remove scopes that aren't required or actively used. Also, delete clients you no longer need. For example, remove access for a migration tool after you complete your migration.</p>
+      <ol>
+        <li>
+
+
+<p>In the Google Admin console, go to Menu <img src="/static/images/icons/standard/menu.svg" class="instructions-icon" style="max-height:18px;">
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <img src="/static/images/icons/gmail/gmail-classification-security-gray-shield.svg" class="instructions-icon" style="max-height:18px;"> <b>Security</b>
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <b>Access and data control</b>
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <b>API controls</b>
+   <img src="/static/images/icons/and-then.svg" class="instructions-icon" style="max-height:18px;" alt="and then"> <b>Manage Domain Wide Delegation</b>.</p>
+
+<div><a class="button button-primary"
+        href="https://admin.google.com/ac/owl/domainwidedelegation"
+        data-category="Magic step"
+        data-label="Go to Manage Domain Wide Delegation"
+        target="_blank">Go to Manage Domain Wide Delegation</a></div>
+
+<p>
+
+<i>You must be signed in as a <a href="/admin/users/prebuilt-administrator-roles#super_admin" target="_blank">super administrator</a> for this task.</i></p></li>
+        <li>Click a client name and then choose an option:</li>
+      </ol>
+      <ul>
+        <li><b>View details</b>—View the full client name and list of scopes</li>
+        <li><b>Edit</b>—Add or remove scopes. You can't edit the client ID. 
+
+Changes can take up to 24 hours but typically happen more quickly. <a href="/admin/support/troubleshooting/how-changes-propagate-to-google-services" target="_blank">Learn more</a></li>
+        <li><b>Delete</b>—Applications that depend on the client authorization will immediately stop working.
+          <p><b>Note</b>: If <a href="/admin/security/multi-party-approval-for-sensitive-actions" target="_blank">Multi-party approval</a> is enabled for your organization, editing scopes or deleting domain-wide delegation for a client app requires approval from another super admin.</p>
+        </li>
+      </ul>
+    </div>
+  </devsite-expandable>
+</div>
+
+  
+
+  
+</div>
+
+  
+    
+    
+      
+    <devsite-thumb-rating position="footer">
+    </devsite-thumb-rating>
+  
+       
+         <devsite-feedback
+  position="footer"
+  project-name="Apps &amp; integrations"
+  product-id="716453"
+  bucket="workspace-help"
+  context=""
+  version="t-devsite-webserver-20260428-r00-rc01.477318040238770238"
+  data-label="Send Feedback Button"
+  track-type="feedback"
+  track-name="sendFeedbackLink"
+  track-metadata-position="footer"
+  class="nocontent"
+  data-nosnippet
+  
+    disable-product-feedback
+  
+  
+  
+    
+      project-icon="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-64dp/logo_googleg_color_2x_web_64dp.png"
+    
+  
+  
+    project-support-url="https://workspace.google.com/support/?utm_source=knowledgecenter&amp;utm_medium=support&amp;utm_campaign=sharefeedback"
+  
+  
+  >
+
+  <button>
+  
+    
+    Send feedback
+  
+  </button>
+</devsite-feedback>
+       
+    
+    
+  
+
+  <div class="devsite-floating-action-buttons"></div></article>
+
+
+<devsite-content-footer class="nocontent" data-nosnippet>
+  <p>Except as otherwise noted, the content of this page is licensed under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 License</a>, and code samples are licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache 2.0 License</a>. For details, see the <a href="https://developers.google.com/site-policies">Google Developers Site Policies</a>. Java is a registered trademark of Oracle and/or its affiliates.</p>
+  <p>Last updated 2026-05-08 UTC.</p>
+</devsite-content-footer>
+
+
+<devsite-notification
+>
+</devsite-notification>
+
+
+  
+<div class="devsite-content-data">
+  
+    
+    
+    <template class="devsite-thumb-rating-feedback">
+      <devsite-feedback
+  position="thumb-rating"
+  project-name="Apps &amp; integrations"
+  product-id="716453"
+  bucket="workspace-help"
+  context=""
+  version="t-devsite-webserver-20260428-r00-rc01.477318040238770238"
+  data-label="Send Feedback Button"
+  track-type="feedback"
+  track-name="sendFeedbackLink"
+  track-metadata-position="thumb-rating"
+  class="nocontent"
+  data-nosnippet
+  
+    disable-product-feedback
+  
+  
+  
+    
+      project-icon="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-64dp/logo_googleg_color_2x_web_64dp.png"
+    
+  
+  
+    project-support-url="https://workspace.google.com/support/?utm_source=knowledgecenter&amp;utm_medium=support&amp;utm_campaign=sharefeedback"
+  
+  
+  >
+
+  <button>
+  
+    Need to tell us more?
+  
+  </button>
+</devsite-feedback>
+    </template>
+  
+  
+    <template class="devsite-content-data-template">
+      [[["Easy to understand","easyToUnderstand","thumb-up"],["Solved my problem","solvedMyProblem","thumb-up"],["Other","otherUp","thumb-up"]],[["Missing the information I need","missingTheInformationINeed","thumb-down"],["Too complicated / too many steps","tooComplicatedTooManySteps","thumb-down"],["Out of date","outOfDate","thumb-down"],["Samples / code issue","samplesCodeIssue","thumb-down"],["Other","otherDown","thumb-down"]],["Last updated 2026-05-08 UTC."],[],[]]
+    </template>
+  
+</div>
+            
+          </devsite-content>
+        </main>
+        <devsite-footer-promos class="devsite-footer">
+          
+            
+
+<nav class="devsite-footer-promos nocontent"
+     aria-label="Promotions"
+     data-nosnippet>
+  <ul class="devsite-footer-promos-list">
+    
+    <li class="devsite-footer-promo">
+      <a href="https://workspace.google.com/"
+         class="devsite-footer-promo-title gc-analytics-event"
+         data-category="Site-Wide Custom Events"
+       
+       
+         data-category="Workspace Help Footer"
+       
+         data-label="Promo - Google Workspace Marketing Site"
+       >
+        
+        
+        <picture>
+          
+          <img class="devsite-footer-promo-icon"
+                src="https://fonts.gstatic.com/s/i/productlogos/google_search_round/v8/web-64dp/logo_google_search_round_color_2x_web_64dp.png"
+                loading="lazy"
+                alt="Google Workspace">
+        </picture>
+        
+        <span class="devsite-footer-promo-label">
+          Google Workspace
+        </span>
+      </a>
+      <div class="devsite-footer-promo-description">Find the right plan for your business</div>
+    </li>
+    
+    <li class="devsite-footer-promo">
+      <a href="https://support.google.com/a/community"
+         class="devsite-footer-promo-title gc-analytics-event"
+         data-category="Site-Wide Custom Events"
+       
+       
+         data-label="Promo - Google Workspace Community Forum"
+       
+         data-category="Workspace Help Footer"
+       >
+        
+        
+        <picture>
+          
+          <img class="devsite-footer-promo-icon"
+                src="https://www.gstatic.com/images/branding/productlogos/admin_2020q4/v6/web-64dp/logo_admin_2020q4_color_2x_web_64dp.png"
+                loading="lazy"
+                alt="Admin Community">
+        </picture>
+        
+        <span class="devsite-footer-promo-label">
+          Admin Community
+        </span>
+      </a>
+      <div class="devsite-footer-promo-description">Get answers from industry peers and experts</div>
+    </li>
+    
+    <li class="devsite-footer-promo">
+      <a href="https://workspace.google.com/support/?utm_source=knowledgecenter&amp;utm_medium=support&amp;utm_campaign=nav"
+         class="devsite-footer-promo-title gc-analytics-event"
+         data-category="Site-Wide Custom Events"
+       
+       
+         data-category="Workspace Help Footer"
+       
+         data-label="Promo - Customer Care"
+       >
+        
+        
+        <picture>
+          
+          <img class="devsite-footer-promo-icon"
+                src="https://fonts.gstatic.com/s/i/productlogos/google_cloud/v8/web-64dp/logo_google_cloud_color_2x_web_64dp.png"
+                loading="lazy"
+                alt="Customer Care">
+        </picture>
+        
+        <span class="devsite-footer-promo-label">
+          Customer Care
+        </span>
+      </a>
+      <div class="devsite-footer-promo-description">Learn about support options and services</div>
+    </li>
+    
+  </ul>
+</nav>
+
+          
+        </devsite-footer-promos>
+        <devsite-footer-linkboxes class="devsite-footer">
+          
+            
+<nav class="devsite-footer-linkboxes nocontent"
+     aria-label="Footer links"
+     data-nosnippet>
+  
+  <ul class="devsite-footer-linkboxes-list">
+    
+    <li class="devsite-footer-linkbox ">
+    <h3 class="devsite-footer-linkbox-heading no-link">Documentation &amp; training</h3>
+      <ul class="devsite-footer-linkbox-list">
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://support.google.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-category="Workspace Footer"data-label="Linkbox - Help Centers">
+            
+          
+            Help Centers
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://developers.google.com/workspace"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-category="Workspace Footer"data-label="Linkbox - Developer guides">
+            
+          
+            Developer guides
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://support.google.com/a/users"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-category="Workspace Footer"data-label="Linkbox - Learning Center">
+            
+          
+            Learning Center
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://www.skills.google/catalog?keywords=workspace"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-category="Workspace Footer"data-label="Linkbox - Google Skills">
+            
+              
+              
+            
+          
+            Google Skills
+          
+          </a>
+          
+          
+        </li>
+        
+      </ul>
+    </li>
+    
+    <li class="devsite-footer-linkbox ">
+    <h3 class="devsite-footer-linkbox-heading no-link">Tools</h3>
+      <ul class="devsite-footer-linkbox-list">
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://admin.google.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-category="Workspace Footer"data-label="Linkbox - Admin console"target="admin-console">
+            
+          
+            Admin console
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://script.google.com/"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-category="Workspace Footer"data-label="Linkbox - Apps Script Dashboard"target="_blank">
+            
+          
+            Apps Script Dashboard
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://console.cloud.google.com/workspace-api"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            target="console"data-label="Linkbox - Google Cloud console"data-category="Workspace Footer">
+            
+              
+              
+            
+          
+            Google Cloud console
+          
+          </a>
+          
+          
+        </li>
+        
+      </ul>
+    </li>
+    
+    <li class="devsite-footer-linkbox ">
+    <h3 class="devsite-footer-linkbox-heading no-link">Support</h3>
+      <ul class="devsite-footer-linkbox-list">
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://support.google.com/a/community"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-label="Linkbox - Admin Community"data-category="Workspace Footer">
+            
+          
+            Admin Community
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://discuss.google.dev/c/google-workspace/20"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-label="Linkbox - Workspace Developers Community"data-category="Workspace Footer">
+            
+          
+            Developers Community
+          
+          </a>
+          
+          
+        </li>
+        
+        <li class="devsite-footer-linkbox-item">
+          
+          <a href="https://workspace.google.com/support/?utm_source=knowledgecenter&amp;utm_medium=support&amp;utm_campaign=nav"
+             class="devsite-footer-linkbox-link gc-analytics-event"
+             data-category="Site-Wide Custom Events"
+            
+            data-label="Linkbox - Customer Care Overview"data-category="Workspace Footer">
+            
+              
+              
+            
+          
+            Customer Care
+          
+          </a>
+          
+          
+        </li>
+        
+      </ul>
+    </li>
+    
+  </ul>
+  
+</nav>
+          
+        </devsite-footer-linkboxes>
+        <devsite-footer-utility class="devsite-footer">
+          
+            
+
+<div class="devsite-footer-utility nocontent" data-nosnippet>
+  
+
+  
+  <nav class="devsite-footer-utility-links" aria-label="Utility links">
+    
+    <ul class="devsite-footer-utility-list">
+      
+      <li class="devsite-footer-utility-item
+                 ">
+        
+        
+        <a class="devsite-footer-utility-link gc-analytics-event"
+           href="//policies.google.com/terms"
+           data-category="Site-Wide Custom Events"
+           data-label="Footer Terms link"
+         >
+          Terms
+        </a>
+        
+      </li>
+      
+      <li class="devsite-footer-utility-item
+                 ">
+        
+        
+        <a class="devsite-footer-utility-link gc-analytics-event"
+           href="//policies.google.com/privacy"
+           data-category="Site-Wide Custom Events"
+           data-label="Footer Privacy link"
+         >
+          Privacy
+        </a>
+        
+      </li>
+      
+      <li class="devsite-footer-utility-item
+                 glue-cookie-notification-bar-control">
+        
+        
+        <a class="devsite-footer-utility-link gc-analytics-event"
+           href="#"
+           data-category="Site-Wide Custom Events"
+           data-label="Footer Manage cookies link"
+         
+           aria-hidden="true"
+         >
+          Manage cookies
+        </a>
+        
+      </li>
+      
+    </ul>
+    
+    
+<devsite-language-selector>
+  <ul role="presentation">
+    
+    
+    <li role="presentation">
+      <a role="menuitem" lang="en"
+        >English</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="de"
+        >Deutsch</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="es_419"
+        >Español – América Latina</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="fr"
+        >Français</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="id"
+        >Indonesia</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="it"
+        >Italiano</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="pl"
+        >Polski</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="pt_br"
+        >Português – Brasil</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="vi"
+        >Tiếng Việt</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="tr"
+        >Türkçe</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ru"
+        >Русский</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="he"
+        >עברית</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ar"
+        >العربيّة</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="fa"
+        >فارسی</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="hi"
+        >हिंदी</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="bn"
+        >বাংলা</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="th"
+        >ภาษาไทย</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="zh_cn"
+        >中文 – 简体</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="zh_tw"
+        >中文 – 繁體</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ja"
+        >日本語</a>
+    </li>
+    
+    <li role="presentation">
+      <a role="menuitem" lang="ko"
+        >한국어</a>
+    </li>
+    
+  </ul>
+</devsite-language-selector>
+
+  </nav>
+</div>
+          
+        </devsite-footer-utility>
+        <devsite-panel>
+          
+        </devsite-panel>
+        
+      </section>
+      </section>
+    <devsite-sitemask></devsite-sitemask>
+    <devsite-snackbar></devsite-snackbar>
+    <devsite-tooltip ></devsite-tooltip>
+    <devsite-heading-link></devsite-heading-link>
+    <devsite-analytics>
+      
+        <script type="application/json" analytics>[{&#34;dimensions&#34;: {&#34;dimension1&#34;: &#34;Signed out&#34;, &#34;dimension2&#34;: false, &#34;dimension4&#34;: &#34;en&#34;, &#34;dimension5&#34;: false, &#34;dimension3&#34;: &#34;en&#34;}, &#34;gaid&#34;: &#34;UA-259008615-1&#34;, &#34;metrics&#34;: {}, &#34;purpose&#34;: 0}]</script>
+<script type="application/json" tag-management>{&#34;at&#34;: &#34;True&#34;, &#34;ga4&#34;: [{&#34;id&#34;: &#34;G-LYNYNF50PC&#34;, &#34;purpose&#34;: 0}], &#34;ga4p&#34;: [{&#34;id&#34;: &#34;G-LYNYNF50PC&#34;, &#34;purpose&#34;: 0}], &#34;gtm&#34;: [], &#34;parameters&#34;: {&#34;internalUser&#34;: &#34;False&#34;, &#34;language&#34;: {&#34;machineTranslated&#34;: &#34;False&#34;, &#34;requested&#34;: &#34;en&#34;, &#34;served&#34;: &#34;en&#34;}, &#34;pageType&#34;: &#34;article&#34;, &#34;projectName&#34;: &#34;Apps &amp; integrations&#34;, &#34;signedIn&#34;: &#34;False&#34;, &#34;tenant&#34;: &#34;workspace&#34;, &#34;recommendations&#34;: {&#34;sourcePage&#34;: &#34;&#34;, &#34;sourceType&#34;: 0, &#34;sourceRank&#34;: 0, &#34;sourceIdenticalDescriptions&#34;: 0, &#34;sourceTitleWords&#34;: 0, &#34;sourceDescriptionWords&#34;: 0, &#34;experiment&#34;: &#34;&#34;}, &#34;experiment&#34;: {&#34;ids&#34;: &#34;&#34;}}}</script>
+      
+    </devsite-analytics>
+    
+      <devsite-badger></devsite-badger>
+    
+    
+    
+    
+<script nonce="nvJUJvOem2f7xueFge1blMmQ6HjYuX">
+  
+  (function(d,e,v,s,i,t,E){d['GoogleDevelopersObject']=i;
+    t=e.createElement(v);t.async=1;t.src=s;E=e.getElementsByTagName(v)[0];
+    E.parentNode.insertBefore(t,E);})(window, document, 'script',
+    'https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/js/app_loader.js', '[50,"en",null,"/js/devsite_app_module.js","https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e","https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace","https://workspace-dot-devsite-v2-prod.appspot.com",null,null,["/_pwa/workspace/manifest.json","https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/images/video-placeholder.svg","https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/images/favicon.png","https://www.gstatic.com/devrel-devsite/prod/v1b953b434e2033f0160fd97c99360ee5d4d0a613449c2a694360a72d378b9d8e/workspace/images/lockup.svg","https://fonts.googleapis.com/css?family=Google+Sans:400,500|Roboto:400,400italic,500,500italic,700,700italic|Roboto+Mono:400,500,700&display=swap"],1,null,[1,6,8,12,14,17,21,25,50,52,63,70,75,76,80,87,91,92,93,97,98,100,101,102,103,104,105,107,108,109,110,112,113,116,117,118,120,122,124,125,126,127,129,130,131,132,133,134,135,136,138,140,141,147,148,149,151,152,156,157,158,159,161,163,164,168,169,170,179,180,182,183,186,191,193,196],"AIzaSyAP-jjEJBzmIyKR4F-3XITp8yM9T1gEEI8","AIzaSyB6xiKGDR5O3Ak2okS4rLkauxGUG7XP0hg","knowledge.workspace.google.com","AIzaSyAQk0fBONSGUqCNznf6Krs82Ap1-NV6J4o","AIzaSyCCxcqdrZ_7QMeLCRY20bh_SXdAYqy70KY",null,null,null,["Cloud__fast_free_trial","Experiments__reqs_query_experiments","MiscFeatureFlags__enable_framebox_badge_methods","MiscFeatureFlags__gdp_dashboard_reskin_enabled","Profiles__enable_user_type","Concierge__enable_remove_info_panel_tags","Profiles__enable_auto_apply_credits","BookNav__enable_tenant_cache_key","MiscFeatureFlags__developers_footer_dark_image","Profiles__enable_callout_notifications","Search__enable_ai_search_summaries_for_all","DevPro__enable_code_assist","Search__enable_dynamic_content_confidential_banner","MiscFeatureFlags__enable_firebase_utm","Profiles__enable_awarding_url","DevPro__enable_google_payments_buyflow","Profiles__enable_completecodelab_endpoint","DevPro__enable_devsite_captcha","Cloud__enable_cloud_dlp_service","Analytics__enable_clearcut_logging","Profiles__enable_stripe_subscription_management","Profiles__enable_page_saving","Profiles__enable_playlist_community_acl","MiscFeatureFlags__enable_explain_this_code","Profiles__enable_complete_playlist_endpoint","EngEduTelemetry__enable_engedu_telemetry","CloudShell__cloud_shell_button","Cloud__enable_cloud_shell_fte_user_flow","DevPro__enable_developer_subscriptions","Profiles__enable_purchase_prompts","MiscFeatureFlags__fix_lower_breadcrumbs","Profiles__enable_targeted_hero","Profiles__enable_public_developer_profiles","MiscFeatureFlags__enable_appearance_cookies","Profiles__enable_developer_profile_benefits_ui_redesign","DevPro__enable_google_one_card","Concierge__enable_pushui","Analytics__enable_devpro_interaction_logging","DevPro__enable_payments_first_batch","TpcFeatures__enable_unmirrored_page_left_nav","Cloud__enable_cloudx_experiment_ids","Profiles__enable_developer_profiles_callout","DevPro__enable_free_benefits","MiscFeatureFlags__enable_view_transitions","DevPro__enable_enterprise","Concierge__enable_actions_menu","Cloud__cache_serialized_dynamic_content","Search__enable_page_map","Profiles__enable_dashboard_curated_recommendations","Profiles__enable_recognition_badges","Cloud__enable_legacy_calculator_redirect","DevPro__enable_devpro_offers","Profiles__enable_completequiz_endpoint","Search__enable_ai_eligibility_checks","MiscFeatureFlags__enable_variable_operator","OnSwitch__enable","DevPro__enable_credits_banner","SignIn__enable_l1_signup_flow","Cloud__enable_free_trial_server_call","Search__enable_suggestions_from_borg","DevPro__remove_eu_tax_intake_form","Profiles__enable_developer_profile_pages_as_content","MiscFeatureFlags__enable_project_variables","CloudShell__cloud_code_overflow_menu","MiscFeatureFlags__enable_variable_operator_index_yaml","DevPro__enable_firebase_workspaces_card","Profiles__require_profile_eligibility_for_signin","DevPro__enable_embed_profile_creation","Profiles__enable_release_notes_notifications","DevPro__enable_g1_integration","Profiles__enable_join_program_group_endpoint","MiscFeatureFlags__developers_footer_image","Cloud__enable_llm_concierge_chat","Cloud__enable_cloud_shell","TpcFeatures__proxy_prod_host","MiscFeatureFlags__enable_explicit_template_dependencies","MiscFeatureFlags__remove_cross_domain_tracking_params","DevPro__enable_cloud_innovators_plus","DevPro__enable_nvidia_credits_card","DevPro__enable_vertex_credit_card","Profiles__enable_profile_collections"],null,null,"AIzaSyBLEMok-5suZ67qRPzx0qUtbnLmyT_kCVE","https://developerscontentserving-pa.clients6.google.com","AIzaSyCM4QpTRSqP5qI4Dvjt4OAScIN8sOUlO-k","https://developerscontentsearch-pa.clients6.google.com",1,4,null,"https://developerprofiles-pa.clients6.google.com",[50,"workspace","Google Workspace Help","knowledge.workspace.google.com",null,"workspace-dot-devsite-v2-prod.appspot.com",null,null,[null,1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,[1],null,null,null,null,[1,null,1],[1,1,null,1,1],null,null,null,null,null,[1]],null,[65,null,null,null,null,null,"/images/lockup.svg","/images/touchicon-180.png",null,null,null,1,1,null,null,null,null,null,null,null,null,1,null,null,null,"/images/lockup-dark-theme.svg"],[],null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,[[],[1,1]],[[["UA-259008615-1"],["UA-259008615-2"],null,null,["UA-259008615-3"],null,null,[["G-LYNYNF50PC"],null,null,[["G-LYNYNF50PC",1]]],[["UA-259008615-1",1]],null,[["UA-259008615-3",1]],null,1],[[4,5],[2,2],[1,1],[3,4],[5,8]]],null,4],1,"pk_live_5170syrHvgGVmSx9sBrnWtA5luvk9BwnVcvIi7HizpwauFG96WedXsuXh790rtij9AmGllqPtMLfhe2RSwD6Pn38V00uBCydV4m",1,1,"https://developerscontentinsights-pa.clients6.google.com","AIzaSyCg-ZUslalsEbXMfIo9ZP8qufZgo3LSBDU","AIzaSyDxT0vkxnY_KeINtA4LSePJO-4MAZPMRsE","https://developers.clients6.google.com",null,null,"AIzaSyBQom12tzI-rybN7Sf-KfeL4nwm-Rf7PmI\n",null,null,"https://developers.googleapis.com"]')
+  
+</script>
+
+    <devsite-a11y-announce></devsite-a11y-announce>
+  </body>
+</html>

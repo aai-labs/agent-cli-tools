@@ -1,0 +1,16 @@
+# Rust build output
+/target/
+
+# Local live-test config and secrets
+/local/e2e.config.toml
+/local/e2e.env
+/local/*.swp
+
+# Editor and OS noise
+*.swp
+*.swo
+.DS_Store
+
+# Temporary runtime files
+*.tmp
+*.log

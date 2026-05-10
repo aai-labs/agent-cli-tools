@@ -1,0 +1,185 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="preconnect" href="//www.zohowebstatic.com"><link rel="dns-prefetch" href="//www.zohowebstatic.com"><link rel="preconnect" href="https://static.zohocdn.com"><link rel="dns-prefetch" href="https://static.zohocdn.com"><link rel="preload" href="https://static.zohocdn.com/zohofonts/zohopuvi/4.0/Zoho_Puvi_Regular.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="https://static.zohocdn.com/zohofonts/zohopuvi/4.0/Zoho_Puvi_Bold.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="https://static.zohocdn.com/zohofonts/zohopuvi/4.0/Zoho_Puvi_Semibold.woff2" as="font" type="font/woff2" crossorigin><script src="//www.zohowebstatic.com/sites/zweb/js/common/var_init.js"></script><script src="//www.zohowebstatic.com/sites/zweb/js/ztm/zoho.js"></script><title>GET - Get events list</title><meta name="description" content="This API is used to get the list of events in a particular calendar of the user."><link rel="icon" href="https://www.zohowebstatic.com/sites/zweb/images/favicon.ico" type="image/vnd.microsoft.icon"><link rel="canonical" href="https://www.zoho.com/calendar/help/api/get-events-list.html"><meta property="og:title" content="GET - Get events list"><meta property="og:description" content="This API is used to get the list of events in a particular calendar of the user."><meta property="og:image" content="https://www.zohowebstatic.com/sites/zweb/images/ogimage/calendar-logo.png"><meta property="og:url" content="https://www.zoho.com/calendar/help/api/get-events-list.html"><meta property="og:site_name" content="Zoho"><meta property="og:type" content="website"><meta name="twitter:title" content="GET - Get events list"><meta name="twitter:description" content="This API is used to get the list of events in a particular calendar of the user."><meta name="twitter:image" content="https://www.zohowebstatic.com/sites/zweb/images/ogimage/calendar-logo.png"><meta name="twitter:card" content="summary"><meta name="twitter:site" content="@zoho"><link rel="stylesheet" href="//www.zohowebstatic.com/sites/zweb/css/r/syntax-highlighter.css"><link rel="stylesheet" href="//www.zohowebstatic.com/sites/zweb/css/common/zohocustom.css"><link rel="stylesheet" href="//www.zohowebstatic.com/sites/zweb/css/template/zp_api.css"><link rel="stylesheet" href="//www.zohowebstatic.com/sites/zweb/css/product/calendar.css"></head><body class="zw-page-7292 zw-product-33 zw-product-calendar zw-template-zp_api i18n-en" data-prdname="calendar" data-prdname-display="Calendar"> <header><div class="zw-promo-top"></div><div class="zw-global-header"></div><div class="zw-product-header "><div></div></div> </header> <main><div class="zw-template-inner"> <section class="api-content-wrap"><div class="content-wrap animated"><div class="content-panel-wrap"><div class="api-menu-panel" id="6799"><div class="api-menu-search"><span class="zgh-search-iconn"></span></div></div><div class="api-content-panel zthree-col right-panel-none " id=""><div><div id="" class="api-content-inner-wrap"><div><h1>GET - Get events list</h1><h2>Purpose</h2><p>This API is used to get a list of all the events in a particular calendar of the user.</p><h2>Request URL</h2><p class="z-higlight-block z-bg-blue">https://calendar.zoho.com/api/v1/calendars/&lt;CALENDAR_UID&gt;/events</p><h2>Headers</h2><p class="z-higlight-block z-bg-blue"><span>Accept - application/json+large ( This is used only when event's description is needed in response )</span></p><h2>OAuth Scope</h2><div class="z-higlight-block z-bg-blue"><p>scope=ZohoCalendar.event.ALL</p><p>(or)</p><p>scope=ZohoCalendar.event.READ</p></div><p><strong>ALL</strong> - Full access to events</p><p><strong>READ</strong> - Gets events</p><p><strong>Ensure CRM oauthscope is added for CRM Calendar events.</strong></p><section><div class="z-data-list"><h2 class="data-list-title">Request Parameters</h2><ul class="data-list-group"><li class="data-list-item"><div class="data-label"><span class="data-name">range</span><span class="data-type">JSONObject with keys, mandatory</span></div><div class="data-description"><p>When the "range" parameter is passed, the events that occur between the given start and end dates are retrieved. The JSON Object should contain the start and end parameters in UNIX date-time format. The range period cannot exceed 31 days.</p><ul><li>start - yyyyMMdd"T"HHmmss"Z" or yyyyMMdd(if it is an all-day event).</li><li>end - yyyyMMdd"T"HHmmss"Z" or yyyyMMdd(if it is an all-day event).</li></ul></div></li><li class="data-list-item"><div class="data-label"><span class="data-name">byinstance </span><span class="data-type">boolean</span></div><div class="data-description"><p>In "byinstance", all the instances of repeat events will be retrieved as a separate event when it is set as true. This (byinstance) will work only when RANGE value is set.</p></div></li><li class="data-list-item"><div class="data-label"><span class="data-name">timezone</span></div><div class="data-description"><p>To get date time based on a particular timezone.</p></div></li><li class="data-list-item"><div class="data-label"><span class="data-name">crm_event_type</span></div><div class="data-description"><ul><li>own</li><li>all</li></ul></div></li></ul></div></section><div class="note"><p><strong>Note:</strong></p><p>The range cannot exceed 31 days.</p><p>When byinstance is set as true, only minimal information about the event will be provided in the response object.</p></div></div></div><div class="api-code-panel"><div class="dark-theme"><h4>Sample Request</h4><div class="api-code-panel-inner"><div class="api-code-block json active"><pre class="language-json dark-theme"><span class="copiedTooltip">Copied</span><span class="copy_button" onclick="copyTextToClipboard(this, this.nextElementSibling.innerText)"></span><code>https://calendar.zoho.com/api/v1/calendars/l9WWZCf_SJWcr3uIuBOq5g==/events?range={&quot;start&quot;:&quot;20170717&quot;,&quot;end&quot;:&quot;20170723&quot;}</code></pre></div></div></div><div class="light-theme"><h4><span id="one">Sample Response</span></h4><div class="api-code-panel-inner"><div class="api-code-block json active"><pre class="language-json light-theme"><span class="copiedTooltip">Copied</span><span class="copy_button" onclick="copyTextToClipboard(this, this.nextElementSibling.innerText)"></span><code>{
+    &quot;events&quot;: [
+        {
+            &quot;isprivate&quot;: false,
+            &quot;enable_eventmanagement&quot;: false,
+            &quot;role&quot;: &quot;participant&quot;,
+            &quot;attendees&quot;: [
+                {
+                    &quot;email&quot;: &quot;rebecca@zylker.com&quot;,
+                    &quot;status&quot;: &quot;DECLINED&quot;
+                }
+            ],
+            &quot;start&quot;: &quot;20170718T205000&quot;,
+            &quot;calid&quot;: &quot;1657000000002003&quot;,
+            &quot;title&quot;: &quot;Teast af&quot;,
+            &quot;createdtime&quot;: &quot;20170713T10Z&quot;,
+            &quot;calendar_alarm&quot;: true,
+            &quot;duration&quot;: 6900000,
+            &quot;uid&quot;: &quot;05bc508fac974ba4b99f56390137bcb4@zoho.com&quot;,
+            &quot;createdby&quot;: &quot;rebecca@zylker.com&quot;,
+            &quot;organizer&quot;: &quot;rebecca@zylker.com&quot;,
+            &quot;isallday&quot;: false,
+            &quot;end&quot;: &quot;20170718T224500&quot;,
+            &quot;modifiedby&quot;: &quot;rebecca@zylker.com&quot;,
+            &quot;etag&quot;: 1500358633876,
+            &quot;multiday&quot;: false,
+            &quot;caluid&quot;: &quot;l9WWZCf_SJWcr3uIuBOq5g==&quot;,
+            &quot;dateandtime&quot;: {
+                &quot;timezone&quot;: &quot;Asia/Calcutta&quot;,
+                &quot;start&quot;: &quot;20170718T205000+0530&quot;,
+                &quot;end&quot;: &quot;20170718T224500+0530&quot;
+            },
+            &quot;lastmodifiedtime&quot;: &quot;20170718T061713Z&quot;
+        },
+        {
+            &quot;reminders&quot;: [
+                {
+                    &quot;minutes&quot;: &quot;-10&quot;,
+                    &quot;action&quot;: &quot;popup&quot;
+                }
+            ],
+            &quot;enable_eventmanagement&quot;: false,
+            &quot;role&quot;: &quot;organizer&quot;,
+            &quot;calid&quot;: &quot;1657000000002003&quot;,
+            &quot;title&quot;: &quot;Test endured &quot;,
+            &quot;calendar_alarm&quot;: false,
+            &quot;duration&quot;: 3600000,
+            &quot;uid&quot;: &quot;0355da9f49884db8bef8c8f22c976dfc@zoho.com&quot;,
+            &quot;rrule&quot;: &quot;FREQ=WEEKLY;UNTIL=20170830T100100Z;INTERVAL=1;BYDAY=MO,WE,SA&quot;,
+            &quot;createdby&quot;: &quot;paula@zylker.com&quot;,
+            &quot;repeat&quot;: [
+                {
+                    &quot;freq&quot;: &quot;weekly&quot;,
+                    &quot;byday&quot;: &quot;MO,WE,SA&quot;,
+                    &quot;interval&quot;: 1,
+                    &quot;until&quot;: &quot;20170830T100100Z&quot;
+                }
+            ],
+            &quot;alarm&quot;: [
+                {
+                    &quot;action&quot;: &quot;popup&quot;,
+                    &quot;trigger&quot;: -600000
+                }
+            ],
+            &quot;end&quot;: &quot;20170715T163000&quot;,
+            &quot;dateandtime&quot;: {
+                &quot;timezone&quot;: &quot;Asia/Calcutta&quot;,
+                &quot;start&quot;: &quot;20170715T153000+0530&quot;,
+                &quot;end&quot;: &quot;20170715T163000+0530&quot;
+            },
+            &quot;lastmodifiedtime&quot;: &quot;20170717T095723Z&quot;,
+            &quot;isprivate&quot;: false,
+            &quot;attendees&quot;: [
+                {
+                    &quot;email&quot;: &quot;paula@zylker.com&quot;,
+                    &quot;status&quot;: &quot;ACCEPTED&quot;
+                },
+                {
+                    &quot;email&quot;: &quot;rebecca-hr@zylker.com&quot;,
+                    &quot;status&quot;: &quot;NEEDS-ACTION&quot;
+                }
+            ],
+            &quot;start&quot;: &quot;20170715T153000&quot;,
+            &quot;createdtime&quot;: &quot;20170717T09Z&quot;,
+            &quot;organizer&quot;: &quot;paula@zylker.com&quot;,
+            &quot;isallday&quot;: false,
+            &quot;modifiedby&quot;: &quot;paula@zylker.com&quot;,
+            &quot;etag&quot;: 1500285443390,
+            &quot;multiday&quot;: false,
+            &quot;caluid&quot;: &quot;l9WWZCf_SJWcr3uIuBOq5g==&quot;
+        }
+    ]
+}</code></pre></div></div></div><div class="light-theme"><h4><span id="one">Sample Response(byinstance=true):</span></h4><div class="api-code-panel-inner"><div class="api-code-block json active"><pre class="language-json light-theme"><span class="copiedTooltip">Copied</span><span class="copy_button" onclick="copyTextToClipboard(this, this.nextElementSibling.innerText)"></span><code>{
+    &quot;events&quot;: [
+        {
+            &quot;isprivate&quot;: false,
+            &quot;enable_eventmanagement&quot;: false,
+            &quot;role&quot;: &quot;participant&quot;,
+            &quot;attendees&quot;: [
+                {
+                    &quot;email&quot;: &quot;rebecca@zylker.com&quot;,
+                    &quot;status&quot;: &quot;DECLINED&quot;
+                }
+            ],
+            &quot;start&quot;: &quot;20170718T205000&quot;,
+            &quot;calid&quot;: &quot;1657000000002003&quot;,
+            &quot;title&quot;: &quot;test 1&quot;,
+            &quot;createdtime&quot;: &quot;20170713T10Z&quot;,
+            &quot;calendar_alarm&quot;: true,
+            &quot;duration&quot;: 6900000,
+            &quot;uid&quot;: &quot;05bc508fac974ba4b99f56390137bcb4@zoho.com&quot;,
+            &quot;createdby&quot;: &quot;rebecca.finance@zylker.com&quot;,
+            &quot;organizer&quot;: &quot;rebecca.finance@zylker.com&quot;,
+            &quot;isallday&quot;: false,
+            &quot;end&quot;: &quot;20170718T224500&quot;,
+            &quot;modifiedby&quot;: &quot;paula@zylker.com&quot;,
+            &quot;etag&quot;: 1500358633876,
+            &quot;multiday&quot;: false,
+            &quot;caluid&quot;: &quot;l9WWZCf_SJWcr3uIuBOq5g==&quot;,
+            &quot;dateandtime&quot;: {
+                &quot;timezone&quot;: &quot;Asia/Calcutta&quot;,
+                &quot;start&quot;: &quot;20170718T205000+0530&quot;,
+                &quot;end&quot;: &quot;20170718T224500+0530&quot;
+            },
+            &quot;lastmodifiedtime&quot;: &quot;20170718T061713Z&quot;
+        },
+        {
+            &quot;reminders&quot;: [
+                {
+                    &quot;minutes&quot;: &quot;-10&quot;,
+                    &quot;action&quot;: &quot;popup&quot;
+                }
+            ],
+            &quot;enable_eventmanagement&quot;: false,
+            &quot;role&quot;: &quot;organizer&quot;,
+            &quot;calid&quot;: &quot;1657000000002003&quot;,
+            &quot;title&quot;: &quot;Test endured &quot;,
+            &quot;calendar_alarm&quot;: false,
+            &quot;duration&quot;: 3600000,
+            &quot;uid&quot;: &quot;0355da9f49884db8bef8c8f22c976dfc@zoho.com&quot;,
+            &quot;rrule&quot;: &quot;FREQ=WEEKLY;UNTIL=20170830T100100Z;INTERVAL=1;BYDAY=MO,WE,SA&quot;,
+            &quot;createdby&quot;: &quot;rebecca@zylker.com&quot;,
+            &quot;repeat&quot;: [
+                {
+                    &quot;freq&quot;: &quot;weekly&quot;,
+                    &quot;byday&quot;: &quot;MO,WE,SA&quot;,
+                    &quot;interval&quot;: 1,
+                    &quot;until&quot;: &quot;20170830T100100Z&quot;
+                }
+            ],
+            &quot;alarm&quot;: [
+                {
+                    &quot;action&quot;: &quot;popup&quot;,
+                    &quot;trigger&quot;: -600000
+                }
+            ],
+            &quot;end&quot;: &quot;20170715T163000&quot;,
+            &quot;dateandtime&quot;: {
+                &quot;timezone&quot;: &quot;Asia/Calcutta&quot;,
+                &quot;start&quot;: &quot;20170715T153000+0530&quot;,
+                &quot;end&quot;: &quot;20170715T163000+0530&quot;
+            },
+            &quot;lastmodifiedtime&quot;: &quot;20170717T095723Z&quot;,
+            &quot;isprivate&quot;: false,
+            &quot;attendees&quot;: [
+                {
+                    &quot;email&quot;: &quot;rebecca@zylker.com&quot;,
+                    &quot;status&quot;: &quot;ACCEPTED&quot;
+                },
+                {
+                    &quot;email&quot;: &quot;michael.scott@zylker.com&quot;,
+                    &quot;status&quot;: &quot;NEEDS-ACTION&quot;
+                }
+            ],
+            &quot;start&quot;: &quot;20170715T153000&quot;,
+            &quot;createdtime&quot;: &quot;20170717T09Z&quot;,
+            &quot;organizer&quot;: &quot;rebecca@zylker.com&quot;,
+            &quot;isallday&quot;: false,
+            &quot;modifiedby&quot;: &quot;rebecca@zylker.com&quot;,
+            &quot;etag&quot;: 1500285443390,
+            &quot;multiday&quot;: false,
+            &quot;caluid&quot;: &quot;l9WWZCf_SJWcr3uIuBOq5g==&quot;
+        }
+    ]
+}</code></pre></div></div></div></div></div></div></div></div></section></div> </main> <footer><div class="zw-product-footer"></div><div class="zw-global-footer"></div><div class="zw-only-copyright"></div><div class="zw-promo-bottom"></div> </footer> <aside><div class="zw-other-info"></div> </aside><script src="//www.zohowebstatic.com/sites/zweb/js/common/zcms.js"></script><script src="//www.zohowebstatic.com/sites/zweb/js/common/zohocustom.js"></script><script src="//www.zohowebstatic.com/sites/zweb/js/template/zp_api.js"></script><script src="//www.zohowebstatic.com/sites/zweb/js/r/syntax-highlighter.js"></script><script src="//www.zohowebstatic.com/sites/zweb/js/product/calendar.js"></script></body></html>

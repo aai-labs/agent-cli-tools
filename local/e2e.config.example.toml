@@ -1,0 +1,78 @@
+# Copy this file to local/e2e.config.toml and fill the non-secret values.
+# Keep secrets in environment variables, not in this file.
+#
+# Run safe tests:
+#   scripts/run-tests.sh safe
+#
+# Run live tests:
+#   export AAI_E2E_CONFIG="$PWD/local/e2e.config.toml"
+#   export GITHUB_TOKEN="..."
+#   export JIRA_API_TOKEN="..."
+#   scripts/run-tests.sh live
+
+default_profile = "github-work"
+
+[profiles.github-work]
+provider = "github"
+auth_type = "bearer_token"
+token_env = "GITHUB_TOKEN"
+owner = "YOUR_GITHUB_OWNER"
+repo = "YOUR_DISPOSABLE_GITHUB_REPO"
+# Optional: used by github repos list. If omitted, lists authenticated user's repos.
+# org = "YOUR_GITHUB_ORG"
+
+[profiles.jira-work]
+auth_type = "basic_api_token"
+site_url = "https://YOUR_SITE.atlassian.net"
+email = "YOUR_ATLASSIAN_EMAIL"
+api_token_env = "JIRA_API_TOKEN"
+
+[profiles.confluence-work]
+auth_type = "basic_api_token"
+site_url = "https://YOUR_SITE.atlassian.net"
+email = "YOUR_ATLASSIAN_EMAIL"
+api_token_env = "CONFLUENCE_API_TOKEN"
+
+[profiles.bitbucket-work]
+auth_type = "basic_api_token"
+workspace = "YOUR_BITBUCKET_WORKSPACE"
+repo = "YOUR_DISPOSABLE_BITBUCKET_REPO"
+email = "YOUR_ATLASSIAN_EMAIL"
+api_token_env = "BITBUCKET_API_TOKEN"
+
+[profiles.gmail-work]
+provider = "google"
+auth_type = "bearer_token"
+token_env = "GOOGLE_GMAIL_ACCESS_TOKEN"
+user_id = "me"
+
+[profiles.google-calendar-work]
+provider = "google"
+auth_type = "bearer_token"
+token_env = "GOOGLE_CALENDAR_ACCESS_TOKEN"
+calendar_id = "primary"
+
+[profiles.zoho-mail-work]
+provider = "zoho"
+transport = "smtp_imap"
+auth_type = "app_password"
+username = "YOUR_ZOHO_EMAIL"
+email = "YOUR_ZOHO_EMAIL"
+from_address = "YOUR_ZOHO_EMAIL"
+password_env = "ZOHO_MAIL_APP_PASSWORD"
+smtp_host = "smtp.zoho.com"
+smtp_port = 465
+imap_host = "imap.zoho.com"
+imap_port = 993
+mail_folder = "INBOX"
+sent_folder = "Sent"
+
+[profiles.zoho-calendar-work]
+provider = "zoho"
+transport = "caldav"
+auth_type = "app_password"
+username = "YOUR_ZOHO_EMAIL"
+email = "YOUR_ZOHO_EMAIL"
+password_env = "ZOHO_CALENDAR_APP_PASSWORD"
+# Copy the exact CalDAV URL from Zoho Calendar Settings > Calendars > Integrate Calendar.
+caldav_url = "https://calendar.zoho.com/..."
