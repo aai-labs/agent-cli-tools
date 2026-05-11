@@ -1,42 +1,61 @@
-# aai-cli Agent Skill
+# aai-cli
 
-Use `aai-cli` when an agent needs structured command-line access to work systems without writing provider-specific API code. The tool returns JSON on stdout and structured JSON errors on stderr, making it suitable for automated planning, execution, and verification loops.
+`aai-cli` is a Rust command-line toolkit that gives agents and automation a consistent JSON interface to common work systems. It wraps provider APIs with predictable commands, JSON stdout, and structured JSON errors on stderr.
 
-## When To Use
+The goal is not to replace full SDKs. The goal is to make common agent tasks easy and safe: create Jira issues, write Confluence pages, manage GitHub/Bitbucket issues and PRs, send/read mail, and create calendar events without each agent learning every provider API.
 
-Use this tool for common operations across:
+## Supported Integrations
 
-- Jira: issues and projects.
-- Confluence: spaces and pages.
-- Bitbucket: repositories and pull requests.
-- GitHub: repositories, issues, and pull requests.
-- Email: Gmail REST profiles or Zoho SMTP/IMAP profiles.
-- Calendar: Google Calendar REST profiles or Zoho CalDAV profiles.
+- Jira Cloud: issues and projects.
+- Confluence Cloud: spaces and pages, including storage-format page bodies.
+- Bitbucket Cloud: repositories, pull requests, PR comments, close/decline.
+- GitHub: repositories, issues, pull requests, PR comments, close/decline.
+- Email: Gmail REST profiles and Zoho SMTP/IMAP profiles.
+- Calendar: Google Calendar REST profiles and Zoho CalDAV profiles.
+- Local encrypted secrets: XChaCha20-Poly1305 secret store for tokens and app passwords.
 
-Do not use this tool to acquire OAuth tokens. It consumes credentials supplied through config files and environment variables.
+## Quick Start
 
-## Command Shape
-
-All commands follow a provider/resource/action pattern:
-
-```bash
-aai-cli <service> <resource> <action> [flags]
-```
-
-Prefer explicit config/profile selection in agent runs:
+Install from the checked-out repository:
 
 ```bash
-aai-cli --config local/e2e.config.toml --profile jira-work jira issues list
-aai-cli --config local/e2e.config.toml --profile github-work github issues get 123
+cargo install --path .
 ```
 
-If `aai-cli` is not installed, run it through Cargo from the repo root:
+Install directly from git:
+
+```bash
+cargo install --git git@github.com:aai-labs/agent-cli-tools.git
+```
+
+Ensure Cargo's bin directory is on `PATH`:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+Build and test without installing:
+
+```bash
+cargo build
+scripts/run-tests.sh safe
+```
+
+Run through Cargo:
 
 ```bash
 cargo run -- --profile jira-work jira issues list
 ```
 
-## Config Contract
+Run an installed binary:
+
+```bash
+aai-cli --profile github-work github issues list
+```
+
+All successful command output is JSON. Errors are JSON on stderr and include `code`, `service`, `operation`, `status`, and `details`.
+
+## Configuration
 
 Default config path:
 
@@ -44,9 +63,20 @@ Default config path:
 ~/.config/aai-cli/config.toml
 ```
 
-Override config with `--config` or `AAI_CONFIG`. Select a profile with `--profile` or `AAI_PROFILE`.
+Override config and profile:
 
-Prefer encrypted secrets for agent sandboxes. Env vars are still supported for CI/dev, but they are easier to exfiltrate with `env` or `/proc`.
+```bash
+aai-cli --config local/e2e.config.toml --profile jira-work jira projects list
+```
+
+Equivalent env vars:
+
+```bash
+AAI_CONFIG=local/e2e.config.toml
+AAI_PROFILE=jira-work
+```
+
+Example config:
 
 ```toml
 default_profile = "github-work"
@@ -102,9 +132,11 @@ password_secret = "zoho.calendar_app_password"
 caldav_url = "https://calendar.zoho.com/caldav/<calendar-id>/events/"
 ```
 
-## Encrypted Secrets
+## Secrets
 
-`aai-cli` can store secrets in an encrypted JSON file using XChaCha20-Poly1305. The key file is created automatically the first time secrets are read or written.
+Prefer encrypted secrets for sandboxed agents. Env vars are supported for CI/dev, but they are easier to exfiltrate with `env` or `/proc`.
+
+`aai-cli` stores secrets in an encrypted JSON file using XChaCha20-Poly1305. The key file is created automatically the first time secrets are read or written.
 
 Default paths:
 
@@ -113,20 +145,14 @@ secrets_file: $AAI_SECRETS_FILE or ~/.config/aai-cli/secrets.enc.json
 key_file:     $AAI_SECRET_KEY_FILE or /run/aai/key when available, otherwise ~/.config/aai-cli/key
 ```
 
-Set secrets from command-line values:
-
-```bash
-aai-cli --config local/e2e.config.toml secrets set github.token --value "$GITHUB_TOKEN"
-aai-cli --config local/e2e.config.toml secrets set bitbucket.api_token --value "$BITBUCKET_API_TOKEN"
-```
-
-Set secrets from stdin to avoid shell history:
+Set values:
 
 ```bash
 printf '%s' "$GITHUB_TOKEN" | aai-cli --config local/e2e.config.toml secrets set github.token
+printf '%s' "$JIRA_API_TOKEN" | aai-cli --config local/e2e.config.toml secrets set jira.api_token
 ```
 
-List secret keys without values:
+List keys without values:
 
 ```bash
 aai-cli --config local/e2e.config.toml secrets list
@@ -138,7 +164,7 @@ Remove a secret:
 aai-cli --config local/e2e.config.toml secrets remove github.token
 ```
 
-Profile secret fields:
+Supported secret reference fields:
 
 ```toml
 token_secret = "github.token"
@@ -146,22 +172,58 @@ api_token_secret = "jira.api_token"
 password_secret = "zoho.mail_app_password"
 ```
 
-Resolution precedence is direct config value, env var, then encrypted secret reference. Do not commit the encrypted secrets file or key file. In Docker automation, mount or create the key file inside the container instance and keep it out of logs/artifacts.
+Resolution precedence is direct config value, env var, then encrypted secret reference. Do not commit encrypted secrets or key files.
 
-## Auth Rules
+## Authentication Notes
 
 - GitHub uses `bearer_token` with `token_secret` or `token_env`.
-- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token from `api_token_secret` or `api_token_env`.
-- Bitbucket Cloud API/personal tokens use `basic_api_token` with Atlassian account `email` plus Bitbucket API token from `api_token_secret` or `api_token_env`.
-- Repository/project/workspace Bitbucket access tokens are different from user API tokens and use bearer auth; model them as a separate profile when needed.
+- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token.
+- Bitbucket Cloud API/personal tokens use `basic_api_token` with Atlassian account `email` plus Bitbucket API token.
+- Bitbucket repository/workspace access tokens are distinct from user API tokens and should be modeled separately with bearer auth when added.
 - Google Gmail and Calendar REST profiles use `bearer_token`.
 - Zoho REST profiles use `zoho_oauth`.
 - Zoho app-password mail uses `transport = "smtp_imap"`.
 - Zoho app-password calendar uses `transport = "caldav"`.
 
-## JSON Input
+## Agent Usage Guide
 
-Create/update commands accept either flags or JSON. Flags override matching JSON fields.
+This section is written for agents and automation systems.
+
+### Contract
+
+- Use the smallest command that satisfies the task.
+- Always pass `--config` and `--profile` unless `AAI_CONFIG` and `AAI_PROFILE` are explicitly set.
+- Parse stdout as JSON.
+- Parse stderr as JSON on failure.
+- Never print resolved tokens, app passwords, full local configs, or encrypted key files.
+- Verify resources with `get` or `list` before destructive actions when possible.
+- Cleanup test resources after creating them.
+
+### Command Shape
+
+Commands follow:
+
+```bash
+aai-cli <service> <resource> <action> [flags]
+```
+
+Examples:
+
+```bash
+aai-cli --config local/e2e.config.toml --profile jira-work jira issues list
+aai-cli --config local/e2e.config.toml --profile confluence-work confluence pages get 123456
+aai-cli --config local/e2e.config.toml --profile github-work github prs comments create 7 --body "Reviewed by agent"
+```
+
+If running from the repository without installing:
+
+```bash
+cargo run -- --config local/e2e.config.toml --profile jira-work jira issues list
+```
+
+### JSON Input
+
+Create/update commands accept flags and JSON. Flags override matching JSON fields.
 
 ```bash
 aai-cli jira issues create --project ENG --summary "Investigate failure" --description "Observed by agent"
@@ -169,9 +231,18 @@ aai-cli jira issues create --json issue.json --summary "Override summary"
 aai-cli github issues create --json - < issue.json
 ```
 
-Jira `--description` is converted to minimal Atlassian Document Format. If raw ADF is supplied through `--json`, it is preserved.
+Jira `--description` is converted to minimal Atlassian Document Format. Raw ADF supplied through `--json` is preserved.
 
-## Supported Commands
+Confluence page bodies use Confluence storage format:
+
+```bash
+aai-cli confluence pages create \
+  --space-id 123456 \
+  --title "Agent Report" \
+  --body '<h1>Report</h1><p><strong>Status:</strong> green</p>'
+```
+
+### Supported Commands
 
 ```bash
 aai-cli jira issues list
@@ -239,64 +310,42 @@ aai-cli secrets list
 aai-cli secrets remove <key>
 ```
 
-## Agent Workflow
-
-1. Select the smallest command that answers the task.
-2. Always pass `--config` and `--profile` in automated runs unless the environment explicitly defines `AAI_CONFIG` and `AAI_PROFILE`.
-3. Parse stdout as JSON.
-4. On failure, parse stderr as JSON and inspect `code`, `service`, `operation`, `status`, and `details`.
-5. Do not log token values or full config files containing secrets.
-6. For destructive actions, prefer list/get verification before delete/update.
-
-Example:
+### Agent Workflow Example
 
 ```bash
-set -a
-source local/e2e.env
-set +a
+aai-cli --config local/e2e.config.toml --profile jira-work jira projects list
 
-aai-cli --config "$AAI_E2E_CONFIG" --profile "$AAI_E2E_JIRA_PROFILE" jira projects list
-aai-cli --config "$AAI_E2E_CONFIG" --profile "$AAI_E2E_JIRA_PROFILE" jira issues create \
+aai-cli --config local/e2e.config.toml --profile jira-work jira issues create \
   --project ENG \
   --summary "Agent-created test issue" \
   --description "Created through aai-cli"
 ```
 
-## Local Development
+## Development And Testing
 
-Build and run safe checks:
+Safe checks:
 
 ```bash
-cargo build
 scripts/run-tests.sh safe
 ```
 
 Safe checks include formatting, unit tests, ignored-live-test compilation, and clippy.
 
-## Live E2E Tests
-
-Live tests require real credentials and disposable resources.
-
-Prepare local files:
+Live tests require real credentials and disposable resources:
 
 ```bash
 cp local/e2e.config.example.toml local/e2e.config.toml
 cp local/e2e.env.example local/e2e.env
 ```
 
-Fill `local/e2e.config.toml` with non-secret metadata and `local/e2e.env` with tokens and test resource IDs.
+Fill `local/e2e.config.toml` with non-secret metadata and configure secrets with either env vars or `aai-cli secrets set`.
 
-Load env:
+Run all live tests:
 
 ```bash
 set -a
 source local/e2e.env
 set +a
-```
-
-Run all live tests:
-
-```bash
 scripts/run-tests.sh live
 ```
 
@@ -306,7 +355,7 @@ Run one live test:
 scripts/run-tests.sh live bitbucket_repos_and_optional_prs
 ```
 
-Common test variables:
+Common live-test variables:
 
 ```bash
 AAI_E2E_CONFIG=./local/e2e.config.toml
@@ -324,7 +373,7 @@ AAI_E2E_GOOGLE_CALENDAR_PROFILE=google-calendar-work
 AAI_E2E_ZOHO_CALENDAR_PROFILE=zoho-calendar-work
 ```
 
-PR tests are optional. Set these only when disposable source/base branches exist:
+Optional PR test variables:
 
 ```bash
 AAI_E2E_GITHUB_PR_HEAD=e2e-branch
