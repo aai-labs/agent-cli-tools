@@ -237,15 +237,42 @@ Confluence page bodies use Confluence storage format:
 
 ```bash
 aai-cli confluence pages create \
-  --space-id 123456 \
+  --space-key ENG \
   --title "Agent Report" \
   --body '<h1>Report</h1><p><strong>Status:</strong> green</p>'
+```
+
+### Search And Pagination
+
+List and search commands return aggregated JSON up to `--limit`; agents do not need to manually follow provider pagination for the supported Jira and Confluence list/search commands.
+
+Jira enhanced search requires bounded JQL. Prefer project-, key-, assignee-, status-, or date-bounded queries:
+
+```bash
+aai-cli jira issues search --jql 'project = ENG ORDER BY created DESC' --limit 25
+aai-cli jira issues search --jql 'key = ENG-123' --fields key,summary,status
+```
+
+Jira search defaults to agent-useful fields: `key,summary,status,issuetype,assignee,created,updated,description,project`. Use `--fields` to reduce payload size.
+
+Confluence search supports raw CQL or a text query helper:
+
+```bash
+aai-cli confluence search --cql 'space = OOP and type = page' --limit 25
+aai-cli confluence search --query 'release notes' --limit 10
+```
+
+Confluence page moves are relative to a target page. Use `append` to make the page a child of the target. Use `before` or `after` only when you intentionally want sibling ordering; moving relative to top-level pages can make pages hard to find in the UI.
+
+```bash
+aai-cli confluence pages move 458795 --target-id 589825 --position append
 ```
 
 ### Supported Commands
 
 ```bash
-aai-cli jira issues list
+aai-cli jira issues list [--jql JQL] [--fields FIELD_LIST] [--limit N]
+aai-cli jira issues search --jql JQL [--fields FIELD_LIST] [--limit N]
 aai-cli jira issues get <issue-key-or-id>
 aai-cli jira issues create [--json <path|->] [--project KEY] [--summary TEXT] [--description TEXT]
 aai-cli jira issues update <issue-key-or-id> [--json <path|->] [--summary TEXT] [--description TEXT]
@@ -254,11 +281,15 @@ aai-cli jira projects list
 aai-cli jira projects get <project-key-or-id>
 
 aai-cli confluence spaces list
-aai-cli confluence spaces get <space-id>
+aai-cli confluence spaces get <space-id-or-key>
+aai-cli confluence search --cql CQL [--limit N]
+aai-cli confluence search --query TEXT [--limit N]
 aai-cli confluence pages list
 aai-cli confluence pages get <page-id>
-aai-cli confluence pages create [--json <path|->] --space-id <space-id> --title TEXT [--body STORAGE_HTML]
+aai-cli confluence pages create [--json <path|->] --space-id <space-id-or-key> --title TEXT [--body STORAGE_HTML]
+aai-cli confluence pages create [--json <path|->] --space-key <space-key> --title TEXT [--body STORAGE_HTML]
 aai-cli confluence pages update <page-id> [--json <path|->] [--title TEXT] [--body STORAGE_HTML] [--version N]
+aai-cli confluence pages move <page-id> --target-id <target-page-id> [--position append|before|after]
 aai-cli confluence pages delete <page-id>
 
 aai-cli bitbucket repos list

@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(name = "aai-cli")]
@@ -73,6 +73,7 @@ pub struct JiraIssuesCommand {
 #[derive(Debug, Subcommand)]
 pub enum JiraIssuesAction {
     List(JiraIssueList),
+    Search(JiraIssueSearch),
     Get(IdArg),
     Create(JiraIssueCreate),
     Update(JiraIssueUpdate),
@@ -83,6 +84,18 @@ pub enum JiraIssuesAction {
 pub struct JiraIssueList {
     #[arg(long)]
     pub jql: Option<String>,
+    #[arg(long)]
+    pub fields: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueSearch {
+    #[arg(long)]
+    pub jql: String,
+    #[arg(long)]
+    pub fields: Option<String>,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
 }
@@ -128,6 +141,7 @@ pub struct ConfluenceCommand {
 pub enum ConfluenceResource {
     Spaces(ConfluenceSpacesCommand),
     Pages(ConfluencePagesCommand),
+    Search(ConfluenceSearch),
 }
 
 #[derive(Debug, Args)]
@@ -148,6 +162,7 @@ pub enum ConfluencePagesAction {
     Get(IdArg),
     Create(ConfluencePageCreate),
     Update(ConfluencePageUpdate),
+    Move(ConfluencePageMove),
     Delete(IdArg),
 }
 
@@ -157,6 +172,8 @@ pub struct ConfluencePageCreate {
     pub json: Option<String>,
     #[arg(long)]
     pub space_id: Option<String>,
+    #[arg(long)]
+    pub space_key: Option<String>,
     #[arg(long)]
     pub title: Option<String>,
     #[arg(long)]
@@ -176,6 +193,42 @@ pub struct ConfluencePageUpdate {
     pub body: Option<String>,
     #[arg(long)]
     pub version: Option<u64>,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageMove {
+    pub id: String,
+    #[arg(long)]
+    pub target_id: String,
+    #[arg(long, value_enum, default_value_t = ConfluenceMovePosition::Append)]
+    pub position: ConfluenceMovePosition,
+}
+
+#[derive(Clone, Debug, ValueEnum)]
+pub enum ConfluenceMovePosition {
+    Before,
+    After,
+    Append,
+}
+
+impl ConfluenceMovePosition {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Before => "before",
+            Self::After => "after",
+            Self::Append => "append",
+        }
+    }
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluenceSearch {
+    #[arg(long, conflicts_with = "query")]
+    pub cql: Option<String>,
+    #[arg(long, conflicts_with = "cql")]
+    pub query: Option<String>,
+    #[arg(long, default_value_t = 25)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
