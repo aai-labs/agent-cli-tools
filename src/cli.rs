@@ -8,6 +8,10 @@ pub struct Cli {
     pub profile: Option<String>,
     #[arg(long, global = true, env = "AAI_CONFIG")]
     pub config: Option<String>,
+    #[arg(long, global = true, env = "AAI_SECRETS_FILE")]
+    pub secrets_file: Option<String>,
+    #[arg(long, global = true, env = "AAI_SECRET_KEY_FILE")]
+    pub key_file: Option<String>,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -20,6 +24,32 @@ pub enum Command {
     Github(GithubCommand),
     Email(EmailCommand),
     Calendar(CalendarCommand),
+    Secrets(SecretsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct SecretsCommand {
+    #[command(subcommand)]
+    pub action: SecretsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SecretsAction {
+    Set(SecretSet),
+    List,
+    Remove(SecretKeyArg),
+}
+
+#[derive(Debug, Args)]
+pub struct SecretSet {
+    pub key: String,
+    #[arg(long)]
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct SecretKeyArg {
+    pub key: String,
 }
 
 #[derive(Debug, Args)]

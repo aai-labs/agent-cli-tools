@@ -46,15 +46,17 @@ Default config path:
 
 Override config with `--config` or `AAI_CONFIG`. Select a profile with `--profile` or `AAI_PROFILE`.
 
-Keep secrets in env vars. Keep non-secret metadata in TOML profiles.
+Prefer encrypted secrets for agent sandboxes. Env vars are still supported for CI/dev, but they are easier to exfiltrate with `env` or `/proc`.
 
 ```toml
 default_profile = "github-work"
+secrets_file = "local/aai-secrets.enc.json"
+key_file = "/run/aai/key"
 
 [profiles.github-work]
 provider = "github"
 auth_type = "bearer_token"
-token_env = "GITHUB_TOKEN"
+token_secret = "github.token"
 owner = "acme"
 repo = "app"
 
@@ -62,20 +64,20 @@ repo = "app"
 auth_type = "basic_api_token"
 site_url = "https://example.atlassian.net"
 email = "agent@example.com"
-api_token_env = "JIRA_API_TOKEN"
+api_token_secret = "jira.api_token"
 
 [profiles.confluence-work]
 auth_type = "basic_api_token"
 site_url = "https://example.atlassian.net"
 email = "agent@example.com"
-api_token_env = "CONFLUENCE_API_TOKEN"
+api_token_secret = "confluence.api_token"
 
 [profiles.bitbucket-work]
 auth_type = "basic_api_token"
 workspace = "acme"
 repo = "app"
 email = "agent@example.com"
-api_token_env = "BITBUCKET_API_TOKEN"
+api_token_secret = "bitbucket.api_token"
 
 [profiles.zoho-mail-work]
 provider = "zoho"
@@ -84,7 +86,7 @@ auth_type = "app_password"
 email = "agent@example.com"
 username = "agent@example.com"
 from_address = "agent@example.com"
-password_env = "ZOHO_MAIL_APP_PASSWORD"
+password_secret = "zoho.mail_app_password"
 smtp_host = "smtp.zoho.com"
 smtp_port = 465
 imap_host = "imap.zoho.com"
@@ -96,15 +98,61 @@ transport = "caldav"
 auth_type = "app_password"
 email = "agent@example.com"
 username = "agent@example.com"
-password_env = "ZOHO_CALENDAR_APP_PASSWORD"
+password_secret = "zoho.calendar_app_password"
 caldav_url = "https://calendar.zoho.com/caldav/<calendar-id>/events/"
 ```
 
+## Encrypted Secrets
+
+`aai-cli` can store secrets in an encrypted JSON file using XChaCha20-Poly1305. The key file is created automatically the first time secrets are read or written.
+
+Default paths:
+
+```text
+secrets_file: $AAI_SECRETS_FILE or ~/.config/aai-cli/secrets.enc.json
+key_file:     $AAI_SECRET_KEY_FILE or /run/aai/key when available, otherwise ~/.config/aai-cli/key
+```
+
+Set secrets from command-line values:
+
+```bash
+aai-cli --config local/e2e.config.toml secrets set github.token --value "$GITHUB_TOKEN"
+aai-cli --config local/e2e.config.toml secrets set bitbucket.api_token --value "$BITBUCKET_API_TOKEN"
+```
+
+Set secrets from stdin to avoid shell history:
+
+```bash
+printf '%s' "$GITHUB_TOKEN" | aai-cli --config local/e2e.config.toml secrets set github.token
+```
+
+List secret keys without values:
+
+```bash
+aai-cli --config local/e2e.config.toml secrets list
+```
+
+Remove a secret:
+
+```bash
+aai-cli --config local/e2e.config.toml secrets remove github.token
+```
+
+Profile secret fields:
+
+```toml
+token_secret = "github.token"
+api_token_secret = "jira.api_token"
+password_secret = "zoho.mail_app_password"
+```
+
+Resolution precedence is direct config value, env var, then encrypted secret reference. Do not commit the encrypted secrets file or key file. In Docker automation, mount or create the key file inside the container instance and keep it out of logs/artifacts.
+
 ## Auth Rules
 
-- GitHub uses `bearer_token` with `token_env`.
-- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token.
-- Bitbucket Cloud API/personal tokens use `basic_api_token` with Atlassian account `email` plus Bitbucket API token.
+- GitHub uses `bearer_token` with `token_secret` or `token_env`.
+- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token from `api_token_secret` or `api_token_env`.
+- Bitbucket Cloud API/personal tokens use `basic_api_token` with Atlassian account `email` plus Bitbucket API token from `api_token_secret` or `api_token_env`.
 - Repository/project/workspace Bitbucket access tokens are different from user API tokens and use bearer auth; model them as a separate profile when needed.
 - Google Gmail and Calendar REST profiles use `bearer_token`.
 - Zoho REST profiles use `zoho_oauth`.
@@ -185,6 +233,10 @@ aai-cli calendar events get <id>
 aai-cli calendar events create --summary TEXT --start YYYYMMDDTHHMMSSZ --end YYYYMMDDTHHMMSSZ [--description TEXT]
 aai-cli calendar events update <id> [--summary TEXT] [--start YYYYMMDDTHHMMSSZ] [--end YYYYMMDDTHHMMSSZ] [--description TEXT]
 aai-cli calendar events delete <id>
+
+aai-cli secrets set <key> [--value TEXT]
+aai-cli secrets list
+aai-cli secrets remove <key>
 ```
 
 ## Agent Workflow

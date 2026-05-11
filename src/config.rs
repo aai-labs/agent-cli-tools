@@ -2,11 +2,13 @@ use std::{collections::HashMap, env, fs, path::PathBuf};
 
 use serde::Deserialize;
 
-use crate::error::AppError;
+use crate::{error::AppError, secrets};
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Config {
     pub default_profile: Option<String>,
+    pub secrets_file: Option<String>,
+    pub key_file: Option<String>,
     #[serde(default)]
     pub profiles: HashMap<String, Profile>,
 }
@@ -22,10 +24,13 @@ pub struct Profile {
     pub username: Option<String>,
     pub token: Option<String>,
     pub token_env: Option<String>,
+    pub token_secret: Option<String>,
     pub api_token: Option<String>,
     pub api_token_env: Option<String>,
+    pub api_token_secret: Option<String>,
     pub password: Option<String>,
     pub password_env: Option<String>,
+    pub password_secret: Option<String>,
     pub workspace: Option<String>,
     pub owner: Option<String>,
     pub repo: Option<String>,
@@ -45,10 +50,17 @@ pub struct Profile {
 
 pub struct Context {
     pub profile: Profile,
+    pub secrets_file: PathBuf,
+    pub key_file: PathBuf,
 }
 
 impl Context {
-    pub fn load(config_arg: Option<&str>, profile_arg: Option<&str>) -> Result<Self, AppError> {
+    pub fn load(
+        config_arg: Option<&str>,
+        profile_arg: Option<&str>,
+        secrets_arg: Option<&str>,
+        key_arg: Option<&str>,
+    ) -> Result<Self, AppError> {
         let config_path = config_path(config_arg)?;
         let text = if config_path.exists() {
             fs::read_to_string(&config_path).map_err(|err| {
@@ -64,6 +76,9 @@ impl Context {
                 .map_err(|err| AppError::config(format!("invalid config TOML: {err}")))?
         };
 
+        let secrets_file = secrets_path(secrets_arg, config.secrets_file.as_deref())?;
+        let key_file = key_path(key_arg, config.key_file.as_deref())?;
+
         let profile_name = profile_arg
             .map(str::to_string)
             .or_else(|| env::var("AAI_PROFILE").ok())
@@ -76,8 +91,14 @@ impl Context {
             .cloned()
             .unwrap_or_default();
         apply_env_overrides(&mut profile, &profile_name);
+        let mut ctx = Self {
+            profile,
+            secrets_file,
+            key_file,
+        };
+        apply_secret_overrides(&mut ctx)?;
 
-        Ok(Self { profile })
+        Ok(ctx)
     }
 }
 
@@ -91,6 +112,23 @@ fn config_path(config_arg: Option<&str>) -> Result<PathBuf, AppError> {
     let config_dir =
         dirs::config_dir().ok_or_else(|| AppError::config("could not locate config directory"))?;
     Ok(config_dir.join("aai-cli").join("config.toml"))
+}
+
+fn secrets_path(
+    secrets_arg: Option<&str>,
+    config_value: Option<&str>,
+) -> Result<PathBuf, AppError> {
+    if let Some(path) = secrets_arg.or(config_value) {
+        return Ok(PathBuf::from(path));
+    }
+    secrets::default_secrets_path()
+}
+
+fn key_path(key_arg: Option<&str>, config_value: Option<&str>) -> Result<PathBuf, AppError> {
+    if let Some(path) = key_arg.or(config_value) {
+        return Ok(PathBuf::from(path));
+    }
+    secrets::default_key_path()
 }
 
 fn apply_env_overrides(profile: &mut Profile, profile_name: &str) {
@@ -129,6 +167,25 @@ fn apply_env_overrides(profile: &mut Profile, profile_name: &str) {
     }
 }
 
+fn apply_secret_overrides(ctx: &mut Context) -> Result<(), AppError> {
+    if ctx.profile.token.is_none() {
+        if let Some(key) = ctx.profile.token_secret.clone() {
+            ctx.profile.token = secrets::get(ctx, &key)?;
+        }
+    }
+    if ctx.profile.api_token.is_none() {
+        if let Some(key) = ctx.profile.api_token_secret.clone() {
+            ctx.profile.api_token = secrets::get(ctx, &key)?;
+        }
+    }
+    if ctx.profile.password.is_none() {
+        if let Some(key) = ctx.profile.password_secret.clone() {
+            ctx.profile.password = secrets::get(ctx, &key)?;
+        }
+    }
+    Ok(())
+}
+
 fn env_value(name: &str) -> Option<String> {
     env::var(name).ok().filter(|value| !value.trim().is_empty())
 }
@@ -136,6 +193,7 @@ fn env_value(name: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn config_uses_default_profile() {
@@ -151,5 +209,56 @@ token = "abc"
         .unwrap();
         assert_eq!(config.default_profile.as_deref(), Some("work"));
         assert_eq!(config.profiles["work"].provider.as_deref(), Some("github"));
+    }
+
+    #[test]
+    fn config_resolves_secret_references() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+        let secrets_path = temp.path().join("secrets.enc.json");
+        let key_path = temp.path().join("key");
+
+        let seed_ctx = Context {
+            profile: Profile::default(),
+            secrets_file: secrets_path.clone(),
+            key_file: key_path.clone(),
+        };
+        crate::secrets::dispatch(
+            &seed_ctx,
+            crate::cli::SecretsCommand {
+                action: crate::cli::SecretsAction::Set(crate::cli::SecretSet {
+                    key: "github.token".to_string(),
+                    value: Some("resolved-token".to_string()),
+                }),
+            },
+        )
+        .unwrap();
+
+        fs::write(
+            &config_path,
+            format!(
+                r#"
+default_profile = "work"
+secrets_file = "{}"
+key_file = "{}"
+
+[profiles.work]
+provider = "github"
+auth_type = "bearer_token"
+token_secret = "github.token"
+"#,
+                display_path(&secrets_path),
+                display_path(&key_path)
+            ),
+        )
+        .unwrap();
+
+        let ctx =
+            Context::load(Some(display_path(&config_path).as_str()), None, None, None).unwrap();
+        assert_eq!(ctx.profile.token.as_deref(), Some("resolved-token"));
+    }
+
+    fn display_path(path: &Path) -> String {
+        path.display().to_string().replace('\\', "\\\\")
     }
 }

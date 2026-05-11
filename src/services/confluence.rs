@@ -72,7 +72,7 @@ pub(crate) async fn dispatch(
             }
             ConfluencePagesAction::Get(args) => {
                 let url = format!(
-                    "{}/wiki/api/v2/pages/{}",
+                    "{}/wiki/api/v2/pages/{}?body-format=storage",
                     site_url(ctx.profile(), "confluence", "pages.get")?,
                     enc(&args.id)
                 );

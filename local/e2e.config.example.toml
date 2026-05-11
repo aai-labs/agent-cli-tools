@@ -1,5 +1,5 @@
 # Copy this file to local/e2e.config.toml and fill the non-secret values.
-# Keep secrets in environment variables, not in this file.
+# Keep secrets in environment variables or encrypted secret refs, not as plaintext in this file.
 #
 # Run safe tests:
 #   scripts/run-tests.sh safe
@@ -11,11 +11,15 @@
 #   scripts/run-tests.sh live
 
 default_profile = "github-work"
+# Optional encrypted secret store. The key file is auto-created on first use.
+# secrets_file = "local/aai-secrets.enc.json"
+# key_file = "/run/aai/key"
 
 [profiles.github-work]
 provider = "github"
 auth_type = "bearer_token"
 token_env = "GITHUB_TOKEN"
+# token_secret = "github.token"
 owner = "YOUR_GITHUB_OWNER"
 repo = "YOUR_DISPOSABLE_GITHUB_REPO"
 # Optional: used by github repos list. If omitted, lists authenticated user's repos.
@@ -26,12 +30,14 @@ auth_type = "basic_api_token"
 site_url = "https://YOUR_SITE.atlassian.net"
 email = "YOUR_ATLASSIAN_EMAIL"
 api_token_env = "JIRA_API_TOKEN"
+# api_token_secret = "jira.api_token"
 
 [profiles.confluence-work]
 auth_type = "basic_api_token"
 site_url = "https://YOUR_SITE.atlassian.net"
 email = "YOUR_ATLASSIAN_EMAIL"
 api_token_env = "CONFLUENCE_API_TOKEN"
+# api_token_secret = "confluence.api_token"
 
 [profiles.bitbucket-work]
 auth_type = "basic_api_token"
@@ -39,17 +45,20 @@ workspace = "YOUR_BITBUCKET_WORKSPACE"
 repo = "YOUR_DISPOSABLE_BITBUCKET_REPO"
 email = "YOUR_ATLASSIAN_EMAIL"
 api_token_env = "BITBUCKET_API_TOKEN"
+# api_token_secret = "bitbucket.api_token"
 
 [profiles.gmail-work]
 provider = "google"
 auth_type = "bearer_token"
 token_env = "GOOGLE_GMAIL_ACCESS_TOKEN"
+# token_secret = "google.gmail_access_token"
 user_id = "me"
 
 [profiles.google-calendar-work]
 provider = "google"
 auth_type = "bearer_token"
 token_env = "GOOGLE_CALENDAR_ACCESS_TOKEN"
+# token_secret = "google.calendar_access_token"
 calendar_id = "primary"
 
 [profiles.zoho-mail-work]
@@ -60,6 +69,7 @@ username = "YOUR_ZOHO_EMAIL"
 email = "YOUR_ZOHO_EMAIL"
 from_address = "YOUR_ZOHO_EMAIL"
 password_env = "ZOHO_MAIL_APP_PASSWORD"
+# password_secret = "zoho.mail_app_password"
 smtp_host = "smtp.zoho.com"
 smtp_port = 465
 imap_host = "imap.zoho.com"
@@ -74,5 +84,6 @@ auth_type = "app_password"
 username = "YOUR_ZOHO_EMAIL"
 email = "YOUR_ZOHO_EMAIL"
 password_env = "ZOHO_CALENDAR_APP_PASSWORD"
+# password_secret = "zoho.calendar_app_password"
 # Copy the exact CalDAV URL from Zoho Calendar Settings > Calendars > Integrate Calendar.
 caldav_url = "https://calendar.zoho.com/..."

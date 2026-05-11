@@ -3,6 +3,7 @@ mod config;
 mod error;
 mod http;
 mod input;
+mod secrets;
 mod services;
 
 use std::process::ExitCode;
@@ -34,6 +35,11 @@ async fn main() -> ExitCode {
 
 async fn run() -> Result<serde_json::Value, AppError> {
     let cli = Cli::parse();
-    let ctx = config::Context::load(cli.config.as_deref(), cli.profile.as_deref())?;
+    let ctx = config::Context::load(
+        cli.config.as_deref(),
+        cli.profile.as_deref(),
+        cli.secrets_file.as_deref(),
+        cli.key_file.as_deref(),
+    )?;
     services::dispatch(&ctx, cli.command).await
 }

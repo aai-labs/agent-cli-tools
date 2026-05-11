@@ -4,6 +4,9 @@
 # Local live-test config and secrets
 /local/e2e.config.toml
 /local/e2e.env
+/local/*.enc.json
+/local/*.key
+/local/key
 /local/*.swp
 
 # Editor and OS noise

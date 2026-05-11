@@ -19,5 +19,6 @@ pub async fn dispatch(ctx: &Context, command: Command) -> Result<Value, AppError
         Command::Github(command) => github::dispatch(&client, ctx, command).await,
         Command::Email(command) => email::dispatch(&client, ctx, command).await,
         Command::Calendar(command) => calendar::dispatch(&client, ctx, command).await,
+        Command::Secrets(command) => crate::secrets::dispatch(ctx, command),
     }
 }
