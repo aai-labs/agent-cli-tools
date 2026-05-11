@@ -7,7 +7,7 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{enc, github_base, github_repo, CtxProfile},
+    services::shared::{enc, github_base, github_repo, write_download, CtxProfile},
 };
 
 pub(crate) async fn dispatch(
@@ -287,6 +287,177 @@ pub(crate) async fn dispatch(
             }
             GithubPullRequestAction::Comments(command) => pr_comments(client, ctx, command).await,
         },
+        GithubResource::Actions(command) => actions(client, ctx, command).await,
+    }
+}
+
+async fn actions(
+    client: &ApiClient,
+    ctx: &Context,
+    command: GithubActionsCommand,
+) -> Result<Value, AppError> {
+    match command.resource {
+        GithubActionsResource::Runs(command) => match command.action {
+            GithubActionsRunsAction::List(args) => {
+                let (owner, repo) = github_repo(
+                    ctx.profile(),
+                    args.owner.as_deref(),
+                    args.repo.as_deref(),
+                    "actions.runs.list",
+                )?;
+                let mut url = format!(
+                    "{}/repos/{}/{}/actions/runs?per_page={}",
+                    github_base(ctx.profile()),
+                    enc(owner),
+                    enc(repo),
+                    args.limit.clamp(1, 100)
+                );
+                append_query(&mut url, "branch", args.branch.as_deref());
+                append_query(&mut url, "status", args.status.as_deref());
+                append_query(&mut url, "event", args.event.as_deref());
+                client
+                    .request(
+                        "github",
+                        "actions.runs.list",
+                        ctx.profile(),
+                        Method::GET,
+                        url,
+                        None,
+                    )
+                    .await
+            }
+            GithubActionsRunsAction::Get(args) => {
+                let (owner, repo) = github_repo(
+                    ctx.profile(),
+                    args.owner.as_deref(),
+                    args.repo.as_deref(),
+                    "actions.runs.get",
+                )?;
+                let url = format!(
+                    "{}/repos/{}/{}/actions/runs/{}",
+                    github_base(ctx.profile()),
+                    enc(owner),
+                    enc(repo),
+                    args.run
+                );
+                client
+                    .request(
+                        "github",
+                        "actions.runs.get",
+                        ctx.profile(),
+                        Method::GET,
+                        url,
+                        None,
+                    )
+                    .await
+            }
+            GithubActionsRunsAction::Logs(command) => match command.action {
+                GithubActionsRunLogsAction::Download(args) => {
+                    let (owner, repo) = github_repo(
+                        ctx.profile(),
+                        args.owner.as_deref(),
+                        args.repo.as_deref(),
+                        "actions.runs.logs.download",
+                    )?;
+                    let url = format!(
+                        "{}/repos/{}/{}/actions/runs/{}/logs",
+                        github_base(ctx.profile()),
+                        enc(owner),
+                        enc(repo),
+                        args.run
+                    );
+                    let bytes = client
+                        .download("github", "actions.runs.logs.download", ctx.profile(), url)
+                        .await?;
+                    write_download("github", "actions.runs.logs.download", &args.output, &bytes)
+                }
+            },
+        },
+        GithubActionsResource::Jobs(command) => match command.action {
+            GithubActionsJobsAction::List(args) => {
+                let (owner, repo) = github_repo(
+                    ctx.profile(),
+                    args.owner.as_deref(),
+                    args.repo.as_deref(),
+                    "actions.jobs.list",
+                )?;
+                let filter = if args.all_attempts { "all" } else { "latest" };
+                let url = format!(
+                    "{}/repos/{}/{}/actions/runs/{}/jobs?per_page={}&filter={}",
+                    github_base(ctx.profile()),
+                    enc(owner),
+                    enc(repo),
+                    args.run,
+                    args.limit.clamp(1, 100),
+                    filter
+                );
+                client
+                    .request(
+                        "github",
+                        "actions.jobs.list",
+                        ctx.profile(),
+                        Method::GET,
+                        url,
+                        None,
+                    )
+                    .await
+            }
+            GithubActionsJobsAction::Get(args) => {
+                let (owner, repo) = github_repo(
+                    ctx.profile(),
+                    args.owner.as_deref(),
+                    args.repo.as_deref(),
+                    "actions.jobs.get",
+                )?;
+                let url = format!(
+                    "{}/repos/{}/{}/actions/jobs/{}",
+                    github_base(ctx.profile()),
+                    enc(owner),
+                    enc(repo),
+                    args.job
+                );
+                client
+                    .request(
+                        "github",
+                        "actions.jobs.get",
+                        ctx.profile(),
+                        Method::GET,
+                        url,
+                        None,
+                    )
+                    .await
+            }
+            GithubActionsJobsAction::Logs(command) => match command.action {
+                GithubActionsJobLogsAction::Download(args) => {
+                    let (owner, repo) = github_repo(
+                        ctx.profile(),
+                        args.owner.as_deref(),
+                        args.repo.as_deref(),
+                        "actions.jobs.logs.download",
+                    )?;
+                    let url = format!(
+                        "{}/repos/{}/{}/actions/jobs/{}/logs",
+                        github_base(ctx.profile()),
+                        enc(owner),
+                        enc(repo),
+                        args.job
+                    );
+                    let bytes = client
+                        .download("github", "actions.jobs.logs.download", ctx.profile(), url)
+                        .await?;
+                    write_download("github", "actions.jobs.logs.download", &args.output, &bytes)
+                }
+            },
+        },
+    }
+}
+
+fn append_query(url: &mut String, key: &str, value: Option<&str>) {
+    if let Some(value) = value {
+        url.push('&');
+        url.push_str(key);
+        url.push('=');
+        url.push_str(&enc(value));
     }
 }
 

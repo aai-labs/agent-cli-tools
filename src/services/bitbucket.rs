@@ -7,7 +7,9 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{bitbucket_base, bitbucket_repo, enc, workspace, CtxProfile},
+    services::shared::{
+        bitbucket_base, bitbucket_repo, enc, workspace, write_download, CtxProfile,
+    },
 };
 
 pub(crate) async fn dispatch(
@@ -148,6 +150,191 @@ pub(crate) async fn dispatch(
                 pr_comments(client, ctx, command).await
             }
         },
+        BitbucketResource::Pipelines(command) => pipelines(client, ctx, command).await,
+    }
+}
+
+async fn pipelines(
+    client: &ApiClient,
+    ctx: &Context,
+    command: BitbucketPipelinesCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        BitbucketPipelinesAction::List(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "pipelines.list",
+            )?;
+            let mut url = format!(
+                "{}/repositories/{}/{}/pipelines?pagelen={}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                args.limit.clamp(1, 100)
+            );
+            append_query(&mut url, "target.branch", args.branch.as_deref());
+            append_query(&mut url, "status", args.status.as_deref());
+            append_query(&mut url, "sort", args.sort.as_deref());
+            client
+                .request(
+                    "bitbucket",
+                    "pipelines.list",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+        BitbucketPipelinesAction::Get(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "pipelines.get",
+            )?;
+            let url = format!(
+                "{}/repositories/{}/{}/pipelines/{}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                enc(&args.pipeline)
+            );
+            client
+                .request(
+                    "bitbucket",
+                    "pipelines.get",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+        BitbucketPipelinesAction::Steps(command) => pipeline_steps(client, ctx, command).await,
+    }
+}
+
+async fn pipeline_steps(
+    client: &ApiClient,
+    ctx: &Context,
+    command: BitbucketPipelineStepsCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        BitbucketPipelineStepsAction::List(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "pipelines.steps.list",
+            )?;
+            let url = format!(
+                "{}/repositories/{}/{}/pipelines/{}/steps",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                enc(&args.pipeline)
+            );
+            client
+                .request(
+                    "bitbucket",
+                    "pipelines.steps.list",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+        BitbucketPipelineStepsAction::Get(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "pipelines.steps.get",
+            )?;
+            let url = format!(
+                "{}/repositories/{}/{}/pipelines/{}/steps/{}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                enc(&args.pipeline),
+                enc(&args.step)
+            );
+            client
+                .request(
+                    "bitbucket",
+                    "pipelines.steps.get",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+        BitbucketPipelineStepsAction::Logs(command) => match command.action {
+            BitbucketPipelineStepLogsAction::Download(args) => {
+                let (workspace, repo) = bitbucket_repo_from_args(
+                    ctx,
+                    args.owner.as_deref(),
+                    args.repo.as_deref(),
+                    "pipelines.steps.logs.download",
+                )?;
+                let suffix = if let Some(log) = args.log.as_deref() {
+                    format!("/logs/{}", enc(log))
+                } else {
+                    "/log".to_string()
+                };
+                let url = format!(
+                    "{}/repositories/{}/{}/pipelines/{}/steps/{}{}",
+                    bitbucket_base(ctx.profile()),
+                    enc(workspace),
+                    enc(repo),
+                    enc(&args.pipeline),
+                    enc(&args.step),
+                    suffix
+                );
+                let bytes = client
+                    .download(
+                        "bitbucket",
+                        "pipelines.steps.logs.download",
+                        ctx.profile(),
+                        url,
+                    )
+                    .await?;
+                write_download(
+                    "bitbucket",
+                    "pipelines.steps.logs.download",
+                    &args.output,
+                    &bytes,
+                )
+            }
+        },
+    }
+}
+
+fn bitbucket_repo_from_args<'a>(
+    ctx: &'a Context,
+    owner: Option<&'a str>,
+    repo: Option<&'a str>,
+    operation: &'static str,
+) -> Result<(&'a str, &'a str), AppError> {
+    if let (Some(owner), Some(repo)) = (owner, repo) {
+        if !owner.is_empty() && !repo.is_empty() {
+            return Ok((owner, repo));
+        }
+    }
+    bitbucket_repo(ctx.profile(), repo, operation)
+}
+
+fn append_query(url: &mut String, key: &str, value: Option<&str>) {
+    if let Some(value) = value {
+        url.push('&');
+        url.push_str(key);
+        url.push('=');
+        url.push_str(&enc(value));
     }
 }
 

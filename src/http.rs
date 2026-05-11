@@ -62,6 +62,55 @@ impl ApiClient {
             ))
         }
     }
+
+    pub async fn download(
+        &self,
+        service: &'static str,
+        operation: &'static str,
+        profile: &Profile,
+        url: String,
+    ) -> Result<Vec<u8>, AppError> {
+        let mut request = self.client.request(Method::GET, &url);
+        request = apply_auth(request, service, operation, profile)?;
+        let accept = match service {
+            "github" => "application/json",
+            "bitbucket" => "*/*",
+            _ => "*/*",
+        };
+        request = request.header("Accept", accept);
+
+        let response = request.send().await.map_err(|err| {
+            AppError::internal(service, operation, format!("request failed: {err}"))
+        })?;
+        let status = response.status();
+        let bytes = response.bytes().await.map_err(|err| {
+            AppError::internal(
+                service,
+                operation,
+                format!("failed to read response: {err}"),
+            )
+        })?;
+
+        if status.is_success() {
+            Ok(bytes.to_vec())
+        } else {
+            let details = std::str::from_utf8(&bytes)
+                .ok()
+                .and_then(|text| serde_json::from_str(text).ok())
+                .or_else(|| {
+                    Some(Value::String(
+                        String::from_utf8_lossy(&bytes).chars().take(4096).collect(),
+                    ))
+                });
+            Err(AppError::api(
+                service,
+                operation,
+                status,
+                format!("provider returned HTTP {}", status.as_u16()),
+                details,
+            ))
+        }
+    }
 }
 
 fn apply_auth(

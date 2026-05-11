@@ -112,3 +112,52 @@ Covered operations:
 
 Agents should set the smallest useful `--limit`. Large limits can increase latency and provider rate-limit pressure.
 
+## GitHub Actions
+
+Use these commands to inspect workflow-run and job status, then download logs to local files.
+
+```bash
+aai-cli github actions runs list [--owner OWNER] [--repo REPO] [--branch BRANCH] [--status STATUS] [--event EVENT] [--limit N]
+aai-cli github actions runs get <run-id> [--owner OWNER] [--repo REPO]
+aai-cli github actions runs logs download <run-id> --output PATH [--owner OWNER] [--repo REPO]
+aai-cli github actions jobs list <run-id> [--owner OWNER] [--repo REPO] [--limit N] [--all-attempts]
+aai-cli github actions jobs get <job-id> [--owner OWNER] [--repo REPO]
+aai-cli github actions jobs logs download <job-id> --output PATH [--owner OWNER] [--repo REPO]
+```
+
+Examples:
+
+```bash
+aai-cli --profile github-work github actions runs list --status failure --limit 10
+aai-cli --profile github-work github actions jobs list 123456789 --all-attempts
+aai-cli --profile github-work github actions runs logs download 123456789 --output local/logs/github-run-123456789.zip
+aai-cli --profile github-work github actions jobs logs download 987654321 --output local/logs/github-job-987654321.txt
+```
+
+GitHub run logs are downloaded as a ZIP archive. Job logs are downloaded as the provider response body, typically plain text. Download commands return JSON metadata with `output` and `bytes`; they do not print log contents to stdout.
+
+Use `local/logs/` for temporary live-smoke downloads in this repository; that directory is ignored by git.
+
+## Bitbucket Pipelines
+
+Use these commands to inspect pipeline-run and step status, then download step logs to local files.
+
+```bash
+aai-cli bitbucket pipelines list [--repo <repo-slug|workspace/repo-slug>] [--branch BRANCH] [--status STATUS] [--sort FIELD] [--limit N]
+aai-cli bitbucket pipelines get <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket pipelines steps list <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket pipelines steps get <pipeline-uuid> <step-uuid> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket pipelines steps logs download <pipeline-uuid> <step-uuid> [--log <log-uuid>] --output PATH [--repo <repo-slug|workspace/repo-slug>]
+```
+
+Examples:
+
+```bash
+aai-cli --profile bitbucket-work bitbucket pipelines list --branch main --status COMPLETED --limit 10
+aai-cli --profile bitbucket-work bitbucket pipelines steps list '{pipeline-uuid}'
+aai-cli --profile bitbucket-work bitbucket pipelines steps logs download '{pipeline-uuid}' '{step-uuid}' --output local/logs/bitbucket-step.log
+```
+
+Use the optional `--log <log-uuid>` when Bitbucket exposes multiple logs for a step, such as service-container logs. Without `--log`, the command downloads the default step log. Download commands return JSON metadata with `output` and `bytes`.
+
+Use `local/logs/` for temporary live-smoke downloads in this repository; that directory is ignored by git.

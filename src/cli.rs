@@ -241,6 +241,7 @@ pub struct BitbucketCommand {
 pub enum BitbucketResource {
     Repos(BitbucketReposCommand),
     Prs(BitbucketPrsCommand),
+    Pipelines(BitbucketPipelinesCommand),
 }
 
 #[derive(Debug, Args)]
@@ -318,6 +319,101 @@ pub struct BitbucketPrCommentWrite {
 }
 
 #[derive(Debug, Args)]
+pub struct BitbucketPipelinesCommand {
+    #[command(subcommand)]
+    pub action: BitbucketPipelinesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketPipelinesAction {
+    List(BitbucketPipelineList),
+    Get(BitbucketPipelineGet),
+    Steps(BitbucketPipelineStepsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPipelineList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub branch: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub sort: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPipelineGet {
+    pub pipeline: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPipelineStepsCommand {
+    #[command(subcommand)]
+    pub action: BitbucketPipelineStepsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketPipelineStepsAction {
+    List(BitbucketPipelineStepList),
+    Get(BitbucketPipelineStepGet),
+    Logs(BitbucketPipelineStepLogsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPipelineStepList {
+    pub pipeline: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPipelineStepGet {
+    pub pipeline: String,
+    pub step: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPipelineStepLogsCommand {
+    #[command(subcommand)]
+    pub action: BitbucketPipelineStepLogsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketPipelineStepLogsAction {
+    Download(BitbucketPipelineStepLogDownload),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPipelineStepLogDownload {
+    pub pipeline: String,
+    pub step: String,
+    #[arg(long)]
+    pub log: Option<String>,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub output: String,
+}
+
+#[derive(Debug, Args)]
 pub struct GithubCommand {
     #[command(subcommand)]
     pub resource: GithubResource,
@@ -328,6 +424,7 @@ pub enum GithubResource {
     Repos(GithubReposCommand),
     Issues(GithubIssuesCommand),
     Prs(GithubPrsCommand),
+    Actions(GithubActionsCommand),
 }
 
 #[derive(Debug, Args)]
@@ -392,6 +489,135 @@ pub struct GithubIssueUpdate {
 pub struct GithubPrsCommand {
     #[command(subcommand)]
     pub action: GithubPullRequestAction,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsCommand {
+    #[command(subcommand)]
+    pub resource: GithubActionsResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubActionsResource {
+    Runs(GithubActionsRunsCommand),
+    Jobs(GithubActionsJobsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsRunsCommand {
+    #[command(subcommand)]
+    pub action: GithubActionsRunsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubActionsRunsAction {
+    List(GithubActionsRunList),
+    Get(GithubActionsRunGet),
+    Logs(GithubActionsRunLogsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsRunList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub branch: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub event: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsRunGet {
+    pub run: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsRunLogsCommand {
+    #[command(subcommand)]
+    pub action: GithubActionsRunLogsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubActionsRunLogsAction {
+    Download(GithubActionsRunLogDownload),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsRunLogDownload {
+    pub run: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsJobsCommand {
+    #[command(subcommand)]
+    pub action: GithubActionsJobsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubActionsJobsAction {
+    List(GithubActionsJobList),
+    Get(GithubActionsJobGet),
+    Logs(GithubActionsJobLogsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsJobList {
+    pub run: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub all_attempts: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsJobGet {
+    pub job: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsJobLogsCommand {
+    #[command(subcommand)]
+    pub action: GithubActionsJobLogsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubActionsJobLogsAction {
+    Download(GithubActionsJobLogDownload),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubActionsJobLogDownload {
+    pub job: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub output: String,
 }
 
 #[derive(Debug, Args)]

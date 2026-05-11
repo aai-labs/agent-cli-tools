@@ -268,6 +268,20 @@ Confluence page moves are relative to a target page. Use `append` to make the pa
 aai-cli confluence pages move 458795 --target-id 589825 --position append
 ```
 
+### CI Status And Logs
+
+GitHub Actions and Bitbucket Pipelines commands expose run/job/step status as JSON. Log download commands require `--output` and write provider log bytes to disk instead of printing logs to stdout.
+
+```bash
+aai-cli github actions runs list --status failure --limit 10
+aai-cli github actions jobs list 123456789 --all-attempts
+aai-cli github actions runs logs download 123456789 --output local/logs/github-run.zip
+aai-cli bitbucket pipelines list --branch main --status COMPLETED --limit 10
+aai-cli bitbucket pipelines steps logs download '{pipeline-uuid}' '{step-uuid}' --output local/logs/bitbucket-step.log
+```
+
+Use `local/logs/` for local smoke-test downloads; it is ignored by git.
+
 ### Supported Commands
 
 ```bash
@@ -305,6 +319,11 @@ aai-cli bitbucket prs comments get <pr-number> <comment-id> [--repo <repo-slug|w
 aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
 aai-cli bitbucket prs comments update <pr-number> --comment <comment-id> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
 aai-cli bitbucket prs comments delete <pr-number> <comment-id> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket pipelines list [--repo <repo-slug|workspace/repo-slug>] [--branch BRANCH] [--status STATUS] [--limit N]
+aai-cli bitbucket pipelines get <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket pipelines steps list <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket pipelines steps get <pipeline-uuid> <step-uuid> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket pipelines steps logs download <pipeline-uuid> <step-uuid> [--log <log-uuid>] --output PATH [--repo <repo-slug|workspace/repo-slug>]
 
 aai-cli github repos list
 aai-cli github repos get [--owner OWNER] [--repo REPO]
@@ -324,6 +343,12 @@ aai-cli github prs comments get <pr-number> <comment-id> [--owner OWNER] [--repo
 aai-cli github prs comments create <pr-number> [--owner OWNER] [--repo REPO] --body TEXT
 aai-cli github prs comments update <pr-number> --comment <comment-id> [--owner OWNER] [--repo REPO] --body TEXT
 aai-cli github prs comments delete <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
+aai-cli github actions runs list [--owner OWNER] [--repo REPO] [--branch BRANCH] [--status STATUS] [--event EVENT] [--limit N]
+aai-cli github actions runs get <run-id> [--owner OWNER] [--repo REPO]
+aai-cli github actions runs logs download <run-id> --output PATH [--owner OWNER] [--repo REPO]
+aai-cli github actions jobs list <run-id> [--owner OWNER] [--repo REPO] [--limit N] [--all-attempts]
+aai-cli github actions jobs get <job-id> [--owner OWNER] [--repo REPO]
+aai-cli github actions jobs logs download <job-id> --output PATH [--owner OWNER] [--repo REPO]
 
 aai-cli email messages list
 aai-cli email messages get <id>

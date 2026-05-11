@@ -1,3 +1,7 @@
+use std::{fs, path::Path};
+
+use serde_json::{json, Value};
+
 use crate::{
     config::{Context, Profile},
     error::AppError,
@@ -167,4 +171,39 @@ pub(crate) fn trim_url(value: &str) -> String {
 
 pub(crate) fn enc(value: &str) -> String {
     urlencoding::encode(value).into_owned()
+}
+
+pub(crate) fn write_download(
+    service: &'static str,
+    operation: &'static str,
+    output: &str,
+    bytes: &[u8],
+) -> Result<Value, AppError> {
+    let path = Path::new(output);
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        fs::create_dir_all(parent).map_err(|err| {
+            AppError::invalid_input(
+                service,
+                operation,
+                format!(
+                    "failed to create output directory {}: {err}",
+                    parent.display()
+                ),
+            )
+        })?;
+    }
+    fs::write(path, bytes).map_err(|err| {
+        AppError::invalid_input(
+            service,
+            operation,
+            format!("failed to write output file {}: {err}", path.display()),
+        )
+    })?;
+    Ok(json!({
+        "output": output,
+        "bytes": bytes.len()
+    }))
 }

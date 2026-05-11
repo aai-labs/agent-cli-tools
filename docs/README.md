@@ -32,7 +32,7 @@ Zoho docs include official Mail and Calendar HTML API references. Zoho does not 
 
 ## Local Reference Files
 
-- `docs/aai-cli-command-reference.md` is the agent-facing command reference for implemented CLI behavior, including Jira/Confluence search, pagination, and Confluence page moves.
+- `docs/aai-cli-command-reference.md` is the agent-facing command reference for implemented CLI behavior, including Jira/Confluence search, pagination, Confluence page moves, GitHub Actions status/logs, and Bitbucket Pipelines status/logs.
 - `docs/manifest.json` records every source URL, output path, format, size, status, and retrieval timestamp.
 - `docs/auth-matrix.md` summarizes personal token, service account, app token, and OAuth differences across providers.
 - `docs/atlassian/adf.md` summarizes the Atlassian Document Format files needed for Jira/Confluence implementation.
