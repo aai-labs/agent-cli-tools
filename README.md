@@ -8,7 +8,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks eas
 
 - Jira Cloud: issues and projects.
 - Confluence Cloud: spaces and pages, including storage-format page bodies.
-- Bitbucket Cloud: repositories, pull requests, PR comments, close/decline.
+- Bitbucket Cloud: repositories, branches, commits, source files at SHA, pull requests, PR diff/diffstat/commits/activity, PR comments (including inline), close/decline.
 - GitHub: repositories, issues, pull requests, PR comments, close/decline.
 - Email: Gmail REST profiles and Zoho SMTP/IMAP profiles.
 - Calendar: Google Calendar REST profiles and Zoho CalDAV profiles.
@@ -314,11 +314,21 @@ aai-cli bitbucket prs create [--repo <repo-slug|workspace/repo-slug>] --title TE
 aai-cli bitbucket prs delete <number> [--repo <repo-slug|workspace/repo-slug>]
 aai-cli bitbucket prs close <number> [--repo <repo-slug|workspace/repo-slug>]
 aai-cli bitbucket prs decline <number> [--repo <repo-slug|workspace/repo-slug>]
-aai-cli bitbucket prs comments list <pr-number> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket prs diff <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--output PATH]
+aai-cli bitbucket prs diffstat <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs commits <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs activity <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs comments list <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--inline-only]
 aai-cli bitbucket prs comments get <pr-number> <comment-id> [--repo <repo-slug|workspace/repo-slug>]
-aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
-aai-cli bitbucket prs comments update <pr-number> --comment <comment-id> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
+aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT [--inline-path FILE] [--inline-from LINE] [--inline-to LINE] [--parent-id COMMENT_ID]
+aai-cli bitbucket prs comments update <pr-number> --comment <comment-id> [--repo <repo-slug|workspace/repo-slug>] --body TEXT [--inline-path FILE] [--inline-from LINE] [--inline-to LINE] [--parent-id COMMENT_ID]
 aai-cli bitbucket prs comments delete <pr-number> <comment-id> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket branches list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--query QUERY]
+aai-cli bitbucket branches get <branch-name> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket commits list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--branch BRANCH] [--include REV] [--exclude REV]
+aai-cli bitbucket commits get <sha> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket source get <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--output PATH] [--meta]
+aai-cli bitbucket source history <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
 aai-cli bitbucket pipelines list [--repo <repo-slug|workspace/repo-slug>] [--branch BRANCH] [--status STATUS] [--limit N]
 aai-cli bitbucket pipelines get <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
 aai-cli bitbucket pipelines steps list <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
@@ -436,6 +446,15 @@ AAI_E2E_GITHUB_PR_HEAD=e2e-branch
 AAI_E2E_GITHUB_PR_BASE=main
 AAI_E2E_BITBUCKET_PR_SOURCE=e2e-branch
 AAI_E2E_BITBUCKET_PR_DESTINATION=main
+AAI_E2E_BITBUCKET_SOURCE_PATH=README.md
+AAI_E2E_BITBUCKET_BRANCH=main
+AAI_E2E_BITBUCKET_COMMIT_SHA=
+```
+
+Run read-only Bitbucket endpoint coverage:
+
+```bash
+scripts/run-tests.sh live bitbucket_read_only_endpoints
 ```
 
 ## API Docs

@@ -253,6 +253,7 @@ fn load_or_create_key(path: &Path) -> Result<[u8; KEY_LEN], AppError> {
     Ok(key.into())
 }
 
+#[cfg_attr(not(unix), allow(unused_variables))]
 fn set_file_private(path: &Path) -> Result<(), AppError> {
     #[cfg(unix)]
     {

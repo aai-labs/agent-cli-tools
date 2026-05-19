@@ -241,6 +241,9 @@ pub struct BitbucketCommand {
 pub enum BitbucketResource {
     Repos(BitbucketReposCommand),
     Prs(BitbucketPrsCommand),
+    Branches(BitbucketBranchesCommand),
+    Commits(BitbucketCommitsCommand),
+    Source(BitbucketSourceCommand),
     Pipelines(BitbucketPipelinesCommand),
 }
 
@@ -264,6 +267,10 @@ pub enum BitbucketPullRequestAction {
     Delete(NumberArg),
     Close(NumberArg),
     Decline(NumberArg),
+    Diff(BitbucketPrDiff),
+    Diffstat(BitbucketPrDiffstat),
+    Commits(BitbucketPrCommits),
+    Activity(BitbucketPrActivity),
     Comments(BitbucketPrCommentsCommand),
 }
 
@@ -291,6 +298,8 @@ pub struct BitbucketPrCommentList {
     pub repo: Option<String>,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
+    #[arg(long)]
+    pub inline_only: bool,
 }
 
 #[derive(Debug, Args)]
@@ -316,6 +325,166 @@ pub struct BitbucketPrCommentWrite {
     pub json: Option<String>,
     #[arg(long)]
     pub body: Option<String>,
+    #[arg(long)]
+    pub inline_path: Option<String>,
+    #[arg(long)]
+    pub inline_from: Option<u64>,
+    #[arg(long)]
+    pub inline_to: Option<u64>,
+    #[arg(long)]
+    pub parent_id: Option<u64>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrDiff {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub output: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrDiffstat {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrCommits {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrActivity {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketBranchesCommand {
+    #[command(subcommand)]
+    pub action: BitbucketBranchesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketBranchesAction {
+    List(BitbucketBranchList),
+    Get(BitbucketBranchGet),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketBranchList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub query: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketBranchGet {
+    pub name: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketCommitsCommand {
+    #[command(subcommand)]
+    pub action: BitbucketCommitsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketCommitsAction {
+    List(BitbucketCommitList),
+    Get(BitbucketCommitGet),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketCommitList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub branch: Option<String>,
+    #[arg(long)]
+    pub include: Option<String>,
+    #[arg(long)]
+    pub exclude: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketCommitGet {
+    pub sha: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketSourceCommand {
+    #[command(subcommand)]
+    pub action: BitbucketSourceAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketSourceAction {
+    Get(BitbucketSourceGet),
+    History(BitbucketSourceHistory),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketSourceGet {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, conflicts_with = "meta")]
+    pub output: Option<String>,
+    #[arg(long, conflicts_with = "output")]
+    pub meta: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketSourceHistory {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]

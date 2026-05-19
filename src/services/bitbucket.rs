@@ -146,10 +146,17 @@ pub(crate) async fn dispatch(
                     )
                     .await
             }
+            BitbucketPullRequestAction::Diff(args) => pr_diff(client, ctx, args).await,
+            BitbucketPullRequestAction::Diffstat(args) => pr_diffstat(client, ctx, args).await,
+            BitbucketPullRequestAction::Commits(args) => pr_commits(client, ctx, args).await,
+            BitbucketPullRequestAction::Activity(args) => pr_activity(client, ctx, args).await,
             BitbucketPullRequestAction::Comments(command) => {
                 pr_comments(client, ctx, command).await
             }
         },
+        BitbucketResource::Branches(command) => branches(client, ctx, command).await,
+        BitbucketResource::Commits(command) => commits(client, ctx, command).await,
+        BitbucketResource::Source(command) => source(client, ctx, command).await,
         BitbucketResource::Pipelines(command) => pipelines(client, ctx, command).await,
     }
 }
@@ -338,6 +345,348 @@ fn append_query(url: &mut String, key: &str, value: Option<&str>) {
     }
 }
 
+fn enc_path(path: &str) -> String {
+    path.trim_start_matches('/')
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .map(enc)
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+async fn pr_diff(
+    client: &ApiClient,
+    ctx: &Context,
+    args: BitbucketPrDiff,
+) -> Result<Value, AppError> {
+    let (workspace, repo) =
+        bitbucket_repo_from_args(ctx, args.owner.as_deref(), args.repo.as_deref(), "prs.diff")?;
+    let url = format!(
+        "{}/repositories/{}/{}/pullrequests/{}/diff",
+        bitbucket_base(ctx.profile()),
+        enc(workspace),
+        enc(repo),
+        args.pr
+    );
+    if let Some(output) = args.output {
+        let bytes = client
+            .download("bitbucket", "prs.diff", ctx.profile(), url)
+            .await?;
+        return write_download("bitbucket", "prs.diff", &output, &bytes);
+    }
+    client
+        .request(
+            "bitbucket",
+            "prs.diff",
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await
+}
+
+async fn pr_diffstat(
+    client: &ApiClient,
+    ctx: &Context,
+    args: BitbucketPrDiffstat,
+) -> Result<Value, AppError> {
+    let (workspace, repo) = bitbucket_repo_from_args(
+        ctx,
+        args.owner.as_deref(),
+        args.repo.as_deref(),
+        "prs.diffstat",
+    )?;
+    let url = format!(
+        "{}/repositories/{}/{}/pullrequests/{}/diffstat?pagelen={}",
+        bitbucket_base(ctx.profile()),
+        enc(workspace),
+        enc(repo),
+        args.pr,
+        args.limit
+    );
+    client
+        .request(
+            "bitbucket",
+            "prs.diffstat",
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await
+}
+
+async fn pr_commits(
+    client: &ApiClient,
+    ctx: &Context,
+    args: BitbucketPrCommits,
+) -> Result<Value, AppError> {
+    let (workspace, repo) = bitbucket_repo_from_args(
+        ctx,
+        args.owner.as_deref(),
+        args.repo.as_deref(),
+        "prs.commits",
+    )?;
+    let url = format!(
+        "{}/repositories/{}/{}/pullrequests/{}/commits?pagelen={}",
+        bitbucket_base(ctx.profile()),
+        enc(workspace),
+        enc(repo),
+        args.pr,
+        args.limit
+    );
+    client
+        .request(
+            "bitbucket",
+            "prs.commits",
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await
+}
+
+async fn pr_activity(
+    client: &ApiClient,
+    ctx: &Context,
+    args: BitbucketPrActivity,
+) -> Result<Value, AppError> {
+    let (workspace, repo) = bitbucket_repo_from_args(
+        ctx,
+        args.owner.as_deref(),
+        args.repo.as_deref(),
+        "prs.activity",
+    )?;
+    let url = format!(
+        "{}/repositories/{}/{}/pullrequests/{}/activity?pagelen={}",
+        bitbucket_base(ctx.profile()),
+        enc(workspace),
+        enc(repo),
+        args.pr,
+        args.limit
+    );
+    client
+        .request(
+            "bitbucket",
+            "prs.activity",
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await
+}
+
+async fn branches(
+    client: &ApiClient,
+    ctx: &Context,
+    command: BitbucketBranchesCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        BitbucketBranchesAction::List(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "branches.list",
+            )?;
+            let mut url = format!(
+                "{}/repositories/{}/{}/refs/branches?pagelen={}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                args.limit
+            );
+            append_query(&mut url, "q", args.query.as_deref());
+            client
+                .request(
+                    "bitbucket",
+                    "branches.list",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+        BitbucketBranchesAction::Get(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "branches.get",
+            )?;
+            let url = format!(
+                "{}/repositories/{}/{}/refs/branches/{}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                enc(&args.name)
+            );
+            client
+                .request(
+                    "bitbucket",
+                    "branches.get",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+    }
+}
+
+async fn commits(
+    client: &ApiClient,
+    ctx: &Context,
+    command: BitbucketCommitsCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        BitbucketCommitsAction::List(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "commits.list",
+            )?;
+            let mut url = format!(
+                "{}/repositories/{}/{}/commits?pagelen={}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                args.limit
+            );
+            if let Some(branch) = args.branch.as_deref() {
+                append_query(&mut url, "include", Some(branch));
+            } else {
+                append_query(&mut url, "include", args.include.as_deref());
+            }
+            append_query(&mut url, "exclude", args.exclude.as_deref());
+            client
+                .request(
+                    "bitbucket",
+                    "commits.list",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+        BitbucketCommitsAction::Get(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "commits.get",
+            )?;
+            let url = format!(
+                "{}/repositories/{}/{}/commit/{}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                enc(&args.sha)
+            );
+            client
+                .request(
+                    "bitbucket",
+                    "commits.get",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+    }
+}
+
+async fn source(
+    client: &ApiClient,
+    ctx: &Context,
+    command: BitbucketSourceCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        BitbucketSourceAction::Get(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "source.get",
+            )?;
+            let path = enc_path(&args.path);
+            let mut url = format!(
+                "{}/repositories/{}/{}/src/{}/{}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                enc(&args.commit),
+                path
+            );
+            if args.meta {
+                url.push_str("?format=meta");
+                return client
+                    .request(
+                        "bitbucket",
+                        "source.get",
+                        ctx.profile(),
+                        Method::GET,
+                        url,
+                        None,
+                    )
+                    .await;
+            }
+            if let Some(output) = args.output {
+                let bytes = client
+                    .download("bitbucket", "source.get", ctx.profile(), url)
+                    .await?;
+                return write_download("bitbucket", "source.get", &output, &bytes);
+            }
+            client
+                .request(
+                    "bitbucket",
+                    "source.get",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+        BitbucketSourceAction::History(args) => {
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "source.history",
+            )?;
+            let path = enc_path(&args.path);
+            let url = format!(
+                "{}/repositories/{}/{}/filehistory/{}/{}?pagelen={}",
+                bitbucket_base(ctx.profile()),
+                enc(workspace),
+                enc(repo),
+                enc(&args.commit),
+                path,
+                args.limit
+            );
+            client
+                .request(
+                    "bitbucket",
+                    "source.history",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
+                .await
+        }
+    }
+}
+
 async fn pr_comments(
     client: &ApiClient,
     ctx: &Context,
@@ -355,7 +704,7 @@ async fn pr_comments(
                 args.pr,
                 args.limit
             );
-            client
+            let response = client
                 .request(
                     "bitbucket",
                     "pr-comments.list",
@@ -364,7 +713,11 @@ async fn pr_comments(
                     url,
                     None,
                 )
-                .await
+                .await?;
+            if args.inline_only {
+                return Ok(filter_inline_comments(response));
+            }
+            Ok(response)
         }
         BitbucketPrCommentAction::Get(args) => {
             let (workspace, repo) =
@@ -484,10 +837,26 @@ fn pr_create_body(args: PullRequestCreate) -> Result<Value, AppError> {
     Ok(body)
 }
 
+fn filter_inline_comments(mut response: Value) -> Value {
+    let Some(values) = response.get_mut("values").and_then(Value::as_array_mut) else {
+        return response;
+    };
+    values.retain(|comment| comment.get("inline").is_some());
+    response
+}
+
 fn pr_comment_body(
     args: BitbucketPrCommentWrite,
     operation: &'static str,
 ) -> Result<Value, AppError> {
+    if (args.inline_from.is_some() || args.inline_to.is_some()) && args.inline_path.is_none() {
+        return Err(AppError::invalid_input(
+            "bitbucket",
+            operation,
+            "--inline-path is required when --inline-from or --inline-to is set",
+        ));
+    }
+
     let mut body = input::read_json_arg("bitbucket", operation, args.json.as_deref())?;
     if let Some(raw) = args.body {
         input::ensure_object(&mut body).insert("content".to_string(), json!({ "raw": raw }));
@@ -499,5 +868,97 @@ fn pr_comment_body(
             "--body or JSON content is required",
         ));
     }
+
+    if let Some(path) = args.inline_path {
+        let mut inline = json!({ "path": path });
+        if let Some(from) = args.inline_from {
+            inline["from"] = json!(from);
+        }
+        if let Some(to) = args.inline_to {
+            inline["to"] = json!(to);
+        }
+        input::ensure_object(&mut body).insert("inline".to_string(), inline);
+    }
+
+    if let Some(parent_id) = args.parent_id {
+        input::ensure_object(&mut body).insert("parent".to_string(), json!({ "id": parent_id }));
+    }
+
     Ok(body)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write_args(
+        body: Option<&str>,
+        inline_path: Option<&str>,
+        inline_from: Option<u64>,
+        inline_to: Option<u64>,
+        parent_id: Option<u64>,
+        json: Option<&str>,
+    ) -> BitbucketPrCommentWrite {
+        BitbucketPrCommentWrite {
+            pr: 1,
+            comment: None,
+            owner: None,
+            repo: None,
+            json: json.map(str::to_string),
+            body: body.map(str::to_string),
+            inline_path: inline_path.map(str::to_string),
+            inline_from,
+            inline_to,
+            parent_id,
+        }
+    }
+
+    #[test]
+    fn inline_comment_body_attaches_inline_object() {
+        let body = pr_comment_body(
+            write_args(
+                Some("looks good"),
+                Some("src/main.rs"),
+                None,
+                Some(42),
+                Some(7),
+                None,
+            ),
+            "pr-comments.create",
+        )
+        .unwrap();
+        assert_eq!(body["content"]["raw"], "looks good");
+        assert_eq!(body["inline"]["path"], "src/main.rs");
+        assert_eq!(body["inline"]["to"], 42);
+        assert_eq!(body["parent"]["id"], 7);
+    }
+
+    #[test]
+    fn inline_comment_requires_path_when_lines_provided() {
+        let err = pr_comment_body(
+            write_args(Some("missing path"), None, Some(1), None, None, None),
+            "pr-comments.create",
+        )
+        .unwrap_err();
+        assert_eq!(err.code, "invalid_input");
+    }
+
+    #[test]
+    fn json_payload_merges_with_inline_flags() {
+        let body = pr_comment_body(
+            write_args(
+                None,
+                Some("README.md"),
+                None,
+                Some(10),
+                None,
+                Some(r#"{"content":{"raw":"from json"}}"#),
+            ),
+            "pr-comments.create",
+        )
+        .unwrap();
+        assert_eq!(body["content"]["raw"], "from json");
+        assert_eq!(body["inline"]["path"], "README.md");
+        assert_eq!(body["inline"]["to"], 10);
+    }
 }
