@@ -161,3 +161,80 @@ aai-cli --profile bitbucket-work bitbucket pipelines steps logs download '{pipel
 Use the optional `--log <log-uuid>` when Bitbucket exposes multiple logs for a step, such as service-container logs. Without `--log`, the command downloads the default step log. Download commands return JSON metadata with `output` and `bytes`.
 
 Use `local/logs/` for temporary live-smoke downloads in this repository; that directory is ignored by git.
+
+## Bitbucket Pull Request Review
+
+Use these commands to inspect pull request changes and post review feedback.
+
+```bash
+aai-cli bitbucket prs diff <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--output PATH]
+aai-cli bitbucket prs diffstat <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs commits <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs activity <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
+    [--inline-path FILE] [--inline-from LINE_BEFORE] [--inline-to LINE_AFTER] [--parent-id COMMENT_ID]
+aai-cli bitbucket prs comments list <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--inline-only]
+```
+
+Examples:
+
+```bash
+aai-cli --profile bitbucket-work bitbucket prs diff 42 --repo my-workspace/my-repo
+aai-cli --profile bitbucket-work bitbucket prs diff 42 --repo my-workspace/my-repo --output local/logs/pr-42.diff
+aai-cli --profile bitbucket-work bitbucket prs diffstat 42 --limit 100
+aai-cli --profile bitbucket-work bitbucket prs comments create 42 --body "Please rename this variable" \
+  --inline-path src/lib.rs --inline-to 120
+```
+
+`prs diff` returns unified diff text as a JSON string on stdout by default. Use `--output` for large diffs; the command returns JSON metadata with `output` and `bytes`.
+
+Inline comments use the same Bitbucket PR comment endpoint with an `inline` object (`path`, optional `from`, optional `to`). Use `--inline-from` for lines removed in the old file and `--inline-to` for lines added in the new file. `--inline-only` filters the comment list client-side to comments that include `inline`.
+
+## Bitbucket Source, Branches, and Commits
+
+```bash
+aai-cli bitbucket branches list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--name-contains TEXT | --name-prefix TEXT]
+aai-cli bitbucket branches get <branch-name> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket commits list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--branch BRANCH] [--include REV] [--exclude REV]
+aai-cli bitbucket commits get <sha> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket source get <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--output PATH] [--meta]
+aai-cli bitbucket source history <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+```
+
+Examples:
+
+```bash
+aai-cli --profile bitbucket-work bitbucket source get main README.md
+aai-cli --profile bitbucket-work bitbucket source get abc123def src/main.rs --output local/main.rs
+aai-cli --profile bitbucket-work bitbucket source history main README.md --limit 20
+aai-cli --profile bitbucket-work bitbucket branches list --name-contains feature
+aai-cli --profile bitbucket-work bitbucket branches list --name-prefix release-
+```
+
+`source get` returns file contents as a JSON string for text files by default. Use `--output` for binary-safe downloads. Use `--meta` to fetch JSON file metadata (`format=meta`) instead of raw content.
+
+`source history` lists commits that modified a file. Bitbucket Cloud does not expose a dedicated per-line blame REST endpoint; `source history` is the closest REST analog. Per-line annotation remains a UI-only feature in Bitbucket Cloud.
+
+`branches list` prefers `--name-contains TEXT` (substring match) and `--name-prefix TEXT` (anchored match) over raw query languages. An advanced `--query` escape hatch exists for Bitbucket BBQL expressions but is hidden from `--help` to keep the surface agent-friendly.
+
+## List Pagination
+
+For Bitbucket commands that accept `--limit N`, `aai-cli` follows Bitbucket's `next` pagination links and aggregates pages until it has `N` matching items (or no next page). The returned envelope is normalized to:
+
+```json
+{ "values": [ ... ], "size": <N>, "truncated": <bool> }
+```
+
+`truncated: true` means there may be more items beyond `--limit`. The `next`/`page`/`pagelen` fields from individual provider pages are intentionally dropped because they are no longer meaningful after aggregation. The first request asks Bitbucket for `pagelen = min(--limit, 100)`; subsequent requests follow the provider's `next` URL.
+
+Covered Bitbucket operations:
+
+- `bitbucket prs diffstat`
+- `bitbucket prs commits`
+- `bitbucket prs activity`
+- `bitbucket prs comments list` (including `--inline-only`, which filters across all fetched pages)
+- `bitbucket branches list`
+- `bitbucket commits list`
+- `bitbucket source history`
+
+Set the smallest useful `--limit`. Large limits increase latency and rate-limit pressure.
