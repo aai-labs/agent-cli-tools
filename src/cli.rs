@@ -62,6 +62,9 @@ pub struct JiraCommand {
 pub enum JiraResource {
     Issues(JiraIssuesCommand),
     Projects(JiraProjectsCommand),
+    Sprints(JiraSprintsCommand),
+    Boards(JiraBoardsCommand),
+    Users(JiraUsersCommand),
 }
 
 #[derive(Debug, Args)]
@@ -73,27 +76,64 @@ pub struct JiraIssuesCommand {
 #[derive(Debug, Subcommand)]
 pub enum JiraIssuesAction {
     List(JiraIssueList),
-    Search(JiraIssueSearch),
     Get(IdArg),
     Create(JiraIssueCreate),
     Update(JiraIssueUpdate),
     Delete(IdArg),
+    Comments(JiraIssueCommentsCommand),
 }
 
 #[derive(Debug, Args)]
-pub struct JiraIssueList {
-    #[arg(long)]
-    pub jql: Option<String>,
-    #[arg(long)]
-    pub fields: Option<String>,
+pub struct JiraIssueCommentsCommand {
+    #[command(subcommand)]
+    pub action: JiraIssueCommentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraIssueCommentsAction {
+    List(JiraIssueCommentsList),
+    Get(JiraIssueCommentsGet),
+    Create(JiraIssueCommentsCreate),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueCommentsList {
+    pub issue: String,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
 }
 
 #[derive(Debug, Args)]
-pub struct JiraIssueSearch {
+pub struct JiraIssueCommentsGet {
+    pub issue: String,
+    pub comment: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueCommentsCreate {
+    pub issue: String,
     #[arg(long)]
-    pub jql: String,
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueList {
+    #[arg(long)]
+    pub project: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub assignee: Option<String>,
+    #[arg(long = "type")]
+    pub issue_type: Option<String>,
+    #[arg(long)]
+    pub sprint: Option<String>,
+    #[arg(long)]
+    pub text: Option<String>,
+    #[arg(long = "updated-since")]
+    pub updated_since: Option<String>,
     #[arg(long)]
     pub fields: Option<String>,
     #[arg(long, default_value_t = 50)]
@@ -129,6 +169,114 @@ pub struct JiraIssueUpdate {
 pub struct JiraProjectsCommand {
     #[command(subcommand)]
     pub action: ListGetAction,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsCommand {
+    #[command(subcommand)]
+    pub action: JiraSprintsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraSprintsAction {
+    List(JiraSprintsList),
+    Get(JiraSprintsGet),
+    Create(JiraSprintsCreate),
+    Issues(JiraSprintsIssuesCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsIssuesCommand {
+    #[command(subcommand)]
+    pub action: JiraSprintsIssuesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraSprintsIssuesAction {
+    Add(JiraSprintsIssuesAdd),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsIssuesAdd {
+    pub sprint: u64,
+    #[arg(long)]
+    pub issues: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsList {
+    #[arg(long)]
+    pub board: u64,
+    #[arg(long)]
+    pub state: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsGet {
+    pub id: u64,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsCreate {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub board: Option<u64>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub goal: Option<String>,
+    #[arg(long = "start-date")]
+    pub start_date: Option<String>,
+    #[arg(long = "end-date")]
+    pub end_date: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraBoardsCommand {
+    #[command(subcommand)]
+    pub action: JiraBoardsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraBoardsAction {
+    List(JiraBoardsList),
+    Get(JiraBoardsGet),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraBoardsList {
+    #[arg(long = "type")]
+    pub board_type: Option<String>,
+    #[arg(long)]
+    pub project: Option<String>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraBoardsGet {
+    pub id: u64,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraUsersCommand {
+    #[command(subcommand)]
+    pub action: JiraUsersAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraUsersAction {
+    Get(JiraUsersGet),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraUsersGet {
+    pub account_id: String,
 }
 
 #[derive(Debug, Args)]

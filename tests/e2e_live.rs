@@ -156,13 +156,7 @@ fn jira_issue_crud_and_projects() {
 
     let _ = cli_required(
         "AAI_E2E_JIRA_PROFILE",
-        &[
-            "jira",
-            "issues",
-            "list",
-            "--jql",
-            &format!("key = {issue_key}"),
-        ],
+        &["jira", "issues", "list", "--project", &project],
     );
     let fetched = cli_required(
         "AAI_E2E_JIRA_PROFILE",
@@ -178,6 +172,219 @@ fn jira_issue_crud_and_projects() {
         "AAI_E2E_JIRA_PROFILE",
         &["jira", "issues", "delete", &issue_key],
     );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable project"]
+fn jira_issue_comments_crud() {
+    let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {
+        return;
+    };
+    let summary = unique("aai-e2e-jira-comments");
+
+    let created = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "create",
+            "--project",
+            &project,
+            "--summary",
+            &summary,
+            "--description",
+            "comments crud fixture created by aai-cli live e2e",
+        ],
+    );
+    let issue_key = str_at(&created, &["key"]).to_string();
+
+    let empty = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "comments", "list", &issue_key],
+    );
+    assert_eq!(
+        empty
+            .get("comments")
+            .and_then(Value::as_array)
+            .map(Vec::len),
+        Some(0),
+        "expected zero comments on freshly created issue: {empty}"
+    );
+
+    let created_comment = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "comments",
+            "create",
+            &issue_key,
+            "--body",
+            "agent comment from aai-cli live e2e",
+        ],
+    );
+    let comment_id = str_at(&created_comment, &["id"]).to_string();
+
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "comments", "list", &issue_key],
+    );
+    assert_eq!(
+        listed
+            .get("comments")
+            .and_then(Value::as_array)
+            .map(Vec::len),
+        Some(1),
+        "expected one comment after create: {listed}"
+    );
+
+    let fetched_comment = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "comments", "get", &issue_key, &comment_id],
+    );
+    assert_eq!(str_at(&fetched_comment, &["id"]), comment_id);
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "delete", &issue_key],
+    );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable Agile board"]
+fn jira_sprint_crud() {
+    let Some(board) = env_or_skip("AAI_E2E_JIRA_BOARD") else {
+        return;
+    };
+    let name = unique("aai-e2e-sprint");
+
+    let created = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira", "sprints", "create", "--board", &board, "--name", &name,
+        ],
+    );
+    let sprint_id = u64_at(&created, &["id"]).to_string();
+
+    let fetched = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "sprints", "get", &sprint_id],
+    );
+    assert_eq!(str_at(&fetched, &["name"]), name);
+
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira", "sprints", "list", "--board", &board, "--state", "future",
+        ],
+    );
+    let values = listed
+        .get("values")
+        .and_then(Value::as_array)
+        .expect("values array");
+    assert!(
+        values.iter().any(
+            |v| v.get("id").and_then(Value::as_u64).map(|n| n.to_string())
+                == Some(sprint_id.clone())
+        ),
+        "created sprint {sprint_id} not found in list: {listed}"
+    );
+
+    // No `delete sprint` command in this slice; the disposable sprint is left in `future` state on the test board.
+    // The update slice will add a state=closed path and full teardown.
+}
+
+#[test]
+#[ignore = "requires live Jira credentials, a disposable project, and a Scrum board"]
+fn jira_sprint_issues_add() {
+    let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {
+        return;
+    };
+    let Some(board) = env_or_skip("AAI_E2E_JIRA_BOARD") else {
+        return;
+    };
+
+    let issue = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "create",
+            "--project",
+            &project,
+            "--summary",
+            &unique("aai-e2e-sprint-issue"),
+            "--description",
+            "added to sprint by aai-cli live e2e",
+        ],
+    );
+    let issue_key = str_at(&issue, &["key"]).to_string();
+
+    let sprint = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "sprints",
+            "create",
+            "--board",
+            &board,
+            "--name",
+            &unique("aai-e2e-sprint"),
+        ],
+    );
+    let sprint_id = u64_at(&sprint, &["id"]).to_string();
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira", "sprints", "issues", "add", &sprint_id, "--issues", &issue_key,
+        ],
+    );
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "delete", &issue_key],
+    );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable Agile board"]
+fn jira_board_read() {
+    let Some(board) = env_or_skip("AAI_E2E_JIRA_BOARD") else {
+        return;
+    };
+
+    let fetched = cli_required("AAI_E2E_JIRA_PROFILE", &["jira", "boards", "get", &board]);
+    assert_eq!(u64_at(&fetched, &["id"]).to_string(), board);
+
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "boards", "list", "--limit", "100"],
+    );
+    let values = listed
+        .get("values")
+        .and_then(Value::as_array)
+        .expect("values array");
+    assert!(
+        values.iter().any(
+            |v| v.get("id").and_then(Value::as_u64).map(|n| n.to_string()) == Some(board.clone())
+        ),
+        "board {board} not found in list: {listed}"
+    );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials"]
+fn jira_user_read() {
+    let Some(account_id) = env_or_skip("AAI_E2E_JIRA_ACCOUNT_ID") else {
+        return;
+    };
+
+    let fetched = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "users", "get", &account_id],
+    );
+    assert_eq!(str_at(&fetched, &["accountId"]), account_id);
 }
 
 #[test]
