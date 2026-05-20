@@ -328,10 +328,60 @@ fn bitbucket_repo_from_args<'a>(
     repo: Option<&'a str>,
     operation: &'static str,
 ) -> Result<(&'a str, &'a str), AppError> {
-    if let (Some(owner), Some(repo)) = (owner, repo) {
-        if !owner.is_empty() && !repo.is_empty() {
+    if let Some(owner) = owner {
+        if owner.is_empty() {
+            return Err(AppError::invalid_input(
+                "bitbucket",
+                operation,
+                "--owner must not be empty",
+            ));
+        }
+
+        if repo.is_some_and(str::is_empty) {
+            return Err(AppError::invalid_input(
+                "bitbucket",
+                operation,
+                "--repo must not be empty",
+            ));
+        }
+
+        if let Some(repo) = repo {
+            if repo.contains('/') {
+                return Err(AppError::invalid_input(
+                    "bitbucket",
+                    operation,
+                    "--owner cannot be combined with a workspace/repo value for --repo; pass a repo slug",
+                ));
+            }
             return Ok((owner, repo));
         }
+
+        let profile_repo = ctx.profile().repo.as_deref().ok_or_else(|| {
+            AppError::service_config(
+                "bitbucket",
+                operation,
+                format!("bitbucket.{operation} requires --repo or profile.repo"),
+            )
+        })?;
+        if profile_repo.is_empty() {
+            return Err(AppError::invalid_input(
+                "bitbucket",
+                operation,
+                "profile.repo must not be empty",
+            ));
+        }
+        let repo_name = profile_repo
+            .split_once('/')
+            .map(|(_, repo_name)| repo_name)
+            .unwrap_or(profile_repo);
+        if repo_name.is_empty() {
+            return Err(AppError::invalid_input(
+                "bitbucket",
+                operation,
+                "profile.repo must include a repo slug",
+            ));
+        }
+        return Ok((owner, repo_name));
     }
     bitbucket_repo(ctx.profile(), repo, operation)
 }
@@ -728,8 +778,12 @@ async fn pr_comments(
 ) -> Result<Value, AppError> {
     match command.action {
         BitbucketPrCommentAction::List(args) => {
-            let (workspace, repo) =
-                bitbucket_repo(ctx.profile(), args.repo.as_deref(), "pr-comments.list")?;
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "pr-comments.list",
+            )?;
             let mut url = format!(
                 "{}/repositories/{}/{}/pullrequests/{}/comments",
                 bitbucket_base(ctx.profile()),
@@ -753,8 +807,12 @@ async fn pr_comments(
             }
         }
         BitbucketPrCommentAction::Get(args) => {
-            let (workspace, repo) =
-                bitbucket_repo(ctx.profile(), args.repo.as_deref(), "pr-comments.get")?;
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "pr-comments.get",
+            )?;
             let url = format!(
                 "{}/repositories/{}/{}/pullrequests/{}/comments/{}",
                 bitbucket_base(ctx.profile()),
@@ -776,9 +834,14 @@ async fn pr_comments(
         }
         BitbucketPrCommentAction::Create(args) => {
             let pr = args.pr;
+            let owner_arg = args.owner.clone();
             let repo_arg = args.repo.clone();
-            let (workspace, repo) =
-                bitbucket_repo(ctx.profile(), repo_arg.as_deref(), "pr-comments.create")?;
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                owner_arg.as_deref(),
+                repo_arg.as_deref(),
+                "pr-comments.create",
+            )?;
             let body = pr_comment_body(args, "pr-comments.create")?;
             let url = format!(
                 "{}/repositories/{}/{}/pullrequests/{}/comments",
@@ -803,9 +866,14 @@ async fn pr_comments(
             let comment = args.comment.ok_or_else(|| {
                 AppError::invalid_input("bitbucket", "pr-comments.update", "--comment is required")
             })?;
+            let owner_arg = args.owner.clone();
             let repo_arg = args.repo.clone();
-            let (workspace, repo) =
-                bitbucket_repo(ctx.profile(), repo_arg.as_deref(), "pr-comments.update")?;
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                owner_arg.as_deref(),
+                repo_arg.as_deref(),
+                "pr-comments.update",
+            )?;
             let body = pr_comment_body(args, "pr-comments.update")?;
             let url = format!(
                 "{}/repositories/{}/{}/pullrequests/{}/comments/{}",
@@ -827,8 +895,12 @@ async fn pr_comments(
                 .await
         }
         BitbucketPrCommentAction::Delete(args) => {
-            let (workspace, repo) =
-                bitbucket_repo(ctx.profile(), args.repo.as_deref(), "pr-comments.delete")?;
+            let (workspace, repo) = bitbucket_repo_from_args(
+                ctx,
+                args.owner.as_deref(),
+                args.repo.as_deref(),
+                "pr-comments.delete",
+            )?;
             let url = format!(
                 "{}/repositories/{}/{}/pullrequests/{}/comments/{}",
                 bitbucket_base(ctx.profile()),
@@ -1012,6 +1084,67 @@ mod tests {
             name_prefix: name_prefix.map(str::to_string),
             query: query.map(str::to_string),
         }
+    }
+
+    fn bitbucket_test_ctx(workspace: Option<&str>, repo: Option<&str>) -> Context {
+        Context {
+            profile: crate::config::Profile {
+                workspace: workspace.map(str::to_string),
+                repo: repo.map(str::to_string),
+                ..Default::default()
+            },
+            secrets_file: Default::default(),
+            key_file: Default::default(),
+        }
+    }
+
+    #[test]
+    fn bitbucket_repo_from_args_owner_overrides_profile_workspace() {
+        let ctx = bitbucket_test_ctx(Some("profile-workspace"), Some("profile-repo"));
+        let resolved =
+            bitbucket_repo_from_args(&ctx, Some("override-workspace"), None, "test").unwrap();
+        assert_eq!(resolved, ("override-workspace", "profile-repo"));
+    }
+
+    #[test]
+    fn bitbucket_repo_from_args_owner_uses_repo_slug_arg() {
+        let ctx = bitbucket_test_ctx(Some("profile-workspace"), Some("profile-repo"));
+        let resolved =
+            bitbucket_repo_from_args(&ctx, Some("override-workspace"), Some("arg-repo"), "test")
+                .unwrap();
+        assert_eq!(resolved, ("override-workspace", "arg-repo"));
+    }
+
+    #[test]
+    fn bitbucket_repo_from_args_owner_strips_profile_repo_workspace() {
+        let ctx = bitbucket_test_ctx(
+            Some("profile-workspace"),
+            Some("stored-workspace/stored-repo"),
+        );
+        let resolved =
+            bitbucket_repo_from_args(&ctx, Some("override-workspace"), None, "test").unwrap();
+        assert_eq!(resolved, ("override-workspace", "stored-repo"));
+    }
+
+    #[test]
+    fn bitbucket_repo_from_args_preserves_workspace_repo_arg_without_owner() {
+        let ctx = bitbucket_test_ctx(Some("profile-workspace"), Some("profile-repo"));
+        let resolved =
+            bitbucket_repo_from_args(&ctx, None, Some("arg-workspace/arg-repo"), "test").unwrap();
+        assert_eq!(resolved, ("arg-workspace", "arg-repo"));
+    }
+
+    #[test]
+    fn bitbucket_repo_from_args_rejects_owner_with_workspace_repo_arg() {
+        let ctx = bitbucket_test_ctx(Some("profile-workspace"), Some("profile-repo"));
+        let err = bitbucket_repo_from_args(
+            &ctx,
+            Some("override-workspace"),
+            Some("arg-workspace/arg-repo"),
+            "test",
+        )
+        .unwrap_err();
+        assert_eq!(err.code, "invalid_input");
     }
 
     #[test]
