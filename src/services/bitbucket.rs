@@ -354,6 +354,83 @@ fn enc_path(path: &str) -> String {
         .join("/")
 }
 
+const BITBUCKET_PAGELEN_MAX: u32 = 100;
+
+fn pagelen_for(limit: u32) -> u32 {
+    limit.clamp(1, BITBUCKET_PAGELEN_MAX)
+}
+
+fn append_pagelen(url: &mut String, limit: u32) {
+    let separator = if url.contains('?') { '&' } else { '?' };
+    url.push(separator);
+    url.push_str("pagelen=");
+    url.push_str(&pagelen_for(limit).to_string());
+}
+
+fn aggregate_values(values: Vec<Value>, truncated: bool) -> Value {
+    let size = values.len();
+    json!({
+        "values": values,
+        "size": size,
+        "truncated": truncated,
+    })
+}
+
+async fn paginate_bitbucket<F>(
+    client: &ApiClient,
+    operation: &'static str,
+    ctx: &Context,
+    first_url: String,
+    limit: u32,
+    filter: F,
+) -> Result<Value, AppError>
+where
+    F: Fn(&Value) -> bool,
+{
+    let limit = limit as usize;
+    let mut url = first_url;
+    let mut accumulated: Vec<Value> = Vec::new();
+    let mut truncated = false;
+    'outer: loop {
+        let page = client
+            .request(
+                "bitbucket",
+                operation,
+                ctx.profile(),
+                Method::GET,
+                url.clone(),
+                None,
+            )
+            .await?;
+        let Some(values) = page.get("values").and_then(Value::as_array) else {
+            return Ok(page);
+        };
+        for value in values {
+            if !filter(value) {
+                continue;
+            }
+            accumulated.push(value.clone());
+            if accumulated.len() >= limit {
+                truncated = true;
+                break 'outer;
+            }
+        }
+        match page.get("next").and_then(Value::as_str) {
+            Some(next) if !next.is_empty() => url = next.to_string(),
+            _ => break 'outer,
+        }
+    }
+    Ok(aggregate_values(accumulated, truncated))
+}
+
+fn keep_all(_value: &Value) -> bool {
+    true
+}
+
+fn keep_inline_only(value: &Value) -> bool {
+    value.get("inline").is_some()
+}
+
 async fn pr_diff(
     client: &ApiClient,
     ctx: &Context,
@@ -397,24 +474,15 @@ async fn pr_diffstat(
         args.repo.as_deref(),
         "prs.diffstat",
     )?;
-    let url = format!(
-        "{}/repositories/{}/{}/pullrequests/{}/diffstat?pagelen={}",
+    let mut url = format!(
+        "{}/repositories/{}/{}/pullrequests/{}/diffstat",
         bitbucket_base(ctx.profile()),
         enc(workspace),
         enc(repo),
-        args.pr,
-        args.limit
+        args.pr
     );
-    client
-        .request(
-            "bitbucket",
-            "prs.diffstat",
-            ctx.profile(),
-            Method::GET,
-            url,
-            None,
-        )
-        .await
+    append_pagelen(&mut url, args.limit);
+    paginate_bitbucket(client, "prs.diffstat", ctx, url, args.limit, keep_all).await
 }
 
 async fn pr_commits(
@@ -428,24 +496,15 @@ async fn pr_commits(
         args.repo.as_deref(),
         "prs.commits",
     )?;
-    let url = format!(
-        "{}/repositories/{}/{}/pullrequests/{}/commits?pagelen={}",
+    let mut url = format!(
+        "{}/repositories/{}/{}/pullrequests/{}/commits",
         bitbucket_base(ctx.profile()),
         enc(workspace),
         enc(repo),
-        args.pr,
-        args.limit
+        args.pr
     );
-    client
-        .request(
-            "bitbucket",
-            "prs.commits",
-            ctx.profile(),
-            Method::GET,
-            url,
-            None,
-        )
-        .await
+    append_pagelen(&mut url, args.limit);
+    paginate_bitbucket(client, "prs.commits", ctx, url, args.limit, keep_all).await
 }
 
 async fn pr_activity(
@@ -459,24 +518,15 @@ async fn pr_activity(
         args.repo.as_deref(),
         "prs.activity",
     )?;
-    let url = format!(
-        "{}/repositories/{}/{}/pullrequests/{}/activity?pagelen={}",
+    let mut url = format!(
+        "{}/repositories/{}/{}/pullrequests/{}/activity",
         bitbucket_base(ctx.profile()),
         enc(workspace),
         enc(repo),
-        args.pr,
-        args.limit
+        args.pr
     );
-    client
-        .request(
-            "bitbucket",
-            "prs.activity",
-            ctx.profile(),
-            Method::GET,
-            url,
-            None,
-        )
-        .await
+    append_pagelen(&mut url, args.limit);
+    paginate_bitbucket(client, "prs.activity", ctx, url, args.limit, keep_all).await
 }
 
 async fn branches(
@@ -493,23 +543,25 @@ async fn branches(
                 "branches.list",
             )?;
             let mut url = format!(
-                "{}/repositories/{}/{}/refs/branches?pagelen={}",
+                "{}/repositories/{}/{}/refs/branches",
                 bitbucket_base(ctx.profile()),
                 enc(workspace),
                 enc(repo),
-                args.limit
             );
-            append_query(&mut url, "q", args.query.as_deref());
-            client
-                .request(
-                    "bitbucket",
-                    "branches.list",
-                    ctx.profile(),
-                    Method::GET,
-                    url,
-                    None,
-                )
-                .await
+            append_pagelen(&mut url, args.limit);
+            let bbql = branches_bbql_from_flags(&args)?;
+            append_query(&mut url, "q", bbql.as_deref());
+            let prefix = args.name_prefix.clone();
+            let filter = move |value: &Value| -> bool {
+                let Some(prefix) = prefix.as_deref() else {
+                    return true;
+                };
+                value
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .is_some_and(|name| name.starts_with(prefix))
+            };
+            paginate_bitbucket(client, "branches.list", ctx, url, args.limit, filter).await
         }
         BitbucketBranchesAction::Get(args) => {
             let (workspace, repo) = bitbucket_repo_from_args(
@@ -553,28 +605,19 @@ async fn commits(
                 "commits.list",
             )?;
             let mut url = format!(
-                "{}/repositories/{}/{}/commits?pagelen={}",
+                "{}/repositories/{}/{}/commits",
                 bitbucket_base(ctx.profile()),
                 enc(workspace),
                 enc(repo),
-                args.limit
             );
+            append_pagelen(&mut url, args.limit);
             if let Some(branch) = args.branch.as_deref() {
                 append_query(&mut url, "include", Some(branch));
             } else {
                 append_query(&mut url, "include", args.include.as_deref());
             }
             append_query(&mut url, "exclude", args.exclude.as_deref());
-            client
-                .request(
-                    "bitbucket",
-                    "commits.list",
-                    ctx.profile(),
-                    Method::GET,
-                    url,
-                    None,
-                )
-                .await
+            paginate_bitbucket(client, "commits.list", ctx, url, args.limit, keep_all).await
         }
         BitbucketCommitsAction::Get(args) => {
             let (workspace, repo) = bitbucket_repo_from_args(
@@ -664,25 +707,16 @@ async fn source(
                 "source.history",
             )?;
             let path = enc_path(&args.path);
-            let url = format!(
-                "{}/repositories/{}/{}/filehistory/{}/{}?pagelen={}",
+            let mut url = format!(
+                "{}/repositories/{}/{}/filehistory/{}/{}",
                 bitbucket_base(ctx.profile()),
                 enc(workspace),
                 enc(repo),
                 enc(&args.commit),
                 path,
-                args.limit
             );
-            client
-                .request(
-                    "bitbucket",
-                    "source.history",
-                    ctx.profile(),
-                    Method::GET,
-                    url,
-                    None,
-                )
-                .await
+            append_pagelen(&mut url, args.limit);
+            paginate_bitbucket(client, "source.history", ctx, url, args.limit, keep_all).await
         }
     }
 }
@@ -696,28 +730,27 @@ async fn pr_comments(
         BitbucketPrCommentAction::List(args) => {
             let (workspace, repo) =
                 bitbucket_repo(ctx.profile(), args.repo.as_deref(), "pr-comments.list")?;
-            let url = format!(
-                "{}/repositories/{}/{}/pullrequests/{}/comments?pagelen={}",
+            let mut url = format!(
+                "{}/repositories/{}/{}/pullrequests/{}/comments",
                 bitbucket_base(ctx.profile()),
                 enc(workspace),
                 enc(repo),
                 args.pr,
-                args.limit
             );
-            let response = client
-                .request(
-                    "bitbucket",
-                    "pr-comments.list",
-                    ctx.profile(),
-                    Method::GET,
-                    url,
-                    None,
-                )
-                .await?;
+            append_pagelen(&mut url, args.limit);
             if args.inline_only {
-                return Ok(filter_inline_comments(response));
+                paginate_bitbucket(
+                    client,
+                    "pr-comments.list",
+                    ctx,
+                    url,
+                    args.limit,
+                    keep_inline_only,
+                )
+                .await
+            } else {
+                paginate_bitbucket(client, "pr-comments.list", ctx, url, args.limit, keep_all).await
             }
-            Ok(response)
         }
         BitbucketPrCommentAction::Get(args) => {
             let (workspace, repo) =
@@ -837,12 +870,35 @@ fn pr_create_body(args: PullRequestCreate) -> Result<Value, AppError> {
     Ok(body)
 }
 
-fn filter_inline_comments(mut response: Value) -> Value {
-    let Some(values) = response.get_mut("values").and_then(Value::as_array_mut) else {
-        return response;
-    };
-    values.retain(|comment| comment.get("inline").is_some());
-    response
+fn branches_bbql_from_flags(args: &BitbucketBranchList) -> Result<Option<String>, AppError> {
+    if let Some(query) = args.query.as_deref() {
+        return Ok(Some(query.to_string()));
+    }
+    let escape = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
+    // Bitbucket BBQL's `~` is a case-insensitive substring match (no regex anchors).
+    // Both --name-contains and --name-prefix use it as a server-side hint;
+    // --name-prefix is then narrowed client-side via the paginator filter.
+    if let Some(text) = args.name_contains.as_deref() {
+        if text.is_empty() {
+            return Err(AppError::invalid_input(
+                "bitbucket",
+                "branches.list",
+                "--name-contains must not be empty",
+            ));
+        }
+        return Ok(Some(format!("name ~ \"{}\"", escape(text))));
+    }
+    if let Some(text) = args.name_prefix.as_deref() {
+        if text.is_empty() {
+            return Err(AppError::invalid_input(
+                "bitbucket",
+                "branches.list",
+                "--name-prefix must not be empty",
+            ));
+        }
+        return Ok(Some(format!("name ~ \"{}\"", escape(text))));
+    }
+    Ok(None)
 }
 
 fn pr_comment_body(
@@ -941,6 +997,97 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(err.code, "invalid_input");
+    }
+
+    fn branch_list_args(
+        name_contains: Option<&str>,
+        name_prefix: Option<&str>,
+        query: Option<&str>,
+    ) -> BitbucketBranchList {
+        BitbucketBranchList {
+            owner: None,
+            repo: None,
+            limit: 50,
+            name_contains: name_contains.map(str::to_string),
+            name_prefix: name_prefix.map(str::to_string),
+            query: query.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn name_contains_builds_bbql() {
+        let bbql = branches_bbql_from_flags(&branch_list_args(Some("feature/"), None, None))
+            .unwrap()
+            .unwrap();
+        assert_eq!(bbql, "name ~ \"feature/\"");
+    }
+
+    #[test]
+    fn name_prefix_uses_substring_hint_for_server_filter() {
+        // BBQL `~` is case-insensitive substring; the actual prefix match is
+        // applied client-side by the paginator filter in `branches::List`.
+        let bbql = branches_bbql_from_flags(&branch_list_args(None, Some("release-"), None))
+            .unwrap()
+            .unwrap();
+        assert_eq!(bbql, "name ~ \"release-\"");
+    }
+
+    #[test]
+    fn name_contains_escapes_quotes_and_backslashes() {
+        let bbql = branches_bbql_from_flags(&branch_list_args(Some(r#"feat\"weird"#), None, None))
+            .unwrap()
+            .unwrap();
+        assert_eq!(bbql, "name ~ \"feat\\\\\\\"weird\"");
+    }
+
+    #[test]
+    fn query_takes_precedence_when_set() {
+        let bbql =
+            branches_bbql_from_flags(&branch_list_args(None, None, Some(r#"name ~ "exact""#)))
+                .unwrap()
+                .unwrap();
+        assert_eq!(bbql, r#"name ~ "exact""#);
+    }
+
+    #[test]
+    fn empty_name_contains_is_rejected() {
+        let err = branches_bbql_from_flags(&branch_list_args(Some(""), None, None)).unwrap_err();
+        assert_eq!(err.code, "invalid_input");
+    }
+
+    #[test]
+    fn pagelen_for_clamps_to_max() {
+        assert_eq!(pagelen_for(0), 1);
+        assert_eq!(pagelen_for(50), 50);
+        assert_eq!(pagelen_for(500), BITBUCKET_PAGELEN_MAX);
+    }
+
+    #[test]
+    fn append_pagelen_uses_question_or_amp() {
+        let mut a = "https://api.example.com/path".to_string();
+        append_pagelen(&mut a, 25);
+        assert!(a.ends_with("?pagelen=25"));
+
+        let mut b = "https://api.example.com/path?q=foo".to_string();
+        append_pagelen(&mut b, 25);
+        assert!(b.ends_with("&pagelen=25"));
+    }
+
+    #[test]
+    fn keep_inline_only_filters_correctly() {
+        let inline = json!({ "id": 1, "inline": { "path": "src/lib.rs", "to": 10 } });
+        let regular = json!({ "id": 2, "content": { "raw": "hi" } });
+        assert!(keep_inline_only(&inline));
+        assert!(!keep_inline_only(&regular));
+    }
+
+    #[test]
+    fn aggregate_values_shape_matches_contract() {
+        let collected = vec![json!({"id": 1}), json!({"id": 2})];
+        let out = aggregate_values(collected.clone(), true);
+        assert_eq!(out["values"].as_array().unwrap().len(), 2);
+        assert_eq!(out["size"], 2);
+        assert_eq!(out["truncated"], true);
     }
 
     #[test]

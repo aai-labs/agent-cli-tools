@@ -399,7 +399,15 @@ pub struct BitbucketBranchList {
     pub repo: Option<String>,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
-    #[arg(long)]
+    #[arg(long, conflicts_with_all = ["name_prefix", "query"])]
+    pub name_contains: Option<String>,
+    #[arg(long, conflicts_with_all = ["name_contains", "query"])]
+    pub name_prefix: Option<String>,
+    #[arg(
+        long,
+        hide = true,
+        help = "Advanced escape hatch: raw Bitbucket BBQL expression for the ?q= filter (e.g. 'name ~ \"^feature/\"'). Prefer --name-contains or --name-prefix."
+    )]
     pub query: Option<String>,
 }
 

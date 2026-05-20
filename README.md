@@ -323,7 +323,7 @@ aai-cli bitbucket prs comments get <pr-number> <comment-id> [--repo <repo-slug|w
 aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT [--inline-path FILE] [--inline-from LINE] [--inline-to LINE] [--parent-id COMMENT_ID]
 aai-cli bitbucket prs comments update <pr-number> --comment <comment-id> [--repo <repo-slug|workspace/repo-slug>] --body TEXT [--inline-path FILE] [--inline-from LINE] [--inline-to LINE] [--parent-id COMMENT_ID]
 aai-cli bitbucket prs comments delete <pr-number> <comment-id> [--repo <repo-slug|workspace/repo-slug>]
-aai-cli bitbucket branches list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--query QUERY]
+aai-cli bitbucket branches list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--name-contains TEXT | --name-prefix TEXT]
 aai-cli bitbucket branches get <branch-name> [--repo <repo-slug|workspace/repo-slug>]
 aai-cli bitbucket commits list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--branch BRANCH] [--include REV] [--exclude REV]
 aai-cli bitbucket commits get <sha> [--repo <repo-slug|workspace/repo-slug>]
