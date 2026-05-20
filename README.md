@@ -177,7 +177,7 @@ Resolution precedence is direct config value, env var, then encrypted secret ref
 ## Authentication Notes
 
 - GitHub uses `bearer_token` with `token_secret` or `token_env`.
-- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token.
+- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token. The same Jira credentials work for sprint and board commands, which hit the Jira Software (Agile) API at `/rest/agile/1.0/...`; sprint list/create require a `--board <id>` flag since boards are not yet modeled in profile config.
 - Bitbucket Cloud API/personal tokens use `basic_api_token` with Atlassian account `email` plus Bitbucket API token.
 - Bitbucket repository/workspace access tokens are distinct from user API tokens and should be modeled separately with bearer auth when added.
 - Google Gmail and Calendar REST profiles use `bearer_token`.
@@ -284,15 +284,28 @@ Use `local/logs/` for local smoke-test downloads; it is ignored by git.
 
 ### Supported Commands
 
+Jira list commands return a **trimmed response** (per-resource allowlist) to keep output small for agent consumers — `expand`, `self`, avatar URLs, and other UI-only fields are dropped. Pagination metadata (`maxResults`, `startAt`, `isLast`, `total`) is preserved. Call the corresponding `get` command if you need the full raw shape.
+
+`jira issues list` filters are structured flags; JQL is built internally. Multi-value flags accept comma-separated lists (e.g. `--status "To Do,In Progress"`). `--assignee me` expands to `currentUser()`. `--sprint current/future/closed` map to the corresponding JQL sprint functions; a numeric value is treated as a sprint ID. `--updated-since` accepts a relative duration (`7d`, `30d`, `1y`) or an ISO date (`2026-05-01`).
+
 ```bash
-aai-cli jira issues list [--jql JQL] [--fields FIELD_LIST] [--limit N]
-aai-cli jira issues search --jql JQL [--fields FIELD_LIST] [--limit N]
+aai-cli jira issues list [--project KEY] [--status NAMES] [--assignee me|<accountId>] [--type NAMES] [--sprint current|future|closed|<id>] [--text TEXT] [--updated-since DATE_OR_RELATIVE] [--fields FIELD_LIST] [--limit N]
 aai-cli jira issues get <issue-key-or-id>
 aai-cli jira issues create [--json <path|->] [--project KEY] [--summary TEXT] [--description TEXT]
 aai-cli jira issues update <issue-key-or-id> [--json <path|->] [--summary TEXT] [--description TEXT]
 aai-cli jira issues delete <issue-key-or-id>
+aai-cli jira issues comments list <issue-key-or-id> [--limit N]
+aai-cli jira issues comments get <issue-key-or-id> <comment-id>
+aai-cli jira issues comments create <issue-key-or-id> [--json <path|->] [--body TEXT]
 aai-cli jira projects list
 aai-cli jira projects get <project-key-or-id>
+aai-cli jira sprints list --board <board-id> [--state STATE] [--limit N]
+aai-cli jira sprints get <sprint-id>
+aai-cli jira sprints create [--json <path|->] [--board <board-id>] [--name TEXT] [--goal TEXT] [--start-date ISO_8601] [--end-date ISO_8601]
+aai-cli jira sprints issues add <sprint-id> --issues KEY1[,KEY2,...]
+aai-cli jira boards list [--type scrum|kanban|simple] [--project KEY] [--name TEXT] [--limit N]
+aai-cli jira boards get <board-id>
+aai-cli jira users get <account-id>
 
 aai-cli confluence spaces list
 aai-cli confluence spaces get <space-id-or-key>

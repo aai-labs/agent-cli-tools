@@ -45,7 +45,7 @@ impl ApiClient {
             )
         })?;
         let parsed = if text.trim().is_empty() {
-            Value::Null
+            Value::Object(serde_json::Map::new())
         } else {
             serde_json::from_str(&text).unwrap_or_else(|_| Value::String(text.clone()))
         };
