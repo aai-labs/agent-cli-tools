@@ -487,6 +487,7 @@ fn github_issue_crud_repos_and_optional_prs() {
         ],
     );
     let pr_number = u64_at(&created_pr, &["number"]).to_string();
+    let head_sha = find_string(&created_pr, &["sha"]);
     let _ = cli_required("AAI_E2E_GITHUB_PROFILE", &["github", "prs", "list"]);
     let _ = cli_required(
         "AAI_E2E_GITHUB_PROFILE",
@@ -515,7 +516,153 @@ fn github_issue_crud_repos_and_optional_prs() {
     );
     let _ = cli_required(
         "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "diff", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "files", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "commits", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "timeline", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "reviews", "list", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "review-comments", "list", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "prs",
+            "reviews",
+            "create",
+            &pr_number,
+            "--event",
+            "COMMENT",
+            "--body",
+            "review summary from aai-cli live e2e",
+        ],
+    );
+    if let (Some(commit_sha), Some(inline_path)) =
+        (head_sha.clone(), env_or_skip("AAI_E2E_GITHUB_SOURCE_PATH"))
+    {
+        let inline = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "create",
+                &pr_number,
+                "--body",
+                "inline review comment from aai-cli live e2e",
+                "--path",
+                &inline_path,
+                "--line",
+                "1",
+                "--commit-id",
+                &commit_sha,
+            ],
+        );
+        let inline_id = u64_at(&inline, &["id"]).to_string();
+        let _ = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "get",
+                &pr_number,
+                &inline_id,
+            ],
+        );
+        let _ = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "delete",
+                &pr_number,
+                &inline_id,
+            ],
+        );
+    }
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
         &["github", "prs", "close", &pr_number],
+    );
+}
+
+#[test]
+#[ignore = "requires live GitHub credentials and read-only repo metadata"]
+fn github_read_only_endpoints() {
+    let branches = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "list", "--limit", "10"],
+    );
+    let branch_name = env_or_skip("AAI_E2E_GITHUB_BRANCH").or_else(|| {
+        branches
+            .get("values")
+            .and_then(Value::as_array)
+            .and_then(|values| values.first())
+            .and_then(|branch| branch.get("name"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+    });
+    let Some(branch_name) = branch_name else {
+        eprintln!("skipping live E2E branch: no branch name available");
+        return;
+    };
+    let branch = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "get", &branch_name],
+    );
+    let commit_sha = env_or_skip("AAI_E2E_GITHUB_COMMIT_SHA")
+        .or_else(|| find_string(&branch, &["sha"]))
+        .unwrap_or_else(|| branch_name.clone());
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "list", "--name-prefix", &branch_name],
+    );
+    let Some(source_path) = env_or_skip("AAI_E2E_GITHUB_SOURCE_PATH") else {
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "source", "get", &commit_sha, &source_path],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "source",
+            "get",
+            &commit_sha,
+            &source_path,
+            "--meta",
+        ],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "source",
+            "history",
+            &commit_sha,
+            &source_path,
+            "--limit",
+            "5",
+        ],
     );
 }
 

@@ -9,7 +9,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks eas
 - Jira Cloud: issues and projects.
 - Confluence Cloud: spaces and pages, including storage-format page bodies.
 - Bitbucket Cloud: repositories, branches, commits, source files at SHA, pull requests, PR diff/diffstat/commits/activity, PR comments (including inline), close/decline.
-- GitHub: repositories, issues, pull requests, PR comments, close/decline.
+- GitHub: repositories, branches, source files at ref/SHA, issues, pull requests, PR diff/files/commits/timeline, PR comments (issue-level), inline review comments, grouped PR reviews, close/decline, GitHub Actions runs and jobs (with log download).
 - Email: Gmail REST profiles and Zoho SMTP/IMAP profiles.
 - Calendar: Google Calendar REST profiles and Zoho CalDAV profiles.
 - Local encrypted secrets: XChaCha20-Poly1305 secret store for tokens and app passwords.
@@ -361,11 +361,27 @@ aai-cli github prs create [--owner OWNER] [--repo REPO] --title TEXT --head BRAN
 aai-cli github prs delete <number> [--owner OWNER] [--repo REPO]
 aai-cli github prs close <number> [--owner OWNER] [--repo REPO]
 aai-cli github prs decline <number> [--owner OWNER] [--repo REPO]
+aai-cli github prs diff <pr-number> [--owner OWNER] [--repo REPO] [--output PATH]
+aai-cli github prs files <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs commits <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs timeline <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
 aai-cli github prs comments list <pr-number> [--owner OWNER] [--repo REPO]
 aai-cli github prs comments get <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
 aai-cli github prs comments create <pr-number> [--owner OWNER] [--repo REPO] --body TEXT
 aai-cli github prs comments update <pr-number> --comment <comment-id> [--owner OWNER] [--repo REPO] --body TEXT
 aai-cli github prs comments delete <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs review-comments list <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs review-comments get <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs review-comments create <pr-number> [--owner OWNER] [--repo REPO] --body TEXT --path FILE --commit-id SHA [--line N] [--side LEFT|RIGHT] [--start-line N] [--start-side LEFT|RIGHT] [--in-reply-to COMMENT_ID]
+aai-cli github prs review-comments update <pr-number> --comment <comment-id> [--owner OWNER] [--repo REPO] --body TEXT
+aai-cli github prs review-comments delete <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs reviews list <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs reviews get <pr-number> <review-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs reviews create <pr-number> [--owner OWNER] [--repo REPO] [--event APPROVE|REQUEST_CHANGES|COMMENT|PENDING] [--body TEXT] [--commit-id SHA] [--comments-json JSON_ARRAY_OR_PATH]
+aai-cli github branches list [--owner OWNER] [--repo REPO] [--limit N] [--name-contains TEXT | --name-prefix TEXT] [--protected true|false]
+aai-cli github branches get <branch-name> [--owner OWNER] [--repo REPO]
+aai-cli github source get <commit> <path> [--owner OWNER] [--repo REPO] [--output PATH] [--meta]
+aai-cli github source history <commit> <path> [--owner OWNER] [--repo REPO] [--limit N]
 aai-cli github actions runs list [--owner OWNER] [--repo REPO] [--branch BRANCH] [--status STATUS] [--event EVENT] [--limit N]
 aai-cli github actions runs get <run-id> [--owner OWNER] [--repo REPO]
 aai-cli github actions runs logs download <run-id> --output PATH [--owner OWNER] [--repo REPO]
@@ -457,6 +473,9 @@ Optional PR test variables:
 ```bash
 AAI_E2E_GITHUB_PR_HEAD=e2e-branch
 AAI_E2E_GITHUB_PR_BASE=main
+AAI_E2E_GITHUB_BRANCH=main
+AAI_E2E_GITHUB_COMMIT_SHA=
+AAI_E2E_GITHUB_SOURCE_PATH=README.md
 AAI_E2E_BITBUCKET_PR_SOURCE=e2e-branch
 AAI_E2E_BITBUCKET_PR_DESTINATION=main
 AAI_E2E_BITBUCKET_SOURCE_PATH=README.md
@@ -464,10 +483,11 @@ AAI_E2E_BITBUCKET_BRANCH=main
 AAI_E2E_BITBUCKET_COMMIT_SHA=
 ```
 
-Run read-only Bitbucket endpoint coverage:
+Run read-only endpoint coverage:
 
 ```bash
 scripts/run-tests.sh live bitbucket_read_only_endpoints
+scripts/run-tests.sh live github_read_only_endpoints
 ```
 
 ## API Docs
