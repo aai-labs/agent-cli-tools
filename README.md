@@ -16,7 +16,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks eas
 
 ## Quick Start
 
-Install from the checked-out repository:
+Install from the checked-out repository:  this is a test
 
 ```bash
 cargo install --path .
