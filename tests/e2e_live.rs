@@ -487,7 +487,7 @@ fn github_issue_crud_repos_and_optional_prs() {
         ],
     );
     let pr_number = u64_at(&created_pr, &["number"]).to_string();
-    let head_sha = find_string(&created_pr, &["sha"]);
+    let head_sha = find_string(&created_pr, &["head", "sha"]);
     let _ = cli_required("AAI_E2E_GITHUB_PROFILE", &["github", "prs", "list"]);
     let _ = cli_required(
         "AAI_E2E_GITHUB_PROFILE",

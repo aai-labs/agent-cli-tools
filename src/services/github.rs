@@ -497,6 +497,17 @@ fn per_page_for(limit: u32) -> u32 {
     limit.clamp(1, GITHUB_PER_PAGE_MAX)
 }
 
+fn json_kind(value: &Value) -> &'static str {
+    match value {
+        Value::Null => "null",
+        Value::Bool(_) => "bool",
+        Value::Number(_) => "number",
+        Value::String(_) => "string",
+        Value::Array(_) => "array",
+        Value::Object(_) => "object",
+    }
+}
+
 fn aggregate_values(values: Vec<Value>, truncated: bool) -> Value {
     let size = values.len();
     json!({
@@ -540,7 +551,19 @@ where
             .cloned()
             .or_else(|| response.get("items").and_then(Value::as_array).cloned());
         let Some(values) = values_opt else {
-            return Ok(response);
+            // Every paginated GitHub endpoint we wrap returns either a bare
+            // array or an object with an `items` array. Anything else is an
+            // unexpected provider response — surface it as an internal error
+            // instead of silently dropping the documented `{ values, size,
+            // truncated }` envelope and confusing downstream callers.
+            return Err(AppError::internal(
+                "github",
+                operation,
+                format!(
+                    "expected an array or {{\"items\": [...]}} from GitHub, got {}",
+                    json_kind(&response)
+                ),
+            ));
         };
         let page_len = values.len();
         for value in values {
@@ -1172,13 +1195,17 @@ async fn source(
                 args.repo.as_deref(),
                 "source.history",
             )?;
-            let trimmed = args.path.trim_start_matches('/');
+            // GitHub's /commits?path= filter expects the literal repo-relative path
+            // with `/` preserved between segments; using enc() would percent-encode
+            // them as %2F, which the API treats as "no match" and silently returns
+            // an empty list. enc_path() encodes only special chars within each
+            // segment, matching the behavior of source.get.
             let url = format!(
                 "{}/repos/{}/{}/commits?path={}&sha={}",
                 github_base(ctx.profile()),
                 enc(owner),
                 enc(repo),
-                enc(trimmed),
+                enc_path(&args.path),
                 enc(&args.commit)
             );
             paginate_github(client, "source.history", ctx, url, args.limit, keep_all).await
@@ -1312,18 +1339,28 @@ fn pr_review_create_body(
         input::ensure_object(&mut body).insert("comments".to_string(), comments);
     }
 
-    if let Some(event) = body.get("event").and_then(Value::as_str) {
-        match event {
-            "APPROVE" | "REQUEST_CHANGES" | "COMMENT" | "PENDING" => {}
-            other => {
-                return Err(AppError::invalid_input(
-                    "github",
-                    operation,
-                    format!(
-                        "--event must be one of APPROVE, REQUEST_CHANGES, COMMENT, PENDING (got '{other}')"
-                    ),
-                ));
-            }
+    // GitHub's POST /pulls/{n}/reviews accepts event values APPROVE,
+    // REQUEST_CHANGES, COMMENT, or omits the field entirely to create a
+    // PENDING (draft) review. The literal "PENDING" string is rejected by
+    // the API with HTTP 422, so when callers pass --event PENDING we accept
+    // it as a friendly alias and strip the field from the body.
+    let pending_event = match body.get("event").and_then(Value::as_str) {
+        Some("APPROVE") | Some("REQUEST_CHANGES") | Some("COMMENT") => false,
+        Some("PENDING") => true,
+        Some(other) => {
+            return Err(AppError::invalid_input(
+                "github",
+                operation,
+                format!(
+                    "--event must be one of APPROVE, REQUEST_CHANGES, COMMENT, PENDING (got '{other}')"
+                ),
+            ));
+        }
+        None => false,
+    };
+    if pending_event {
+        if let Some(obj) = body.as_object_mut() {
+            obj.remove("event");
         }
     }
     Ok(body)
@@ -1515,5 +1552,60 @@ mod tests {
             enc_path("src/with space/file.txt"),
             "src/with%20space/file.txt"
         );
+    }
+
+    #[test]
+    fn review_create_strips_pending_event() {
+        let body = pr_review_create_body(
+            GithubPrReviewCreate {
+                pr: 1,
+                owner: None,
+                repo: None,
+                json: None,
+                body: Some("draft notes".to_string()),
+                event: Some("PENDING".to_string()),
+                commit_id: Some("deadbeef".to_string()),
+                comments_json: None,
+            },
+            "pr-reviews.create",
+        )
+        .unwrap();
+        assert!(
+            body.get("event").is_none(),
+            "event must be omitted for PENDING reviews; GitHub rejects literal \"PENDING\""
+        );
+        assert_eq!(body["body"], "draft notes");
+        assert_eq!(body["commit_id"], "deadbeef");
+    }
+
+    #[test]
+    fn review_create_keeps_real_events() {
+        for event in ["APPROVE", "REQUEST_CHANGES", "COMMENT"] {
+            let body = pr_review_create_body(
+                GithubPrReviewCreate {
+                    pr: 1,
+                    owner: None,
+                    repo: None,
+                    json: None,
+                    body: Some("hi".to_string()),
+                    event: Some(event.to_string()),
+                    commit_id: None,
+                    comments_json: None,
+                },
+                "pr-reviews.create",
+            )
+            .unwrap();
+            assert_eq!(body["event"], event);
+        }
+    }
+
+    #[test]
+    fn json_kind_labels_each_variant() {
+        assert_eq!(json_kind(&Value::Null), "null");
+        assert_eq!(json_kind(&json!(true)), "bool");
+        assert_eq!(json_kind(&json!(7)), "number");
+        assert_eq!(json_kind(&json!("hi")), "string");
+        assert_eq!(json_kind(&json!([1, 2])), "array");
+        assert_eq!(json_kind(&json!({"a": 1})), "object");
     }
 }
