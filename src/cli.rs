@@ -750,6 +750,8 @@ pub enum GithubResource {
     Issues(GithubIssuesCommand),
     Prs(GithubPrsCommand),
     Actions(GithubActionsCommand),
+    Branches(GithubBranchesCommand),
+    Source(GithubSourceCommand),
 }
 
 #[derive(Debug, Args)]
@@ -1116,7 +1118,315 @@ pub enum GithubPullRequestAction {
     Delete(NumberArg),
     Close(NumberArg),
     Decline(NumberArg),
-    Comments(BitbucketPrCommentsCommand),
+    Diff(GithubPrDiff),
+    Files(GithubPrFiles),
+    Commits(GithubPrCommits),
+    Timeline(GithubPrTimeline),
+    Comments(GithubPrCommentsCommand),
+    #[command(name = "review-comments")]
+    ReviewComments(GithubPrReviewCommentsCommand),
+    Reviews(GithubPrReviewsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrDiff {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub output: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrFiles {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommits {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrTimeline {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentsCommand {
+    #[command(subcommand)]
+    pub action: GithubPrCommentAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubPrCommentAction {
+    List(GithubPrCommentList),
+    Get(GithubPrCommentGet),
+    Create(GithubPrCommentWrite),
+    Update(GithubPrCommentWrite),
+    Delete(GithubPrCommentGet),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentList {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentGet {
+    pub pr: u64,
+    pub comment: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentWrite {
+    pub pr: u64,
+    #[arg(long)]
+    pub comment: Option<u64>,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentsCommand {
+    #[command(subcommand)]
+    pub action: GithubPrReviewCommentAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubPrReviewCommentAction {
+    List(GithubPrReviewCommentList),
+    Get(GithubPrReviewCommentGet),
+    Create(GithubPrReviewCommentCreate),
+    Update(GithubPrReviewCommentUpdate),
+    Delete(GithubPrReviewCommentGet),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentList {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentGet {
+    pub pr: u64,
+    pub comment: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentCreate {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+    #[arg(long)]
+    pub path: Option<String>,
+    #[arg(long)]
+    pub line: Option<u64>,
+    #[arg(long)]
+    pub side: Option<String>,
+    #[arg(long = "start-line")]
+    pub start_line: Option<u64>,
+    #[arg(long = "start-side")]
+    pub start_side: Option<String>,
+    #[arg(long = "commit-id")]
+    pub commit_id: Option<String>,
+    #[arg(long = "in-reply-to")]
+    pub in_reply_to: Option<u64>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentUpdate {
+    pub pr: u64,
+    #[arg(long)]
+    pub comment: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewsCommand {
+    #[command(subcommand)]
+    pub action: GithubPrReviewAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubPrReviewAction {
+    List(GithubPrReviewList),
+    Get(GithubPrReviewGet),
+    Create(GithubPrReviewCreate),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewList {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewGet {
+    pub pr: u64,
+    pub review: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCreate {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+    #[arg(long)]
+    pub event: Option<String>,
+    #[arg(long = "commit-id")]
+    pub commit_id: Option<String>,
+    #[arg(long = "comments-json")]
+    pub comments_json: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubBranchesCommand {
+    #[command(subcommand)]
+    pub action: GithubBranchesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubBranchesAction {
+    List(GithubBranchList),
+    Get(GithubBranchGet),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubBranchList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long, conflicts_with = "name_prefix")]
+    pub name_contains: Option<String>,
+    #[arg(long, conflicts_with = "name_contains")]
+    pub name_prefix: Option<String>,
+    #[arg(long)]
+    pub protected: Option<bool>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubBranchGet {
+    pub name: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubSourceCommand {
+    #[command(subcommand)]
+    pub action: GithubSourceAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubSourceAction {
+    Get(GithubSourceGet),
+    History(GithubSourceHistory),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubSourceGet {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, conflicts_with = "meta")]
+    pub output: Option<String>,
+    #[arg(long, conflicts_with = "output")]
+    pub meta: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubSourceHistory {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]

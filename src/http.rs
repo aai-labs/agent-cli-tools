@@ -70,13 +70,25 @@ impl ApiClient {
         profile: &Profile,
         url: String,
     ) -> Result<Vec<u8>, AppError> {
-        let mut request = self.client.request(Method::GET, &url);
-        request = apply_auth(request, service, operation, profile)?;
         let accept = match service {
             "github" => "application/json",
             "bitbucket" => "*/*",
             _ => "*/*",
         };
+        self.download_with_accept(service, operation, profile, url, accept)
+            .await
+    }
+
+    pub async fn download_with_accept(
+        &self,
+        service: &'static str,
+        operation: &'static str,
+        profile: &Profile,
+        url: String,
+        accept: &str,
+    ) -> Result<Vec<u8>, AppError> {
+        let mut request = self.client.request(Method::GET, &url);
+        request = apply_auth(request, service, operation, profile)?;
         request = request.header("Accept", accept);
 
         let response = request.send().await.map_err(|err| {
