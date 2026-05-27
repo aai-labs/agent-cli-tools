@@ -161,3 +161,160 @@ aai-cli --profile bitbucket-work bitbucket pipelines steps logs download '{pipel
 Use the optional `--log <log-uuid>` when Bitbucket exposes multiple logs for a step, such as service-container logs. Without `--log`, the command downloads the default step log. Download commands return JSON metadata with `output` and `bytes`.
 
 Use `local/logs/` for temporary live-smoke downloads in this repository; that directory is ignored by git.
+
+## GitHub Pull Request Review
+
+Use these commands to inspect pull request changes and post review feedback. GitHub exposes three distinct PR comment resources, kept as separate command groups so each maps cleanly to its REST endpoint:
+
+- `github prs comments` → general/issue-level PR comments (`/repos/{o}/{r}/issues/{n}/comments`)
+- `github prs review-comments` → inline comments tied to a file and line (`/repos/{o}/{r}/pulls/{n}/comments`)
+- `github prs reviews` → grouped reviews bundling a summary plus optional inline comments (`/repos/{o}/{r}/pulls/{n}/reviews`)
+
+```bash
+aai-cli github prs diff <pr-number> [--owner OWNER] [--repo REPO] [--output PATH]
+aai-cli github prs files <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs commits <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs timeline <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs comments list <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs comments create <pr-number> [--owner OWNER] [--repo REPO] --body TEXT
+aai-cli github prs review-comments list <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs review-comments create <pr-number> [--owner OWNER] [--repo REPO] \
+    --body TEXT --path FILE --commit-id SHA \
+    [--line N] [--side LEFT|RIGHT] [--start-line N] [--start-side LEFT|RIGHT] \
+    [--in-reply-to COMMENT_ID]
+aai-cli github prs reviews list <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs reviews create <pr-number> [--owner OWNER] [--repo REPO] \
+    [--event APPROVE|REQUEST_CHANGES|COMMENT|PENDING] [--body TEXT] \
+    [--commit-id SHA] [--comments-json JSON_ARRAY_OR_PATH]
+```
+
+Examples:
+
+```bash
+aai-cli --profile github-work github prs diff 42
+aai-cli --profile github-work github prs diff 42 --output local/logs/pr-42.diff
+aai-cli --profile github-work github prs files 42 --limit 100
+aai-cli --profile github-work github prs review-comments create 42 \
+  --body "Please rename this variable" \
+  --path src/lib.rs --line 120 --commit-id abc123def
+aai-cli --profile github-work github prs reviews create 42 \
+  --event REQUEST_CHANGES --body "A few nits inline" \
+  --comments-json '[{"path":"src/lib.rs","line":120,"body":"rename"}]'
+```
+
+`prs diff` requests the PR with `Accept: application/vnd.github.v3.diff` and returns unified diff text as a JSON string by default. Use `--output` for large diffs; the command then returns JSON metadata with `output` and `bytes`.
+
+Inline review comments require `--body`, `--path`, and `--commit-id`. `--line` is the new-file line number; `--side` is `LEFT` (old file) or `RIGHT` (new file, default). For multi-line comments use `--start-line` and `--start-side`. To reply to an existing inline comment, pass `--in-reply-to COMMENT_ID --body TEXT`; the reply routes to `/pulls/{n}/comments/{COMMENT_ID}/replies` and only requires a body.
+
+Grouped reviews accept `--event APPROVE|REQUEST_CHANGES|COMMENT|PENDING`. Omitting `--event` submits a `PENDING` (draft) review per GitHub semantics. `--comments-json` accepts a JSON array of inline review comments to attach in the same call.
+
+## GitHub Source and Branches
+
+```bash
+aai-cli github branches list [--owner OWNER] [--repo REPO] [--limit N] [--name-contains TEXT | --name-prefix TEXT] [--protected true|false]
+aai-cli github branches get <branch-name> [--owner OWNER] [--repo REPO]
+aai-cli github source get <commit> <path> [--owner OWNER] [--repo REPO] [--output PATH] [--meta]
+aai-cli github source history <commit> <path> [--owner OWNER] [--repo REPO] [--limit N]
+```
+
+Examples:
+
+```bash
+aai-cli --profile github-work github branches list --name-prefix release-
+aai-cli --profile github-work github source get main README.md
+aai-cli --profile github-work github source get abc123def src/main.rs --output local/main.rs
+aai-cli --profile github-work github source history main README.md --limit 20
+```
+
+`source get` requests the contents endpoint with `Accept: application/vnd.github.v3.raw` and returns file contents as a JSON string for text files. Use `--output` for binary-safe downloads or `--meta` to fetch the GitHub JSON metadata envelope instead.
+
+`source history` lists commits that modified a file via `GET /repos/{o}/{r}/commits?path=PATH&sha=REF`. GitHub REST does not expose a per-line blame endpoint; `source history` is the closest REST analog. Per-line blame is only available via GitHub's GraphQL API.
+
+`branches list` filters with `--name-contains TEXT` (case-insensitive substring) and `--name-prefix TEXT` (anchored prefix), both client-side because GitHub's branches endpoint has no name filter. `--protected true|false` is GitHub's server-side filter.
+
+## Bitbucket Pull Request Review
+
+Use these commands to inspect pull request changes and post review feedback.
+
+```bash
+aai-cli bitbucket prs diff <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--output PATH]
+aai-cli bitbucket prs diffstat <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs commits <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs activity <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
+    [--inline-path FILE] [--inline-from LINE_BEFORE] [--inline-to LINE_AFTER] [--parent-id COMMENT_ID]
+aai-cli bitbucket prs comments list <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--inline-only]
+```
+
+Examples:
+
+```bash
+aai-cli --profile bitbucket-work bitbucket prs diff 42 --repo my-workspace/my-repo
+aai-cli --profile bitbucket-work bitbucket prs diff 42 --repo my-workspace/my-repo --output local/logs/pr-42.diff
+aai-cli --profile bitbucket-work bitbucket prs diffstat 42 --limit 100
+aai-cli --profile bitbucket-work bitbucket prs comments create 42 --body "Please rename this variable" \
+  --inline-path src/lib.rs --inline-to 120
+```
+
+`prs diff` returns unified diff text as a JSON string on stdout by default. Use `--output` for large diffs; the command returns JSON metadata with `output` and `bytes`.
+
+Inline comments use the same Bitbucket PR comment endpoint with an `inline` object (`path`, optional `from`, optional `to`). Use `--inline-from` for lines removed in the old file and `--inline-to` for lines added in the new file. `--inline-only` filters the comment list client-side to comments that include `inline`.
+
+## Bitbucket Source, Branches, and Commits
+
+```bash
+aai-cli bitbucket branches list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--name-contains TEXT | --name-prefix TEXT]
+aai-cli bitbucket branches get <branch-name> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket commits list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--branch BRANCH] [--include REV] [--exclude REV]
+aai-cli bitbucket commits get <sha> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket source get <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--output PATH] [--meta]
+aai-cli bitbucket source history <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+```
+
+Examples:
+
+```bash
+aai-cli --profile bitbucket-work bitbucket source get main README.md
+aai-cli --profile bitbucket-work bitbucket source get abc123def src/main.rs --output local/main.rs
+aai-cli --profile bitbucket-work bitbucket source history main README.md --limit 20
+aai-cli --profile bitbucket-work bitbucket branches list --name-contains feature
+aai-cli --profile bitbucket-work bitbucket branches list --name-prefix release-
+```
+
+`source get` returns file contents as a JSON string for text files by default. Use `--output` for binary-safe downloads. Use `--meta` to fetch JSON file metadata (`format=meta`) instead of raw content.
+
+`source history` lists commits that modified a file. Bitbucket Cloud does not expose a dedicated per-line blame REST endpoint; `source history` is the closest REST analog. Per-line annotation remains a UI-only feature in Bitbucket Cloud.
+
+`branches list` prefers `--name-contains TEXT` (substring match) and `--name-prefix TEXT` (anchored match) over raw query languages. An advanced `--query` escape hatch exists for Bitbucket BBQL expressions but is hidden from `--help` to keep the surface agent-friendly.
+
+## List Pagination
+
+For Bitbucket commands that accept `--limit N`, `aai-cli` follows Bitbucket's `next` pagination links and aggregates pages until it has `N` matching items (or no next page). The returned envelope is normalized to:
+
+```json
+{ "values": [ ... ], "size": <N>, "truncated": <bool> }
+```
+
+`truncated: true` means there may be more items beyond `--limit`. The `next`/`page`/`pagelen` fields from individual provider pages are intentionally dropped because they are no longer meaningful after aggregation. The first request asks Bitbucket for `pagelen = min(--limit, 100)`; subsequent requests follow the provider's `next` URL.
+
+Covered Bitbucket operations:
+
+- `bitbucket prs diffstat`
+- `bitbucket prs commits`
+- `bitbucket prs activity`
+- `bitbucket prs comments list` (including `--inline-only`, which filters across all fetched pages)
+- `bitbucket branches list`
+- `bitbucket commits list`
+- `bitbucket source history`
+
+Covered GitHub operations (uses page-based GitHub pagination):
+
+- `github prs files`
+- `github prs commits`
+- `github prs timeline`
+- `github prs reviews list`
+- `github prs review-comments list`
+- `github branches list` (`--name-contains` and `--name-prefix` filter across all fetched pages)
+- `github source history`
+
+Set the smallest useful `--limit`. Large limits increase latency and rate-limit pressure.

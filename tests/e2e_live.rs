@@ -748,6 +748,7 @@ fn github_issue_crud_repos_and_optional_prs() {
         ],
     );
     let pr_number = u64_at(&created_pr, &["number"]).to_string();
+    let head_sha = find_string(&created_pr, &["head", "sha"]);
     let _ = cli_required("AAI_E2E_GITHUB_PROFILE", &["github", "prs", "list"]);
     let _ = cli_required(
         "AAI_E2E_GITHUB_PROFILE",
@@ -776,7 +777,153 @@ fn github_issue_crud_repos_and_optional_prs() {
     );
     let _ = cli_required(
         "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "diff", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "files", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "commits", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "timeline", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "reviews", "list", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "review-comments", "list", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "prs",
+            "reviews",
+            "create",
+            &pr_number,
+            "--event",
+            "COMMENT",
+            "--body",
+            "review summary from aai-cli live e2e",
+        ],
+    );
+    if let (Some(commit_sha), Some(inline_path)) =
+        (head_sha.clone(), env_or_skip("AAI_E2E_GITHUB_SOURCE_PATH"))
+    {
+        let inline = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "create",
+                &pr_number,
+                "--body",
+                "inline review comment from aai-cli live e2e",
+                "--path",
+                &inline_path,
+                "--line",
+                "1",
+                "--commit-id",
+                &commit_sha,
+            ],
+        );
+        let inline_id = u64_at(&inline, &["id"]).to_string();
+        let _ = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "get",
+                &pr_number,
+                &inline_id,
+            ],
+        );
+        let _ = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "delete",
+                &pr_number,
+                &inline_id,
+            ],
+        );
+    }
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
         &["github", "prs", "close", &pr_number],
+    );
+}
+
+#[test]
+#[ignore = "requires live GitHub credentials and read-only repo metadata"]
+fn github_read_only_endpoints() {
+    let branches = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "list", "--limit", "10"],
+    );
+    let branch_name = env_or_skip("AAI_E2E_GITHUB_BRANCH").or_else(|| {
+        branches
+            .get("values")
+            .and_then(Value::as_array)
+            .and_then(|values| values.first())
+            .and_then(|branch| branch.get("name"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+    });
+    let Some(branch_name) = branch_name else {
+        eprintln!("skipping live E2E branch: no branch name available");
+        return;
+    };
+    let branch = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "get", &branch_name],
+    );
+    let commit_sha = env_or_skip("AAI_E2E_GITHUB_COMMIT_SHA")
+        .or_else(|| find_string(&branch, &["sha"]))
+        .unwrap_or_else(|| branch_name.clone());
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "list", "--name-prefix", &branch_name],
+    );
+    let Some(source_path) = env_or_skip("AAI_E2E_GITHUB_SOURCE_PATH") else {
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "source", "get", &commit_sha, &source_path],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "source",
+            "get",
+            &commit_sha,
+            &source_path,
+            "--meta",
+        ],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "source",
+            "history",
+            &commit_sha,
+            &source_path,
+            "--limit",
+            "5",
+        ],
     );
 }
 
@@ -826,6 +973,22 @@ fn bitbucket_repos_and_optional_prs() {
         "AAI_E2E_BITBUCKET_PROFILE",
         &["bitbucket", "prs", "get", &pr_number, "--repo", &repo],
     );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "diff", &pr_number, "--repo", &repo],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "diffstat", &pr_number, "--repo", &repo],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "commits", &pr_number, "--repo", &repo],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "activity", &pr_number, "--repo", &repo],
+    );
     let comment = cli_required(
         "AAI_E2E_BITBUCKET_PROFILE",
         &[
@@ -867,9 +1030,134 @@ fn bitbucket_repos_and_optional_prs() {
             &repo,
         ],
     );
+    if let Some(inline_path) = env_or_skip("AAI_E2E_BITBUCKET_SOURCE_PATH") {
+        let _ = cli_required(
+            "AAI_E2E_BITBUCKET_PROFILE",
+            &[
+                "bitbucket",
+                "prs",
+                "comments",
+                "create",
+                &pr_number,
+                "--repo",
+                &repo,
+                "--body",
+                "inline comment from aai-cli live e2e",
+                "--inline-path",
+                &inline_path,
+                "--inline-to",
+                "1",
+            ],
+        );
+        let _ = cli_required(
+            "AAI_E2E_BITBUCKET_PROFILE",
+            &[
+                "bitbucket",
+                "prs",
+                "comments",
+                "list",
+                &pr_number,
+                "--repo",
+                &repo,
+                "--inline-only",
+            ],
+        );
+    }
     let _ = cli_required(
         "AAI_E2E_BITBUCKET_PROFILE",
         &["bitbucket", "prs", "decline", &pr_number, "--repo", &repo],
+    );
+}
+
+#[test]
+#[ignore = "requires live Bitbucket credentials and read-only repo metadata"]
+fn bitbucket_read_only_endpoints() {
+    let Some(repo) = env_or_skip("AAI_E2E_BITBUCKET_REPO") else {
+        return;
+    };
+    let branches = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "branches", "list", "--repo", &repo],
+    );
+    let branch_name = env_or_skip("AAI_E2E_BITBUCKET_BRANCH").or_else(|| {
+        branches
+            .get("values")
+            .and_then(Value::as_array)
+            .and_then(|values| values.first())
+            .and_then(|branch| branch.get("name"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+    });
+    let Some(branch_name) = branch_name else {
+        eprintln!("skipping live E2E branch: no branch name available");
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "branches",
+            "get",
+            &branch_name,
+            "--repo",
+            &repo,
+        ],
+    );
+    let commits = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "commits",
+            "list",
+            "--repo",
+            &repo,
+            "--branch",
+            &branch_name,
+        ],
+    );
+    let commit_sha = env_or_skip("AAI_E2E_BITBUCKET_COMMIT_SHA").or_else(|| {
+        commits
+            .get("values")
+            .and_then(Value::as_array)
+            .and_then(|values| values.first())
+            .and_then(|commit| commit.get("hash"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+    });
+    let Some(commit_sha) = commit_sha else {
+        eprintln!("skipping live E2E branch: no commit SHA available");
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "commits", "get", &commit_sha, "--repo", &repo],
+    );
+    let Some(source_path) = env_or_skip("AAI_E2E_BITBUCKET_SOURCE_PATH") else {
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "source",
+            "get",
+            &commit_sha,
+            &source_path,
+            "--repo",
+            &repo,
+        ],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "source",
+            "history",
+            &commit_sha,
+            &source_path,
+            "--repo",
+            &repo,
+        ],
     );
 }
 
