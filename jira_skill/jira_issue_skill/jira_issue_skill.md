@@ -359,3 +359,113 @@ aai-cli jira issues comments create SCRUM-1 --body "Confirmed fix is deployed to
   "jsdPublic": true
 }
 ```
+
+---
+
+## issues attachments list
+
+List attachments on an issue. Returns trimmed attachment objects (avatar URLs and self-links stripped).
+
+```
+aai-cli jira issues attachments list <ISSUE_KEY_OR_ID>
+```
+
+| Argument | Required | Description |
+|---|---|---|
+| `ISSUE_KEY_OR_ID` | **yes** | Issue key or numeric ID |
+
+**Example**
+
+```
+aai-cli jira issues attachments list SCRUM-1
+```
+
+```json
+{
+  "attachments": [
+    {
+      "author": {
+        "accountId": "712020:3fd582db-3261-4930-b192-171d1cb74d1f",
+        "displayName": "Marselle Wing"
+      },
+      "created": "2026-05-27T10:01:11.133+0300",
+      "filename": "jira_smoke.txt",
+      "id": "10000",
+      "mimeType": "text/plain",
+      "size": 33
+    }
+  ],
+  "total": 1
+}
+```
+
+Use `id` from this response as `<ATTACHMENT_ID>` in the download command.
+
+---
+
+## issues attachments download
+
+Download an attachment's binary content to a local file.
+
+```
+aai-cli jira issues attachments download <ATTACHMENT_ID> --output <PATH>
+```
+
+| Argument / Flag | Required | Description |
+|---|---|---|
+| `ATTACHMENT_ID` | **yes** | Numeric attachment ID (from `attachments list`) |
+| `--output` | **yes** | Local file path to write the downloaded content |
+
+**Example**
+
+```
+aai-cli jira issues attachments download 10000 --output /tmp/jira_smoke.txt
+```
+
+```json
+{
+  "bytes": 33,
+  "output": "/tmp/jira_smoke.txt"
+}
+```
+
+---
+
+## issues attachments upload
+
+Upload a local file as an attachment to an issue.
+
+```
+aai-cli jira issues attachments upload <ISSUE_KEY_OR_ID> --file <PATH>
+```
+
+| Argument / Flag | Required | Description |
+|---|---|---|
+| `ISSUE_KEY_OR_ID` | **yes** | Issue key or numeric ID |
+| `--file` | **yes** | Local file path to upload |
+
+Returns an array of attachment objects (raw Jira response). On success there will be exactly one element matching the uploaded file.
+
+**Example**
+
+```
+aai-cli jira issues attachments upload SCRUM-1 --file /tmp/report.pdf
+```
+
+```json
+[
+  {
+    "author": {
+      "accountId": "712020:3fd582db-3261-4930-b192-171d1cb74d1f",
+      "displayName": "Marselle Wing",
+      "emailAddress": "marsellewing@gmail.com"
+    },
+    "content": "https://example.atlassian.net/rest/api/2/attachment/content/10000",
+    "created": "2026-05-27T10:01:11.133+0300",
+    "filename": "report.pdf",
+    "id": "10000",
+    "mimeType": "application/pdf",
+    "size": 204800
+  }
+]
+```

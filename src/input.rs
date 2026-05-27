@@ -40,11 +40,6 @@ pub fn set_string(value: &mut Value, key: &str, field: &Option<String>) {
     }
 }
 
-pub fn set_u64(value: &mut Value, key: &str, field: Option<u64>) {
-    if let Some(field) = field {
-        ensure_object(value).insert(key.to_string(), json!(field));
-    }
-}
 
 pub fn ensure_object(value: &mut Value) -> &mut Map<String, Value> {
     if !value.is_object() {

@@ -111,6 +111,81 @@ impl ApiClient {
             ))
         }
     }
+
+    pub async fn upload(
+        &self,
+        service: &'static str,
+        operation: &'static str,
+        profile: &Profile,
+        url: String,
+        file_path: &str,
+        comment: Option<&str>,
+    ) -> Result<Value, AppError> {
+        let file_bytes = std::fs::read(file_path).map_err(|e| {
+            AppError::internal(service, operation, format!("failed to read file: {e}"))
+        })?;
+        let filename = std::path::Path::new(file_path)
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "file".to_string());
+
+        let boundary = "----AaiCliBoundary7b2c4e9f1d3a6b8c";
+        let mut body: Vec<u8> = Vec::new();
+
+        // file part
+        let file_header = format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+        );
+        body.extend_from_slice(file_header.as_bytes());
+        body.extend_from_slice(&file_bytes);
+        body.extend_from_slice(b"\r\n");
+
+        // optional comment part
+        if let Some(c) = comment {
+            let comment_header =
+                format!("--{boundary}\r\nContent-Disposition: form-data; name=\"comment\"\r\n\r\n");
+            body.extend_from_slice(comment_header.as_bytes());
+            body.extend_from_slice(c.as_bytes());
+            body.extend_from_slice(b"\r\n");
+        }
+
+        // closing boundary
+        body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
+
+        let content_type = format!("multipart/form-data; boundary={boundary}");
+        let mut request = self
+            .client
+            .post(&url)
+            .body(body)
+            .header("Content-Type", content_type);
+        request = apply_auth(request, service, operation, profile)?;
+        request = request.header("X-Atlassian-Token", "no-check");
+
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AppError::internal(service, operation, format!("request failed: {e}")))?;
+        let status = response.status();
+        let text = response.text().await.map_err(|e| {
+            AppError::internal(service, operation, format!("failed to read response: {e}"))
+        })?;
+        let parsed = if text.trim().is_empty() {
+            Value::Object(serde_json::Map::new())
+        } else {
+            serde_json::from_str(&text).unwrap_or(Value::String(text))
+        };
+        if status.is_success() {
+            Ok(parsed)
+        } else {
+            Err(AppError::api(
+                service,
+                operation,
+                status,
+                format!("provider returned HTTP {}", status.as_u16()),
+                Some(parsed),
+            ))
+        }
+    }
 }
 
 fn apply_auth(
