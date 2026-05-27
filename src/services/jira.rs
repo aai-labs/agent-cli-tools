@@ -7,7 +7,7 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{enc, site_url, write_download, CtxProfile},
+    services::shared::{enc, pick, site_url, write_download, CtxProfile},
 };
 
 pub(crate) async fn dispatch(
@@ -810,18 +810,6 @@ fn jql_updated_since_clause(value: &str) -> String {
     } else {
         format!("updated >= {}", jql_quote(value))
     }
-}
-
-fn pick(src: &Value, keys: &[&str]) -> Value {
-    let mut out = serde_json::Map::new();
-    if let Some(obj) = src.as_object() {
-        for k in keys {
-            if let Some(v) = obj.get(*k) {
-                out.insert((*k).to_string(), v.clone());
-            }
-        }
-    }
-    Value::Object(out)
 }
 
 fn trim_issue(src: &Value) -> Value {
