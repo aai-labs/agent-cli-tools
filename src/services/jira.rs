@@ -7,7 +7,7 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{enc, site_url, CtxProfile},
+    services::shared::{enc, pick, site_url, write_download, CtxProfile},
 };
 
 pub(crate) async fn dispatch(
@@ -132,6 +132,17 @@ pub(crate) async fn dispatch(
                             Some(body),
                         )
                         .await
+                }
+            },
+            JiraIssuesAction::Attachments(command) => match command.action {
+                JiraIssueAttachmentsAction::List(args) => {
+                    list_issue_attachments(client, ctx, args).await
+                }
+                JiraIssueAttachmentsAction::Download(args) => {
+                    download_issue_attachment(client, ctx, args).await
+                }
+                JiraIssueAttachmentsAction::Upload(args) => {
+                    upload_issue_attachment(client, ctx, args).await
                 }
             },
         },
@@ -801,18 +812,6 @@ fn jql_updated_since_clause(value: &str) -> String {
     }
 }
 
-fn pick(src: &Value, keys: &[&str]) -> Value {
-    let mut out = serde_json::Map::new();
-    if let Some(obj) = src.as_object() {
-        for k in keys {
-            if let Some(v) = obj.get(*k) {
-                out.insert((*k).to_string(), v.clone());
-            }
-        }
-    }
-    Value::Object(out)
-}
-
 fn trim_issue(src: &Value) -> Value {
     let mut out = serde_json::Map::new();
     let Some(obj) = src.as_object() else {
@@ -939,6 +938,101 @@ fn fields_object(value: &mut Value) -> &mut serde_json::Map<String, Value> {
         .entry("fields")
         .or_insert_with(|| Value::Object(Default::default()));
     input::ensure_object(fields)
+}
+
+async fn list_issue_attachments(
+    client: &ApiClient,
+    ctx: &Context,
+    args: JiraIssueAttachmentsList,
+) -> Result<Value, AppError> {
+    let base = site_url(ctx.profile(), "jira", "issues.attachments.list")?;
+    let url = format!(
+        "{base}/rest/api/3/issue/{}?fields=attachment",
+        enc(&args.issue)
+    );
+    let issue = client
+        .request(
+            "jira",
+            "issues.attachments.list",
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await?;
+    let attachments = issue
+        .get("fields")
+        .and_then(|f| f.get("attachment"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let trimmed: Vec<Value> = attachments.iter().map(trim_jira_attachment).collect();
+    let total = trimmed.len();
+    Ok(json!({ "attachments": trimmed, "total": total }))
+}
+
+async fn download_issue_attachment(
+    client: &ApiClient,
+    ctx: &Context,
+    args: JiraAttachmentDownload,
+) -> Result<Value, AppError> {
+    let base = site_url(ctx.profile(), "jira", "issues.attachments.download")?;
+    let meta_url = format!("{base}/rest/api/3/attachment/{}", enc(&args.attachment_id));
+    let meta = client
+        .request(
+            "jira",
+            "issues.attachments.download",
+            ctx.profile(),
+            Method::GET,
+            meta_url,
+            None,
+        )
+        .await?;
+    let dl_url = meta
+        .get("content")
+        .and_then(Value::as_str)
+        .ok_or_else(|| {
+            AppError::internal(
+                "jira",
+                "issues.attachments.download",
+                "missing content URL in attachment metadata",
+            )
+        })?
+        .to_string();
+    let bytes = client
+        .download("jira", "issues.attachments.download", ctx.profile(), dl_url)
+        .await?;
+    write_download("jira", "issues.attachments.download", &args.output, &bytes)
+}
+
+async fn upload_issue_attachment(
+    client: &ApiClient,
+    ctx: &Context,
+    args: JiraAttachmentUpload,
+) -> Result<Value, AppError> {
+    let base = site_url(ctx.profile(), "jira", "issues.attachments.upload")?;
+    let url = format!("{base}/rest/api/2/issue/{}/attachments", enc(&args.issue));
+    client
+        .upload(
+            "jira",
+            "issues.attachments.upload",
+            ctx.profile(),
+            url,
+            &args.file,
+            None,
+        )
+        .await
+}
+
+fn trim_jira_attachment(src: &Value) -> Value {
+    let mut out = pick(src, &["id", "filename", "mimeType", "size", "created"]);
+    if let Some(author) = src.get("author") {
+        out.as_object_mut().unwrap().insert(
+            "author".to_string(),
+            pick(author, &["accountId", "displayName"]),
+        );
+    }
+    out
 }
 
 #[cfg(test)]

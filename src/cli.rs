@@ -81,6 +81,7 @@ pub enum JiraIssuesAction {
     Update(JiraIssueUpdate),
     Delete(IdArg),
     Comments(JiraIssueCommentsCommand),
+    Attachments(JiraIssueAttachmentsCommand),
 }
 
 #[derive(Debug, Args)]
@@ -116,6 +117,38 @@ pub struct JiraIssueCommentsCreate {
     pub json: Option<String>,
     #[arg(long)]
     pub body: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueAttachmentsCommand {
+    #[command(subcommand)]
+    pub action: JiraIssueAttachmentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraIssueAttachmentsAction {
+    List(JiraIssueAttachmentsList),
+    Download(JiraAttachmentDownload),
+    Upload(JiraAttachmentUpload),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueAttachmentsList {
+    pub issue: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraAttachmentDownload {
+    pub attachment_id: String,
+    #[arg(long)]
+    pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraAttachmentUpload {
+    pub issue: String,
+    #[arg(long)]
+    pub file: String,
 }
 
 #[derive(Debug, Args)]
@@ -289,13 +322,30 @@ pub struct ConfluenceCommand {
 pub enum ConfluenceResource {
     Spaces(ConfluenceSpacesCommand),
     Pages(ConfluencePagesCommand),
-    Search(ConfluenceSearch),
 }
 
 #[derive(Debug, Args)]
 pub struct ConfluenceSpacesCommand {
     #[command(subcommand)]
-    pub action: ListGetAction,
+    pub action: ConfluenceSpacesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfluenceSpacesAction {
+    List(ConfluenceSpacesList),
+    Get(IdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluenceSpacesList {
+    #[arg(long = "type")]
+    pub space_type: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub key: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
@@ -306,12 +356,95 @@ pub struct ConfluencePagesCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum ConfluencePagesAction {
-    List(LimitArg),
+    List(ConfluencePagesList),
     Get(IdArg),
     Create(ConfluencePageCreate),
     Update(ConfluencePageUpdate),
     Move(ConfluencePageMove),
     Delete(IdArg),
+    Comments(ConfluencePageCommentsCommand),
+    Attachments(ConfluencePageAttachmentsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageCommentsCommand {
+    #[command(subcommand)]
+    pub action: ConfluencePageCommentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfluencePageCommentsAction {
+    List(ConfluencePageCommentsList),
+    Create(ConfluencePageCommentsCreate),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageCommentsList {
+    pub page_id: String,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageCommentsCreate {
+    pub page_id: String,
+    #[arg(long)]
+    pub body: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long = "reply-to")]
+    pub reply_to: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsCommand {
+    #[command(subcommand)]
+    pub action: ConfluencePageAttachmentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfluencePageAttachmentsAction {
+    List(ConfluencePageAttachmentsList),
+    Download(ConfluencePageAttachmentsDownload),
+    Upload(ConfluencePageAttachmentsUpload),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsList {
+    pub page_id: String,
+    #[arg(long, default_value_t = 25)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsDownload {
+    pub page_id: String,
+    pub attachment_id: String,
+    #[arg(long)]
+    pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsUpload {
+    pub page_id: String,
+    #[arg(long)]
+    pub file: String,
+    #[arg(long)]
+    pub comment: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePagesList {
+    #[arg(long)]
+    pub space: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub parent: Option<String>,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
@@ -367,16 +500,6 @@ impl ConfluenceMovePosition {
             Self::Append => "append",
         }
     }
-}
-
-#[derive(Debug, Args)]
-pub struct ConfluenceSearch {
-    #[arg(long, conflicts_with = "query")]
-    pub cql: Option<String>,
-    #[arg(long, conflicts_with = "cql")]
-    pub query: Option<String>,
-    #[arg(long, default_value_t = 25)]
-    pub limit: u32,
 }
 
 #[derive(Debug, Args)]

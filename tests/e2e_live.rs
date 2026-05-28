@@ -435,6 +435,267 @@ fn confluence_page_crud_and_spaces() {
 }
 
 #[test]
+#[ignore = "requires live Confluence credentials and a disposable page"]
+fn confluence_page_comments_crud() {
+    let Some(space_id) = env_or_skip("AAI_E2E_CONFLUENCE_SPACE_ID") else {
+        return;
+    };
+    let title = unique("aai-e2e-comments");
+
+    let created_page = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "create",
+            "--space-id",
+            &space_id,
+            "--title",
+            &title,
+            "--body",
+            "page for comments e2e",
+        ],
+    );
+    let page_id = str_at(&created_page, &["id"]).to_string();
+
+    // list before any comments
+    let empty = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "comments", "list", &page_id],
+    );
+    assert_eq!(empty["page_comments"].as_array().unwrap().len(), 0);
+
+    // create top-level comment
+    let top = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "comments",
+            "create",
+            &page_id,
+            "--body",
+            "top-level comment from e2e",
+        ],
+    );
+    let comment_id = str_at(&top, &["id"]).to_string();
+
+    // create reply
+    let reply = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "comments",
+            "create",
+            &page_id,
+            "--body",
+            "reply from e2e",
+            "--reply-to",
+            &comment_id,
+        ],
+    );
+    let reply_id = str_at(&reply, &["id"]).to_string();
+    assert_eq!(str_at(&reply, &["parentCommentId"]), comment_id);
+
+    // list should show top-level with nested reply
+    let listed = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "comments", "list", &page_id],
+    );
+    let page_comments = listed["page_comments"].as_array().unwrap();
+    assert_eq!(page_comments.len(), 1);
+    let replies = page_comments[0]["replies"].as_array().unwrap();
+    assert_eq!(replies.len(), 1);
+    assert_eq!(str_at(&replies[0], &["id"]), reply_id);
+
+    let _ = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "delete", &page_id],
+    );
+}
+
+#[test]
+#[ignore = "requires live Confluence credentials and a disposable space"]
+fn confluence_page_attachments_crud() {
+    let Some(space_id) = env_or_skip("AAI_E2E_CONFLUENCE_SPACE_ID") else {
+        return;
+    };
+    let title = unique("aai-e2e-attachments");
+
+    let created_page = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "create",
+            "--space-id",
+            &space_id,
+            "--title",
+            &title,
+            "--body",
+            "page for attachments e2e",
+        ],
+    );
+    let page_id = str_at(&created_page, &["id"]).to_string();
+
+    // write a temp file to upload
+    let tmp = std::env::temp_dir().join("aai_e2e_attachment.txt");
+    std::fs::write(&tmp, b"hello from aai-cli e2e").unwrap();
+    let tmp_path = tmp.to_str().unwrap();
+
+    // list before any attachments — expect empty
+    let empty = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "attachments", "list", &page_id],
+    );
+    assert_eq!(empty["results"].as_array().unwrap().len(), 0);
+
+    // upload
+    let uploaded = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "attachments",
+            "upload",
+            &page_id,
+            "--file",
+            tmp_path,
+            "--comment",
+            "e2e upload",
+        ],
+    );
+    let attachment_id = str_at(&uploaded, &["id"]).to_string();
+
+    // list should show the uploaded attachment
+    let listed = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "attachments", "list", &page_id],
+    );
+    let results = listed["results"].as_array().unwrap();
+    assert_eq!(results.len(), 1);
+    assert_eq!(str_at(&results[0], &["id"]), attachment_id);
+
+    // download to a temp path and verify content
+    let dl_path = std::env::temp_dir().join("aai_e2e_downloaded.txt");
+    let dl_path_str = dl_path.to_str().unwrap();
+    let _ = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "attachments",
+            "download",
+            &page_id,
+            &attachment_id,
+            "--output",
+            dl_path_str,
+        ],
+    );
+    let content = std::fs::read(&dl_path).unwrap();
+    assert!(!content.is_empty());
+
+    let _ = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "delete", &page_id],
+    );
+    let _ = std::fs::remove_file(&tmp);
+    let _ = std::fs::remove_file(&dl_path);
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable project"]
+fn jira_issue_attachments_crud() {
+    let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {
+        return;
+    };
+
+    let created_issue = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "create",
+            "--project",
+            &project,
+            "--summary",
+            &unique("aai-e2e-attachments"),
+            "--issue-type",
+            "Task",
+        ],
+    );
+    let issue_key = str_at(&created_issue, &["key"]).to_string();
+
+    // write a temp file
+    let tmp = std::env::temp_dir().join("aai_e2e_jira_attachment.txt");
+    std::fs::write(&tmp, b"hello from jira e2e").unwrap();
+    let tmp_path = tmp.to_str().unwrap();
+
+    // list before upload — expect empty
+    let empty = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "attachments", "list", &issue_key],
+    );
+    assert_eq!(empty["total"].as_u64().unwrap(), 0);
+
+    // upload
+    let uploaded_arr = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "attachments",
+            "upload",
+            &issue_key,
+            "--file",
+            tmp_path,
+        ],
+    );
+    // Jira returns an array on upload success
+    let attachment_id = uploaded_arr
+        .as_array()
+        .and_then(|a| a.first())
+        .and_then(|o| o.get("id"))
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
+
+    // list should show the uploaded attachment
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "attachments", "list", &issue_key],
+    );
+    assert_eq!(listed["total"].as_u64().unwrap(), 1);
+    assert_eq!(str_at(&listed["attachments"][0], &["id"]), attachment_id);
+
+    // download
+    let dl_path = std::env::temp_dir().join("aai_e2e_jira_downloaded.txt");
+    let dl_path_str = dl_path.to_str().unwrap();
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "attachments",
+            "download",
+            &attachment_id,
+            "--output",
+            dl_path_str,
+        ],
+    );
+    let content = std::fs::read(&dl_path).unwrap();
+    assert!(!content.is_empty());
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "delete", &issue_key],
+    );
+    let _ = std::fs::remove_file(&tmp);
+    let _ = std::fs::remove_file(&dl_path);
+}
+
+#[test]
 #[ignore = "requires live GitHub credentials and a disposable repo"]
 fn github_issue_crud_repos_and_optional_prs() {
     let created = cli_required(

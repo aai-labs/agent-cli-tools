@@ -255,11 +255,11 @@ aai-cli jira issues search --jql 'key = ENG-123' --fields key,summary,status
 
 Jira search defaults to agent-useful fields: `key,summary,status,issuetype,assignee,created,updated,description,project`. Use `--fields` to reduce payload size.
 
-Confluence search supports raw CQL or a text query helper:
+Confluence list commands return a **trimmed response** (per-resource allowlist) — `_links`, icons, `description`, and full page bodies are dropped. Filter `pages list` and `spaces list` with structured flags; CQL is not exposed. Multi-value flags accept comma-separated values (e.g. `--key DOCS,ENG`).
 
 ```bash
-aai-cli confluence search --cql 'space = OOP and type = page' --limit 25
-aai-cli confluence search --query 'release notes' --limit 10
+aai-cli confluence pages list --space DOCS --status current --limit 10
+aai-cli confluence spaces list --type global
 ```
 
 Confluence page moves are relative to a target page. Use `append` to make the page a child of the target. Use `before` or `after` only when you intentionally want sibling ordering; moving relative to top-level pages can make pages hard to find in the UI.
@@ -297,6 +297,9 @@ aai-cli jira issues delete <issue-key-or-id>
 aai-cli jira issues comments list <issue-key-or-id> [--limit N]
 aai-cli jira issues comments get <issue-key-or-id> <comment-id>
 aai-cli jira issues comments create <issue-key-or-id> [--json <path|->] [--body TEXT]
+aai-cli jira issues attachments list <issue-key-or-id>
+aai-cli jira issues attachments download <attachment-id> --output <path>
+aai-cli jira issues attachments upload <issue-key-or-id> --file <path>
 aai-cli jira projects list
 aai-cli jira projects get <project-key-or-id>
 aai-cli jira sprints list --board <board-id> [--state STATE] [--limit N]
@@ -307,17 +310,21 @@ aai-cli jira boards list [--type scrum|kanban|simple] [--project KEY] [--name TE
 aai-cli jira boards get <board-id>
 aai-cli jira users get <account-id>
 
-aai-cli confluence spaces list
+aai-cli confluence spaces list [--type global|personal|collaboration|knowledge_base] [--status current|archived] [--key KEY1[,KEY2,...]] [--limit N]
 aai-cli confluence spaces get <space-id-or-key>
-aai-cli confluence search --cql CQL [--limit N]
-aai-cli confluence search --query TEXT [--limit N]
-aai-cli confluence pages list
+aai-cli confluence pages list [--space <space-id-or-key>] [--status current|archived|deleted|trashed] [--parent <page-id>] [--title TEXT] [--limit N]
 aai-cli confluence pages get <page-id>
 aai-cli confluence pages create [--json <path|->] --space-id <space-id-or-key> --title TEXT [--body STORAGE_HTML]
 aai-cli confluence pages create [--json <path|->] --space-key <space-key> --title TEXT [--body STORAGE_HTML]
 aai-cli confluence pages update <page-id> [--json <path|->] [--title TEXT] [--body STORAGE_HTML] [--version N]
 aai-cli confluence pages move <page-id> --target-id <target-page-id> [--position append|before|after]
 aai-cli confluence pages delete <page-id>
+aai-cli confluence pages comments list <page-id> [--limit N]
+aai-cli confluence pages comments create <page-id> --body TEXT [--reply-to <comment-id>]
+aai-cli confluence pages comments create <page-id> --json <path|-> [--reply-to <comment-id>]
+aai-cli confluence pages attachments list <page-id> [--limit N]
+aai-cli confluence pages attachments download <page-id> <attachment-id> --output <path>
+aai-cli confluence pages attachments upload <page-id> --file <path> [--comment TEXT]
 
 aai-cli bitbucket repos list
 aai-cli bitbucket repos get <repo-slug|workspace/repo-slug>
