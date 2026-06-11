@@ -153,6 +153,16 @@ fn apply_auth(
                 .ok_or_else(|| AppError::auth(service, operation, "profile is missing token"))?;
             Ok(request.header("Authorization", format!("Zoho-oauthtoken {token}")))
         }
+        "pipedrive_personal_token" | "pipedrive-personal-token" => {
+            let token = profile
+                .api_token
+                .as_deref()
+                .or(profile.token.as_deref())
+                .ok_or_else(|| {
+                    AppError::auth(service, operation, "profile is missing api_token or token")
+                })?;
+            Ok(request.header("x-api-token", token))
+        }
         _ => {
             let token = profile
                 .token
@@ -161,5 +171,33 @@ fn apply_auth(
                 .ok_or_else(|| AppError::auth(service, operation, "profile is missing token"))?;
             Ok(request.bearer_auth(token))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use reqwest::Method;
+
+    #[test]
+    fn pipedrive_personal_token_uses_x_api_token_header() {
+        let client = Client::new();
+        let profile = Profile {
+            auth_type: Some("pipedrive_personal_token".to_string()),
+            api_token: Some("pd-token".to_string()),
+            ..Profile::default()
+        };
+        let request = apply_auth(
+            client.request(Method::GET, "https://api.pipedrive.com/api/v2/deals"),
+            "pipedrive",
+            "deals.list",
+            &profile,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+
+        assert_eq!(request.headers()["x-api-token"], "pd-token");
+        assert!(!request.headers().contains_key("authorization"));
     }
 }

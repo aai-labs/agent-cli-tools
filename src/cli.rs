@@ -24,6 +24,7 @@ pub enum Command {
     Github(GithubCommand),
     Email(EmailCommand),
     Calendar(CalendarCommand),
+    Pipedrive(PipedriveCommand),
     Secrets(SecretsCommand),
 }
 
@@ -729,6 +730,474 @@ pub struct CalendarEventUpdate {
     pub start: Option<String>,
     #[arg(long)]
     pub end: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveCommand {
+    #[command(subcommand)]
+    pub resource: PipedriveResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveResource {
+    Leads(PipedriveLeadsCommand),
+    Persons(PipedrivePersonsCommand),
+    Organizations(PipedriveOrganizationsCommand),
+    Deals(PipedriveDealsCommand),
+    Labels(PipedriveLabelsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLeadsCommand {
+    #[command(subcommand)]
+    pub action: PipedriveLeadsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveLeadsAction {
+    List(PipedriveLeadList),
+    Search(PipedriveLeadSearch),
+    Get(PipedriveIdArg),
+    Create(PipedriveLeadWrite),
+    Update(PipedriveLeadUpdate),
+    Delete(PipedriveIdArg),
+    Convert(PipedriveLeadConvert),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLeadList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub organization_id: Option<String>,
+    #[arg(long)]
+    pub filter_id: Option<String>,
+    #[arg(long)]
+    pub updated_since: Option<String>,
+    #[arg(long)]
+    pub sort: Option<String>,
+    #[arg(long)]
+    pub archived: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLeadSearch {
+    #[arg(long)]
+    pub term: String,
+    #[arg(long)]
+    pub fields: Option<String>,
+    #[arg(long)]
+    pub exact_match: bool,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub organization_id: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLeadWrite {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub title: String,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub organization_id: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLeadUpdate {
+    pub id: String,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub organization_id: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLeadConvert {
+    pub id: String,
+    #[arg(long)]
+    pub json: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedrivePersonsCommand {
+    #[command(subcommand)]
+    pub action: PipedrivePersonsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedrivePersonsAction {
+    List(PipedrivePersonList),
+    Search(PipedrivePersonSearch),
+    Get(PipedriveGetWithLabels),
+    Create(PipedrivePersonWrite),
+    Update(PipedrivePersonUpdate),
+    Delete(PipedriveIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedrivePersonList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub filter_id: Option<String>,
+    #[arg(long)]
+    pub ids: Option<String>,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    #[arg(long)]
+    pub deal_id: Option<String>,
+    #[arg(long)]
+    pub updated_since: Option<String>,
+    #[arg(long)]
+    pub updated_until: Option<String>,
+    #[arg(long)]
+    pub sort_by: Option<String>,
+    #[arg(long, value_enum)]
+    pub sort_direction: Option<PipedriveSortDirection>,
+    #[arg(long)]
+    pub include_labels: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedrivePersonSearch {
+    #[arg(long)]
+    pub term: String,
+    #[arg(long)]
+    pub fields: Option<String>,
+    #[arg(long)]
+    pub exact_match: bool,
+    #[arg(long)]
+    pub organization_id: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedrivePersonWrite {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub name: String,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    #[arg(long)]
+    pub email: Option<String>,
+    #[arg(long)]
+    pub phone: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedrivePersonUpdate {
+    pub id: String,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    #[arg(long)]
+    pub email: Option<String>,
+    #[arg(long)]
+    pub phone: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveOrganizationsCommand {
+    #[command(subcommand)]
+    pub action: PipedriveOrganizationsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveOrganizationsAction {
+    List(PipedriveOrganizationList),
+    Search(PipedriveOrganizationSearch),
+    Get(PipedriveGetWithLabels),
+    Create(PipedriveOrganizationWrite),
+    Update(PipedriveOrganizationUpdate),
+    Delete(PipedriveIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveOrganizationList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub filter_id: Option<String>,
+    #[arg(long)]
+    pub ids: Option<String>,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub updated_since: Option<String>,
+    #[arg(long)]
+    pub updated_until: Option<String>,
+    #[arg(long)]
+    pub sort_by: Option<String>,
+    #[arg(long, value_enum)]
+    pub sort_direction: Option<PipedriveSortDirection>,
+    #[arg(long)]
+    pub include_labels: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveOrganizationSearch {
+    #[arg(long)]
+    pub term: String,
+    #[arg(long)]
+    pub fields: Option<String>,
+    #[arg(long)]
+    pub exact_match: bool,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveOrganizationWrite {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub name: String,
+    #[arg(long)]
+    pub address: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveOrganizationUpdate {
+    pub id: String,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub address: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveDealsCommand {
+    #[command(subcommand)]
+    pub action: PipedriveDealsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveDealsAction {
+    List(PipedriveDealList),
+    Search(PipedriveDealSearch),
+    Get(PipedriveGetWithLabels),
+    Create(PipedriveDealWrite),
+    Update(PipedriveDealUpdate),
+    Delete(PipedriveIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveDealList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub filter_id: Option<String>,
+    #[arg(long)]
+    pub ids: Option<String>,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    #[arg(long)]
+    pub pipeline_id: Option<String>,
+    #[arg(long)]
+    pub stage_id: Option<String>,
+    #[arg(long, value_enum)]
+    pub status: Option<PipedriveDealStatus>,
+    #[arg(long)]
+    pub updated_since: Option<String>,
+    #[arg(long)]
+    pub updated_until: Option<String>,
+    #[arg(long)]
+    pub sort_by: Option<String>,
+    #[arg(long, value_enum)]
+    pub sort_direction: Option<PipedriveSortDirection>,
+    #[arg(long)]
+    pub include_labels: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveDealSearch {
+    #[arg(long)]
+    pub term: String,
+    #[arg(long)]
+    pub fields: Option<String>,
+    #[arg(long)]
+    pub exact_match: bool,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub organization_id: Option<String>,
+    #[arg(long, value_enum)]
+    pub status: Option<PipedriveSearchDealStatus>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveDealWrite {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub title: String,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    #[arg(long)]
+    pub value: Option<f64>,
+    #[arg(long)]
+    pub currency: Option<String>,
+    #[arg(long)]
+    pub pipeline_id: Option<String>,
+    #[arg(long)]
+    pub stage_id: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveDealUpdate {
+    pub id: String,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    #[arg(long)]
+    pub value: Option<f64>,
+    #[arg(long)]
+    pub currency: Option<String>,
+    #[arg(long)]
+    pub pipeline_id: Option<String>,
+    #[arg(long)]
+    pub stage_id: Option<String>,
+    #[arg(long)]
+    pub label_ids: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLabelsCommand {
+    #[command(subcommand)]
+    pub resource: PipedriveLabelResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveLabelResource {
+    Leads(PipedriveLeadLabelsCommand),
+    Deals(PipedriveLabelListCommand),
+    Persons(PipedriveLabelListCommand),
+    Organizations(PipedriveLabelListCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLeadLabelsCommand {
+    #[command(subcommand)]
+    pub action: PipedriveLeadLabelsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveLeadLabelsAction {
+    List,
+    Create(PipedriveLabelCreate),
+    Update(PipedriveLabelUpdate),
+    Delete(PipedriveIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLabelListCommand {
+    #[command(subcommand)]
+    pub action: PipedriveLabelListAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveLabelListAction {
+    List,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLabelCreate {
+    #[arg(long)]
+    pub name: String,
+    #[arg(long)]
+    pub color: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveLabelUpdate {
+    pub id: String,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveIdArg {
+    pub id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveGetWithLabels {
+    pub id: String,
+    #[arg(long)]
+    pub include_labels: bool,
+}
+
+#[derive(Clone, Debug, ValueEnum)]
+pub enum PipedriveSortDirection {
+    Asc,
+    Desc,
+}
+
+#[derive(Clone, Debug, ValueEnum)]
+pub enum PipedriveDealStatus {
+    Open,
+    Won,
+    Lost,
+    Deleted,
+}
+
+#[derive(Clone, Debug, ValueEnum)]
+pub enum PipedriveSearchDealStatus {
+    Open,
+    Won,
+    Lost,
 }
 
 #[derive(Debug, Subcommand)]

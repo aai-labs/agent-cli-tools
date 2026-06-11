@@ -13,6 +13,8 @@ Run `bash scripts/fetch-api-docs.sh` from the repository root to refresh the sna
 | GitHub | REST API | `docs/github/rest-api-openapi.json` |
 | Google | Gmail API | `docs/google/gmail/discovery-v1.json` |
 | Google | Calendar API | `docs/google/calendar/discovery-v3.json` |
+| Pipedrive | CRM API v1 | `docs/pipedrive/openapi-v1.json` |
+| Pipedrive | CRM API v2 | `docs/pipedrive/openapi-v2.json` |
 
 ## Developer Guides
 
@@ -29,6 +31,8 @@ GitHub docs include REST authentication, GitHub App authentication, fine-grained
 Google docs include Gmail and Calendar discovery docs, REST references, scopes, sync, push notifications, batch guidance, service accounts, and domain-wide delegation.
 
 Zoho docs include official Mail and Calendar HTML API references. Zoho does not appear to publish official OpenAPI specs for these products, so the saved docs are HTML pages plus the manifest.
+
+Pipedrive docs include official v1 and v2 OpenAPI specs, the API reference, personal API token guide, and v2 overview. The CLI uses v1 for leads/lead labels and v2 for deals, persons, organizations, and search where available.
 
 ## Local Reference Files
 

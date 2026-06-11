@@ -15,7 +15,8 @@ mkdir -p \
   "$DOCS_DIR/google/calendar" \
   "$DOCS_DIR/google/auth" \
   "$DOCS_DIR/zoho/mail" \
-  "$DOCS_DIR/zoho/calendar"
+  "$DOCS_DIR/zoho/calendar" \
+  "$DOCS_DIR/pipedrive"
 
 : > "$TMP_MANIFEST"
 
@@ -163,6 +164,12 @@ download_doc "zoho" "calendar" "list_events" "https://www.zoho.com/calendar/help
 download_doc "zoho" "calendar" "event_details" "https://www.zoho.com/calendar/help/api/get-event-details.html" "docs/zoho/calendar/get-event-details.html" "html"
 download_doc "zoho" "calendar" "create_event" "https://www.zoho.com/calendar/help/api/post-create-event.html" "docs/zoho/calendar/post-create-event.html" "html"
 download_doc "zoho" "calendar" "create_calendar" "https://www.zoho.com/calendar/help/api/post-create-calendar.html" "docs/zoho/calendar/post-create-calendar.html" "html"
+
+download_doc "pipedrive" "crm" "openapi_v1" "https://developers.pipedrive.com/docs/api/v1/openapi.json" "docs/pipedrive/openapi-v1.json" "json"
+download_doc "pipedrive" "crm" "openapi_v2" "https://developers.pipedrive.com/docs/api/v2/openapi.json" "docs/pipedrive/openapi-v2.json" "json"
+download_doc "pipedrive" "crm" "api_reference" "https://developers.pipedrive.com/docs/api/v1" "docs/pipedrive/api-reference.html" "html"
+download_doc "pipedrive" "crm" "auth_api_token" "https://pipedrive.readme.io/docs/how-to-find-the-api-token" "docs/pipedrive/how-to-find-api-token.html" "html"
+download_doc "pipedrive" "crm" "api_v2_overview" "https://pipedrive.readme.io/docs/pipedrive-api-v2" "docs/pipedrive/api-v2-overview.html" "html"
 
 python3 - "$TMP_MANIFEST" "$DOCS_DIR/manifest.json" <<'PY'
 import json

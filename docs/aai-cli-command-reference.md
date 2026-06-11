@@ -97,9 +97,60 @@ Move positions:
 
 Prefer `append` unless sibling ordering is required. Atlassian warns that `before`/`after` relative to top-level pages can move pages to the top level of a space, where they are harder to find in the UI.
 
+## Pipedrive
+
+Use Pipedrive's API resource terms directly: `leads`, `persons`, `organizations`, `deals`, and `labels`.
+
+```bash
+aai-cli pipedrive leads list [--limit N] [--owner-id ID] [--person-id ID] [--organization-id ID] [--filter-id ID] [--updated-since TS] [--sort SORT] [--archived]
+aai-cli pipedrive leads search --term TEXT [--fields LIST] [--exact-match] [--person-id ID] [--organization-id ID] [--limit N]
+aai-cli pipedrive leads get <lead-id>
+aai-cli pipedrive leads create [--json <path|->] --title TEXT [--person-id ID] [--organization-id ID] [--label-ids CSV]
+aai-cli pipedrive leads update <lead-id> [--json <path|->] [--title TEXT] [--person-id ID] [--organization-id ID] [--label-ids CSV]
+aai-cli pipedrive leads delete <lead-id>
+aai-cli pipedrive leads convert <lead-id> [--json <path|->]
+```
+
+```bash
+aai-cli pipedrive persons list [--limit N] [--filter-id ID] [--ids CSV] [--owner-id ID] [--org-id ID] [--deal-id ID] [--updated-since TS] [--updated-until TS] [--sort-by FIELD] [--sort-direction asc|desc] [--include-labels]
+aai-cli pipedrive persons search --term TEXT [--fields LIST] [--exact-match] [--organization-id ID] [--limit N]
+aai-cli pipedrive persons get <person-id> [--include-labels]
+aai-cli pipedrive persons create [--json <path|->] --name TEXT [--org-id ID] [--email EMAIL] [--phone PHONE] [--label-ids CSV]
+aai-cli pipedrive persons update <person-id> [--json <path|->] [--name TEXT] [--org-id ID] [--email EMAIL] [--phone PHONE] [--label-ids CSV]
+aai-cli pipedrive persons delete <person-id>
+```
+
+```bash
+aai-cli pipedrive organizations list [--limit N] [--filter-id ID] [--ids CSV] [--owner-id ID] [--updated-since TS] [--updated-until TS] [--sort-by FIELD] [--sort-direction asc|desc] [--include-labels]
+aai-cli pipedrive organizations search --term TEXT [--fields LIST] [--exact-match] [--limit N]
+aai-cli pipedrive organizations get <organization-id> [--include-labels]
+aai-cli pipedrive organizations create [--json <path|->] --name TEXT [--address TEXT] [--label-ids CSV]
+aai-cli pipedrive organizations update <organization-id> [--json <path|->] [--name TEXT] [--address TEXT] [--label-ids CSV]
+aai-cli pipedrive organizations delete <organization-id>
+```
+
+```bash
+aai-cli pipedrive deals list [--limit N] [--filter-id ID] [--ids CSV] [--owner-id ID] [--person-id ID] [--org-id ID] [--pipeline-id ID] [--stage-id ID] [--status open|won|lost|deleted] [--updated-since TS] [--updated-until TS] [--sort-by FIELD] [--sort-direction asc|desc] [--include-labels]
+aai-cli pipedrive deals search --term TEXT [--fields LIST] [--exact-match] [--person-id ID] [--organization-id ID] [--status open|won|lost] [--limit N]
+aai-cli pipedrive deals get <deal-id> [--include-labels]
+aai-cli pipedrive deals create [--json <path|->] --title TEXT [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
+aai-cli pipedrive deals update <deal-id> [--json <path|->] [--title TEXT] [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
+aai-cli pipedrive deals delete <deal-id>
+```
+
+```bash
+aai-cli pipedrive labels leads list
+aai-cli pipedrive labels leads create --name TEXT --color COLOR
+aai-cli pipedrive labels leads update <label-id> [--name TEXT] [--color COLOR]
+aai-cli pipedrive labels leads delete <label-id>
+aai-cli pipedrive labels deals list
+aai-cli pipedrive labels persons list
+aai-cli pipedrive labels organizations list
+```
+
 ## Pagination
 
-For implemented Jira and Confluence list/search commands, `aai-cli` follows provider pagination and aggregates results until it reaches `--limit` or the provider has no next page.
+For implemented Jira, Confluence, and Pipedrive list/search commands, `aai-cli` follows provider pagination and aggregates results until it reaches `--limit` or the provider has no next page.
 
 Covered operations:
 
@@ -109,6 +160,14 @@ Covered operations:
 - `confluence spaces list`
 - `confluence pages list`
 - `confluence search`
+- `pipedrive leads list`
+- `pipedrive leads search`
+- `pipedrive persons list`
+- `pipedrive persons search`
+- `pipedrive organizations list`
+- `pipedrive organizations search`
+- `pipedrive deals list`
+- `pipedrive deals search`
 
 Agents should set the smallest useful `--limit`. Large limits can increase latency and provider rate-limit pressure.
 

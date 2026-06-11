@@ -12,6 +12,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks eas
 - GitHub: repositories, issues, pull requests, PR comments, close/decline.
 - Email: Gmail REST profiles and Zoho SMTP/IMAP profiles.
 - Calendar: Google Calendar REST profiles and Zoho CalDAV profiles.
+- Pipedrive CRM: leads, persons, organizations, deals, and labels.
 - Local encrypted secrets: XChaCha20-Poly1305 secret store for tokens and app passwords.
 
 ## Quick Start
@@ -130,6 +131,13 @@ email = "agent@example.com"
 username = "agent@example.com"
 password_secret = "zoho.calendar_app_password"
 caldav_url = "https://calendar.zoho.com/caldav/<calendar-id>/events/"
+
+[profiles.pipedrive-work]
+provider = "pipedrive"
+auth_type = "pipedrive_personal_token"
+api_token_secret = "pipedrive.api_token"
+# Optional; defaults to https://api.pipedrive.com
+base_url = "https://api.pipedrive.com"
 ```
 
 ## Secrets
@@ -181,6 +189,7 @@ Resolution precedence is direct config value, env var, then encrypted secret ref
 - Bitbucket Cloud API/personal tokens use `basic_api_token` with Atlassian account `email` plus Bitbucket API token.
 - Bitbucket repository/workspace access tokens are distinct from user API tokens and should be modeled separately with bearer auth when added.
 - Google Gmail and Calendar REST profiles use `bearer_token`.
+- Pipedrive uses `pipedrive_personal_token` and sends `x-api-token`.
 - Zoho REST profiles use `zoho_oauth`.
 - Zoho app-password mail uses `transport = "smtp_imap"`.
 - Zoho app-password calendar uses `transport = "caldav"`.

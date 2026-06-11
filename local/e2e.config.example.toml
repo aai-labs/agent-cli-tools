@@ -87,3 +87,10 @@ password_env = "ZOHO_CALENDAR_APP_PASSWORD"
 # password_secret = "zoho.calendar_app_password"
 # Copy the exact CalDAV URL from Zoho Calendar Settings > Calendars > Integrate Calendar.
 caldav_url = "https://calendar.zoho.com/..."
+
+[profiles.pipedrive-work]
+provider = "pipedrive"
+auth_type = "pipedrive_personal_token"
+api_token_env = "PIPEDRIVE_API_TOKEN"
+# Optional; defaults to https://api.pipedrive.com.
+base_url = "https://api.pipedrive.com"

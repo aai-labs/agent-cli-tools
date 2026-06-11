@@ -536,3 +536,141 @@ fn zoho_calendar_event_crud() {
         &["calendar", "events", "delete", &id],
     );
 }
+
+#[test]
+#[ignore = "requires live Pipedrive credentials and disposable CRM records"]
+fn pipedrive_crm_crud_and_labels() {
+    let label = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &[
+            "pipedrive",
+            "labels",
+            "leads",
+            "create",
+            "--name",
+            &unique("aai-e2e-label"),
+            "--color",
+            "green",
+        ],
+    );
+    let lead_label_id = find_string(&label, &["id"])
+        .or_else(|| find_u64(&label, &["id"]).map(|id| id.to_string()))
+        .expect("Pipedrive lead label response missing id");
+
+    let org = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &[
+            "pipedrive",
+            "organizations",
+            "create",
+            "--name",
+            &unique("aai-e2e-org"),
+            "--address",
+            "1 Test Way",
+        ],
+    );
+    let org_id = find_u64(&org, &["id"])
+        .map(|id| id.to_string())
+        .expect("Pipedrive organization response missing id");
+
+    let person = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &[
+            "pipedrive",
+            "persons",
+            "create",
+            "--name",
+            &unique("aai-e2e-person"),
+            "--org-id",
+            &org_id,
+            "--email",
+            "aai-e2e@example.com",
+        ],
+    );
+    let person_id = find_u64(&person, &["id"])
+        .map(|id| id.to_string())
+        .expect("Pipedrive person response missing id");
+
+    let deal = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &[
+            "pipedrive",
+            "deals",
+            "create",
+            "--title",
+            &unique("aai-e2e-deal"),
+            "--person-id",
+            &person_id,
+            "--org-id",
+            &org_id,
+            "--value",
+            "10",
+            "--currency",
+            "USD",
+        ],
+    );
+    let deal_id = find_u64(&deal, &["id"])
+        .map(|id| id.to_string())
+        .expect("Pipedrive deal response missing id");
+
+    let lead = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &[
+            "pipedrive",
+            "leads",
+            "create",
+            "--title",
+            &unique("aai-e2e-lead"),
+            "--person-id",
+            &person_id,
+            "--organization-id",
+            &org_id,
+            "--label-ids",
+            &lead_label_id,
+        ],
+    );
+    let lead_id = find_string(&lead, &["id"]).expect("Pipedrive lead response missing id");
+
+    let _ = cli_required("AAI_E2E_PIPEDRIVE_PROFILE", &["pipedrive", "leads", "list"]);
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "leads", "get", &lead_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "persons", "get", &person_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "organizations", "get", &org_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "deals", "get", &deal_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "labels", "leads", "list"],
+    );
+
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "leads", "delete", &lead_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "deals", "delete", &deal_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "persons", "delete", &person_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "organizations", "delete", &org_id],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "labels", "leads", "delete", &lead_label_id],
+    );
+}

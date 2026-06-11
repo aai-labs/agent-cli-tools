@@ -1,0 +1,1097 @@
+use reqwest::Method;
+use serde_json::{json, Number, Value};
+
+use crate::{
+    cli::*,
+    config::Context,
+    error::AppError,
+    http::ApiClient,
+    input,
+    services::shared::{enc, pipedrive_base, CtxProfile},
+};
+
+pub(crate) async fn dispatch(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveCommand,
+) -> Result<Value, AppError> {
+    match command.resource {
+        PipedriveResource::Leads(command) => leads(client, ctx, command).await,
+        PipedriveResource::Persons(command) => persons(client, ctx, command).await,
+        PipedriveResource::Organizations(command) => organizations(client, ctx, command).await,
+        PipedriveResource::Deals(command) => deals(client, ctx, command).await,
+        PipedriveResource::Labels(command) => labels(client, ctx, command).await,
+    }
+}
+
+async fn leads(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveLeadsCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        PipedriveLeadsAction::List(args) => {
+            let mut query = Query::new();
+            query.push("owner_id", args.owner_id.as_deref());
+            query.push("person_id", args.person_id.as_deref());
+            query.push("organization_id", args.organization_id.as_deref());
+            query.push("filter_id", args.filter_id.as_deref());
+            query.push("updated_since", args.updated_since.as_deref());
+            query.push("sort", args.sort.as_deref());
+            let path = if args.archived {
+                "/v1/leads/archived"
+            } else {
+                "/v1/leads"
+            };
+            list_v1(client, ctx, "leads.list", path, query, args.limit).await
+        }
+        PipedriveLeadsAction::Search(args) => {
+            let mut query = Query::new();
+            query.push_value("term", &args.term);
+            query.push("fields", args.fields.as_deref());
+            query.push_bool("exact_match", args.exact_match);
+            query.push("person_id", args.person_id.as_deref());
+            query.push("organization_id", args.organization_id.as_deref());
+            search_v2(
+                client,
+                ctx,
+                "leads.search",
+                "/api/v2/leads/search",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedriveLeadsAction::Get(args) => {
+            get(client, ctx, "leads.get", "/v1/leads", &args.id).await
+        }
+        PipedriveLeadsAction::Create(args) => {
+            let body = lead_create_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "leads.create",
+                Method::POST,
+                "/v1/leads",
+                Some(body),
+            )
+            .await
+        }
+        PipedriveLeadsAction::Update(args) => {
+            let id = args.id.clone();
+            let body = lead_update_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "leads.update",
+                Method::PATCH,
+                &format!("/v1/leads/{}", enc(&id)),
+                Some(body),
+            )
+            .await
+        }
+        PipedriveLeadsAction::Delete(args) => {
+            delete(client, ctx, "leads.delete", "/v1/leads", &args.id).await
+        }
+        PipedriveLeadsAction::Convert(args) => {
+            let id = args.id.clone();
+            let body = input::read_json_arg("pipedrive", "leads.convert", args.json.as_deref())?;
+            request_json(
+                client,
+                ctx,
+                "leads.convert",
+                Method::POST,
+                &format!("/api/v2/leads/{}/convert/deal", enc(&id)),
+                Some(body),
+            )
+            .await
+        }
+    }
+}
+
+async fn persons(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedrivePersonsCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        PipedrivePersonsAction::List(args) => {
+            let mut query = Query::new();
+            query.push("filter_id", args.filter_id.as_deref());
+            query.push("ids", args.ids.as_deref());
+            query.push("owner_id", args.owner_id.as_deref());
+            query.push("org_id", args.org_id.as_deref());
+            query.push("deal_id", args.deal_id.as_deref());
+            query.push("updated_since", args.updated_since.as_deref());
+            query.push("updated_until", args.updated_until.as_deref());
+            query.push("sort_by", args.sort_by.as_deref());
+            query.push(
+                "sort_direction",
+                sort_direction(args.sort_direction.as_ref()),
+            );
+            query.push_bool("include_labels", args.include_labels);
+            list_v2(
+                client,
+                ctx,
+                "persons.list",
+                "/api/v2/persons",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedrivePersonsAction::Search(args) => {
+            let mut query = Query::new();
+            query.push_value("term", &args.term);
+            query.push("fields", args.fields.as_deref());
+            query.push_bool("exact_match", args.exact_match);
+            query.push("organization_id", args.organization_id.as_deref());
+            search_v2(
+                client,
+                ctx,
+                "persons.search",
+                "/api/v2/persons/search",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedrivePersonsAction::Get(args) => {
+            let mut query = Query::new();
+            query.push_bool("include_labels", args.include_labels);
+            get_with_query(
+                client,
+                ctx,
+                "persons.get",
+                "/api/v2/persons",
+                &args.id,
+                query,
+            )
+            .await
+        }
+        PipedrivePersonsAction::Create(args) => {
+            let body = person_create_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "persons.create",
+                Method::POST,
+                "/api/v2/persons",
+                Some(body),
+            )
+            .await
+        }
+        PipedrivePersonsAction::Update(args) => {
+            let id = args.id.clone();
+            let body = person_update_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "persons.update",
+                Method::PATCH,
+                &format!("/api/v2/persons/{}", enc(&id)),
+                Some(body),
+            )
+            .await
+        }
+        PipedrivePersonsAction::Delete(args) => {
+            delete(client, ctx, "persons.delete", "/api/v2/persons", &args.id).await
+        }
+    }
+}
+
+async fn organizations(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveOrganizationsCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        PipedriveOrganizationsAction::List(args) => {
+            let mut query = Query::new();
+            query.push("filter_id", args.filter_id.as_deref());
+            query.push("ids", args.ids.as_deref());
+            query.push("owner_id", args.owner_id.as_deref());
+            query.push("updated_since", args.updated_since.as_deref());
+            query.push("updated_until", args.updated_until.as_deref());
+            query.push("sort_by", args.sort_by.as_deref());
+            query.push(
+                "sort_direction",
+                sort_direction(args.sort_direction.as_ref()),
+            );
+            query.push_bool("include_labels", args.include_labels);
+            list_v2(
+                client,
+                ctx,
+                "organizations.list",
+                "/api/v2/organizations",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedriveOrganizationsAction::Search(args) => {
+            let mut query = Query::new();
+            query.push_value("term", &args.term);
+            query.push("fields", args.fields.as_deref());
+            query.push_bool("exact_match", args.exact_match);
+            search_v2(
+                client,
+                ctx,
+                "organizations.search",
+                "/api/v2/organizations/search",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedriveOrganizationsAction::Get(args) => {
+            let mut query = Query::new();
+            query.push_bool("include_labels", args.include_labels);
+            get_with_query(
+                client,
+                ctx,
+                "organizations.get",
+                "/api/v2/organizations",
+                &args.id,
+                query,
+            )
+            .await
+        }
+        PipedriveOrganizationsAction::Create(args) => {
+            let body = organization_create_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "organizations.create",
+                Method::POST,
+                "/api/v2/organizations",
+                Some(body),
+            )
+            .await
+        }
+        PipedriveOrganizationsAction::Update(args) => {
+            let id = args.id.clone();
+            let body = organization_update_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "organizations.update",
+                Method::PATCH,
+                &format!("/api/v2/organizations/{}", enc(&id)),
+                Some(body),
+            )
+            .await
+        }
+        PipedriveOrganizationsAction::Delete(args) => {
+            delete(
+                client,
+                ctx,
+                "organizations.delete",
+                "/api/v2/organizations",
+                &args.id,
+            )
+            .await
+        }
+    }
+}
+
+async fn deals(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveDealsCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        PipedriveDealsAction::List(args) => {
+            let mut query = Query::new();
+            query.push("filter_id", args.filter_id.as_deref());
+            query.push("ids", args.ids.as_deref());
+            query.push("owner_id", args.owner_id.as_deref());
+            query.push("person_id", args.person_id.as_deref());
+            query.push("org_id", args.org_id.as_deref());
+            query.push("pipeline_id", args.pipeline_id.as_deref());
+            query.push("stage_id", args.stage_id.as_deref());
+            query.push("status", deal_status(args.status.as_ref()));
+            query.push("updated_since", args.updated_since.as_deref());
+            query.push("updated_until", args.updated_until.as_deref());
+            query.push("sort_by", args.sort_by.as_deref());
+            query.push(
+                "sort_direction",
+                sort_direction(args.sort_direction.as_ref()),
+            );
+            query.push_bool("include_labels", args.include_labels);
+            list_v2(
+                client,
+                ctx,
+                "deals.list",
+                "/api/v2/deals",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedriveDealsAction::Search(args) => {
+            let mut query = Query::new();
+            query.push_value("term", &args.term);
+            query.push("fields", args.fields.as_deref());
+            query.push_bool("exact_match", args.exact_match);
+            query.push("person_id", args.person_id.as_deref());
+            query.push("organization_id", args.organization_id.as_deref());
+            query.push("status", search_deal_status(args.status.as_ref()));
+            search_v2(
+                client,
+                ctx,
+                "deals.search",
+                "/api/v2/deals/search",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedriveDealsAction::Get(args) => {
+            let mut query = Query::new();
+            query.push_bool("include_labels", args.include_labels);
+            get_with_query(client, ctx, "deals.get", "/api/v2/deals", &args.id, query).await
+        }
+        PipedriveDealsAction::Create(args) => {
+            let body = deal_create_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "deals.create",
+                Method::POST,
+                "/api/v2/deals",
+                Some(body),
+            )
+            .await
+        }
+        PipedriveDealsAction::Update(args) => {
+            let id = args.id.clone();
+            let body = deal_update_body(args)?;
+            request_json(
+                client,
+                ctx,
+                "deals.update",
+                Method::PATCH,
+                &format!("/api/v2/deals/{}", enc(&id)),
+                Some(body),
+            )
+            .await
+        }
+        PipedriveDealsAction::Delete(args) => {
+            delete(client, ctx, "deals.delete", "/api/v2/deals", &args.id).await
+        }
+    }
+}
+
+async fn labels(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveLabelsCommand,
+) -> Result<Value, AppError> {
+    match command.resource {
+        PipedriveLabelResource::Leads(command) => match command.action {
+            PipedriveLeadLabelsAction::List => {
+                request_json(
+                    client,
+                    ctx,
+                    "labels.leads.list",
+                    Method::GET,
+                    "/v1/leadLabels",
+                    None,
+                )
+                .await
+            }
+            PipedriveLeadLabelsAction::Create(args) => {
+                request_json(
+                    client,
+                    ctx,
+                    "labels.leads.create",
+                    Method::POST,
+                    "/v1/leadLabels",
+                    Some(json!({ "name": args.name, "color": args.color })),
+                )
+                .await
+            }
+            PipedriveLeadLabelsAction::Update(args) => {
+                let mut body = json!({});
+                input::set_string(&mut body, "name", &args.name);
+                input::set_string(&mut body, "color", &args.color);
+                request_json(
+                    client,
+                    ctx,
+                    "labels.leads.update",
+                    Method::PATCH,
+                    &format!("/v1/leadLabels/{}", enc(&args.id)),
+                    Some(body),
+                )
+                .await
+            }
+            PipedriveLeadLabelsAction::Delete(args) => {
+                delete(
+                    client,
+                    ctx,
+                    "labels.leads.delete",
+                    "/v1/leadLabels",
+                    &args.id,
+                )
+                .await
+            }
+        },
+        PipedriveLabelResource::Deals(command) => match command.action {
+            PipedriveLabelListAction::List => {
+                field_label_list(client, ctx, "labels.deals.list", "/api/v2/dealFields").await
+            }
+        },
+        PipedriveLabelResource::Persons(command) => match command.action {
+            PipedriveLabelListAction::List => {
+                field_label_list(client, ctx, "labels.persons.list", "/api/v2/personFields").await
+            }
+        },
+        PipedriveLabelResource::Organizations(command) => match command.action {
+            PipedriveLabelListAction::List => {
+                field_label_list(
+                    client,
+                    ctx,
+                    "labels.organizations.list",
+                    "/api/v2/organizationFields",
+                )
+                .await
+            }
+        },
+    }
+}
+
+async fn field_label_list(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    path: &str,
+) -> Result<Value, AppError> {
+    let mut query = Query::new();
+    query.push_value("include_option_labels", "true");
+    let mut url = format!("{}{}", pipedrive_base(ctx.profile()), path);
+    query.append_to(&mut url);
+    let mut response = client
+        .request(
+            "pipedrive",
+            operation,
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await?;
+    let labels = extract_label_options(&response);
+    input::ensure_object(&mut response).insert("data".to_string(), Value::Array(labels));
+    Ok(response)
+}
+
+async fn get(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    collection_path: &str,
+    id: &str,
+) -> Result<Value, AppError> {
+    get_with_query(client, ctx, operation, collection_path, id, Query::new()).await
+}
+
+async fn get_with_query(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    collection_path: &str,
+    id: &str,
+    query: Query,
+) -> Result<Value, AppError> {
+    let mut url = format!(
+        "{}{}/{}",
+        pipedrive_base(ctx.profile()),
+        collection_path,
+        enc(id)
+    );
+    query.append_to(&mut url);
+    client
+        .request(
+            "pipedrive",
+            operation,
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await
+}
+
+async fn delete(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    collection_path: &str,
+    id: &str,
+) -> Result<Value, AppError> {
+    request_json(
+        client,
+        ctx,
+        operation,
+        Method::DELETE,
+        &format!("{}/{}", collection_path, enc(id)),
+        None,
+    )
+    .await
+}
+
+async fn request_json(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    method: Method,
+    path: &str,
+    body: Option<Value>,
+) -> Result<Value, AppError> {
+    client
+        .request(
+            "pipedrive",
+            operation,
+            ctx.profile(),
+            method,
+            format!("{}{}", pipedrive_base(ctx.profile()), path),
+            body,
+        )
+        .await
+}
+
+async fn list_v2(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    path: &str,
+    mut query: Query,
+    limit: u32,
+) -> Result<Value, AppError> {
+    paginate_cursor(client, ctx, operation, path, &mut query, limit, &["data"]).await
+}
+
+async fn search_v2(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    path: &str,
+    mut query: Query,
+    limit: u32,
+) -> Result<Value, AppError> {
+    paginate_cursor(
+        client,
+        ctx,
+        operation,
+        path,
+        &mut query,
+        limit,
+        &["data", "items"],
+    )
+    .await
+}
+
+async fn paginate_cursor(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    path: &str,
+    query: &mut Query,
+    limit: u32,
+    array_path: &[&str],
+) -> Result<Value, AppError> {
+    if limit == 0 {
+        return Ok(empty_aggregate(array_path));
+    }
+
+    let mut cursor: Option<String> = None;
+    let mut first_page = None;
+    let mut values = Vec::new();
+    let page_size = limit.clamp(1, 500);
+
+    loop {
+        query.set("limit", page_size.to_string());
+        if let Some(cursor) = cursor.as_deref() {
+            query.set("cursor", cursor.to_string());
+        }
+        let mut url = format!("{}{}", pipedrive_base(ctx.profile()), path);
+        query.append_to(&mut url);
+        let page = client
+            .request(
+                "pipedrive",
+                operation,
+                ctx.profile(),
+                Method::GET,
+                url,
+                None,
+            )
+            .await?;
+        if first_page.is_none() {
+            first_page = Some(page.clone());
+        }
+        for value in values_at(&page, array_path) {
+            if values.len() >= limit as usize {
+                break;
+            }
+            values.push(value);
+        }
+        if values.len() >= limit as usize {
+            break;
+        }
+        cursor = page
+            .pointer("/additional_data/next_cursor")
+            .and_then(Value::as_str)
+            .filter(|value| !value.is_empty())
+            .map(ToString::to_string);
+        if cursor.is_none() {
+            break;
+        }
+    }
+
+    Ok(aggregate_response(first_page, array_path, values))
+}
+
+async fn list_v1(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    path: &str,
+    mut query: Query,
+    limit: u32,
+) -> Result<Value, AppError> {
+    paginate_start(client, ctx, operation, path, &mut query, limit, &["data"]).await
+}
+
+async fn paginate_start(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    path: &str,
+    query: &mut Query,
+    limit: u32,
+    array_path: &[&str],
+) -> Result<Value, AppError> {
+    if limit == 0 {
+        return Ok(empty_aggregate(array_path));
+    }
+
+    let page_size = limit.clamp(1, 500);
+    let mut start = 0u64;
+    let mut first_page = None;
+    let mut values = Vec::new();
+
+    loop {
+        query.set("limit", page_size.to_string());
+        query.set("start", start.to_string());
+        let mut url = format!("{}{}", pipedrive_base(ctx.profile()), path);
+        query.append_to(&mut url);
+        let page = client
+            .request(
+                "pipedrive",
+                operation,
+                ctx.profile(),
+                Method::GET,
+                url,
+                None,
+            )
+            .await?;
+        if first_page.is_none() {
+            first_page = Some(page.clone());
+        }
+        for value in values_at(&page, array_path) {
+            if values.len() >= limit as usize {
+                break;
+            }
+            values.push(value);
+        }
+        if values.len() >= limit as usize {
+            break;
+        }
+        let next_start = page
+            .pointer("/additional_data/pagination/next_start")
+            .and_then(Value::as_u64);
+        match next_start {
+            Some(value) => start = value,
+            None => break,
+        }
+    }
+
+    Ok(aggregate_response(first_page, array_path, values))
+}
+
+fn lead_create_body(args: PipedriveLeadWrite) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "leads.create", args.json.as_deref())?;
+    input::set_string(&mut body, "title", &Some(args.title));
+    set_id(&mut body, "person_id", args.person_id.as_deref());
+    set_id(
+        &mut body,
+        "organization_id",
+        args.organization_id.as_deref(),
+    );
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn lead_update_body(args: PipedriveLeadUpdate) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "leads.update", args.json.as_deref())?;
+    input::set_string(&mut body, "title", &args.title);
+    set_id(&mut body, "person_id", args.person_id.as_deref());
+    set_id(
+        &mut body,
+        "organization_id",
+        args.organization_id.as_deref(),
+    );
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn person_create_body(args: PipedrivePersonWrite) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "persons.create", args.json.as_deref())?;
+    input::set_string(&mut body, "name", &Some(args.name));
+    set_id(&mut body, "org_id", args.org_id.as_deref());
+    set_contact_field(&mut body, "emails", args.email.as_deref());
+    set_contact_field(&mut body, "phones", args.phone.as_deref());
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn person_update_body(args: PipedrivePersonUpdate) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "persons.update", args.json.as_deref())?;
+    input::set_string(&mut body, "name", &args.name);
+    set_id(&mut body, "org_id", args.org_id.as_deref());
+    set_contact_field(&mut body, "emails", args.email.as_deref());
+    set_contact_field(&mut body, "phones", args.phone.as_deref());
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn organization_create_body(args: PipedriveOrganizationWrite) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "organizations.create", args.json.as_deref())?;
+    input::set_string(&mut body, "name", &Some(args.name));
+    set_address(&mut body, args.address.as_deref());
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn organization_update_body(args: PipedriveOrganizationUpdate) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "organizations.update", args.json.as_deref())?;
+    input::set_string(&mut body, "name", &args.name);
+    set_address(&mut body, args.address.as_deref());
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn deal_create_body(args: PipedriveDealWrite) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "deals.create", args.json.as_deref())?;
+    input::set_string(&mut body, "title", &Some(args.title));
+    set_id(&mut body, "person_id", args.person_id.as_deref());
+    set_id(&mut body, "org_id", args.org_id.as_deref());
+    set_f64(&mut body, "value", args.value);
+    input::set_string(&mut body, "currency", &args.currency);
+    set_id(&mut body, "pipeline_id", args.pipeline_id.as_deref());
+    set_id(&mut body, "stage_id", args.stage_id.as_deref());
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn deal_update_body(args: PipedriveDealUpdate) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("pipedrive", "deals.update", args.json.as_deref())?;
+    input::set_string(&mut body, "title", &args.title);
+    set_id(&mut body, "person_id", args.person_id.as_deref());
+    set_id(&mut body, "org_id", args.org_id.as_deref());
+    set_f64(&mut body, "value", args.value);
+    input::set_string(&mut body, "currency", &args.currency);
+    set_id(&mut body, "pipeline_id", args.pipeline_id.as_deref());
+    set_id(&mut body, "stage_id", args.stage_id.as_deref());
+    set_csv(&mut body, "label_ids", args.label_ids.as_deref())?;
+    Ok(body)
+}
+
+fn set_contact_field(body: &mut Value, key: &str, value: Option<&str>) {
+    if let Some(value) = value {
+        input::ensure_object(body).insert(key.to_string(), json!([{ "value": value }]));
+    }
+}
+
+fn set_address(body: &mut Value, value: Option<&str>) {
+    if let Some(value) = value {
+        input::ensure_object(body).insert("address".to_string(), json!([{ "value": value }]));
+    }
+}
+
+fn set_id(body: &mut Value, key: &str, value: Option<&str>) {
+    if let Some(value) = value {
+        input::ensure_object(body).insert(key.to_string(), id_value(value));
+    }
+}
+
+fn set_f64(body: &mut Value, key: &str, value: Option<f64>) {
+    if let Some(value) = value.and_then(Number::from_f64) {
+        input::ensure_object(body).insert(key.to_string(), Value::Number(value));
+    }
+}
+
+fn set_csv(body: &mut Value, key: &str, value: Option<&str>) -> Result<(), AppError> {
+    if let Some(value) = value {
+        let values = parse_csv(value)?;
+        input::ensure_object(body).insert(key.to_string(), Value::Array(values));
+    }
+    Ok(())
+}
+
+fn parse_csv(value: &str) -> Result<Vec<Value>, AppError> {
+    let values = value
+        .split(',')
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(id_value)
+        .collect::<Vec<_>>();
+    if values.is_empty() {
+        return Err(AppError::invalid_input(
+            "pipedrive",
+            "csv.parse",
+            "CSV value must contain at least one id",
+        ));
+    }
+    Ok(values)
+}
+
+fn id_value(value: &str) -> Value {
+    value
+        .parse::<u64>()
+        .map(|id| json!(id))
+        .unwrap_or_else(|_| Value::String(value.to_string()))
+}
+
+fn values_at(value: &Value, path: &[&str]) -> Vec<Value> {
+    let mut current = value;
+    for segment in path {
+        let Some(next) = current.get(*segment) else {
+            return Vec::new();
+        };
+        current = next;
+    }
+    current.as_array().cloned().unwrap_or_default()
+}
+
+fn empty_aggregate(array_path: &[&str]) -> Value {
+    aggregate_response(None, array_path, Vec::new())
+}
+
+fn aggregate_response(first_page: Option<Value>, array_path: &[&str], values: Vec<Value>) -> Value {
+    let mut response = first_page.unwrap_or_else(|| json!({}));
+    set_array_at(&mut response, array_path, values);
+    response
+}
+
+fn set_array_at(response: &mut Value, path: &[&str], values: Vec<Value>) {
+    if path.is_empty() {
+        *response = Value::Array(values);
+        return;
+    }
+    let mut current = response;
+    for segment in &path[..path.len() - 1] {
+        let object = input::ensure_object(current);
+        current = object
+            .entry((*segment).to_string())
+            .or_insert_with(|| Value::Object(Default::default()));
+    }
+    input::ensure_object(current).insert(path[path.len() - 1].to_string(), Value::Array(values));
+}
+
+fn extract_label_options(value: &Value) -> Vec<Value> {
+    value
+        .get("data")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .find(|field| {
+            field.get("key").and_then(Value::as_str) == Some("label")
+                || field.get("name").and_then(Value::as_str) == Some("label")
+        })
+        .and_then(|field| field.get("options"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+}
+
+fn sort_direction(value: Option<&PipedriveSortDirection>) -> Option<&'static str> {
+    value.map(|value| match value {
+        PipedriveSortDirection::Asc => "asc",
+        PipedriveSortDirection::Desc => "desc",
+    })
+}
+
+fn deal_status(value: Option<&PipedriveDealStatus>) -> Option<&'static str> {
+    value.map(|value| match value {
+        PipedriveDealStatus::Open => "open",
+        PipedriveDealStatus::Won => "won",
+        PipedriveDealStatus::Lost => "lost",
+        PipedriveDealStatus::Deleted => "deleted",
+    })
+}
+
+fn search_deal_status(value: Option<&PipedriveSearchDealStatus>) -> Option<&'static str> {
+    value.map(|value| match value {
+        PipedriveSearchDealStatus::Open => "open",
+        PipedriveSearchDealStatus::Won => "won",
+        PipedriveSearchDealStatus::Lost => "lost",
+    })
+}
+
+#[derive(Debug, Default)]
+struct Query(Vec<(String, String)>);
+
+impl Query {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn push(&mut self, key: &str, value: Option<&str>) {
+        if let Some(value) = value.filter(|value| !value.trim().is_empty()) {
+            self.push_value(key, value);
+        }
+    }
+
+    fn push_value(&mut self, key: &str, value: &str) {
+        self.0.push((key.to_string(), value.to_string()));
+    }
+
+    fn push_bool(&mut self, key: &str, value: bool) {
+        if value {
+            self.push_value(key, "true");
+        }
+    }
+
+    fn set(&mut self, key: &str, value: String) {
+        if let Some((_, existing)) = self.0.iter_mut().find(|(existing, _)| existing == key) {
+            *existing = value;
+        } else {
+            self.0.push((key.to_string(), value));
+        }
+    }
+
+    fn append_to(&self, url: &mut String) {
+        let mut separator = if url.contains('?') { '&' } else { '?' };
+        for (key, value) in &self.0 {
+            url.push(separator);
+            separator = '&';
+            url.push_str(&urlencoding::encode(key));
+            url.push('=');
+            url.push_str(&urlencoding::encode(value));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_csv_keeps_numeric_and_string_ids() {
+        assert_eq!(
+            parse_csv("1, abc,2").unwrap(),
+            vec![json!(1), json!("abc"), json!(2)]
+        );
+    }
+
+    #[test]
+    fn typed_flags_override_json_payload() {
+        let body = deal_update_body(PipedriveDealUpdate {
+            id: "10".to_string(),
+            json: Some(r#"{"title":"old","value":1,"label_ids":["old"]}"#.to_string()),
+            title: Some("new".to_string()),
+            person_id: Some("123".to_string()),
+            org_id: None,
+            value: Some(42.5),
+            currency: Some("USD".to_string()),
+            pipeline_id: None,
+            stage_id: None,
+            label_ids: Some("blue,7".to_string()),
+        })
+        .unwrap();
+
+        assert_eq!(body["title"], "new");
+        assert_eq!(body["person_id"], 123);
+        assert_eq!(body["value"], 42.5);
+        assert_eq!(body["currency"], "USD");
+        assert_eq!(body["label_ids"], json!(["blue", 7]));
+    }
+
+    #[test]
+    fn person_body_uses_pipedrive_contact_arrays() {
+        let body = person_create_body(PipedrivePersonWrite {
+            json: None,
+            name: "Ada".to_string(),
+            org_id: Some("5".to_string()),
+            email: Some("ada@example.com".to_string()),
+            phone: Some("+1 555 0100".to_string()),
+            label_ids: None,
+        })
+        .unwrap();
+
+        assert_eq!(body["name"], "Ada");
+        assert_eq!(body["org_id"], 5);
+        assert_eq!(body["emails"][0]["value"], "ada@example.com");
+        assert_eq!(body["phones"][0]["value"], "+1 555 0100");
+    }
+
+    #[test]
+    fn organization_address_flag_uses_pipedrive_address_array() {
+        let body = organization_create_body(PipedriveOrganizationWrite {
+            json: None,
+            name: "Acme".to_string(),
+            address: Some("1 Test Way".to_string()),
+            label_ids: None,
+        })
+        .unwrap();
+
+        assert_eq!(body["address"], json!([{ "value": "1 Test Way" }]));
+    }
+
+    #[test]
+    fn aggregate_v2_cursor_shape_replaces_page_local_data() {
+        let first = json!({
+            "success": true,
+            "data": [{"id": 1}],
+            "additional_data": {"next_cursor": "abc"}
+        });
+        let response = aggregate_response(
+            Some(first),
+            &["data"],
+            vec![json!({"id": 1}), json!({"id": 2})],
+        );
+        assert_eq!(response["data"], json!([{"id": 1}, {"id": 2}]));
+        assert_eq!(response["additional_data"]["next_cursor"], "abc");
+    }
+
+    #[test]
+    fn aggregate_search_items_shape() {
+        let first = json!({
+            "success": true,
+            "data": {"items": [{"item": {"id": 1}}]},
+            "additional_data": {"pagination": {"next_start": 100}}
+        });
+        let response = aggregate_response(
+            Some(first),
+            &["data", "items"],
+            vec![json!({"item": {"id": 1}}), json!({"item": {"id": 2}})],
+        );
+        assert_eq!(response["data"]["items"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn extracts_label_options_from_field_metadata() {
+        let metadata = json!({
+            "data": [
+                {"key": "title"},
+                {"key": "label", "options": [{"id": 1, "label": "Hot"}]}
+            ]
+        });
+        assert_eq!(
+            extract_label_options(&metadata),
+            vec![json!({"id": 1, "label": "Hot"})]
+        );
+    }
+}

@@ -165,6 +165,14 @@ pub(crate) fn zoho_calendar_base(profile: &Profile) -> String {
         .unwrap_or_else(|| "https://calendar.zoho.com".to_string())
 }
 
+pub(crate) fn pipedrive_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://api.pipedrive.com".to_string())
+}
+
 pub(crate) fn trim_url(value: &str) -> String {
     value.trim_end_matches('/').to_string()
 }

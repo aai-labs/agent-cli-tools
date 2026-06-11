@@ -713,5 +713,60 @@
     "size_bytes": 12122,
     "source_url": "https://www.zoho.com/calendar/help/api/post-create-calendar.html",
     "status": "ok"
+  },
+  {
+    "doc_type": "openapi_v1",
+    "format": "json",
+    "local_path": "docs/pipedrive/openapi-v1.json",
+    "provider": "pipedrive",
+    "retrieved_at": "2026-05-12T00:00:00Z",
+    "service": "crm",
+    "size_bytes": 2381207,
+    "source_url": "https://developers.pipedrive.com/docs/api/v1/openapi.json",
+    "status": "ok"
+  },
+  {
+    "doc_type": "openapi_v2",
+    "format": "json",
+    "local_path": "docs/pipedrive/openapi-v2.json",
+    "provider": "pipedrive",
+    "retrieved_at": "2026-05-12T00:00:00Z",
+    "service": "crm",
+    "size_bytes": 1309510,
+    "source_url": "https://developers.pipedrive.com/docs/api/v2/openapi.json",
+    "status": "ok"
+  },
+  {
+    "doc_type": "api_reference",
+    "format": "html",
+    "local_path": "docs/pipedrive/api-reference.html",
+    "provider": "pipedrive",
+    "retrieved_at": "2026-05-12T00:00:00Z",
+    "service": "crm",
+    "size_bytes": 1738634,
+    "source_url": "https://developers.pipedrive.com/docs/api/v1",
+    "status": "ok"
+  },
+  {
+    "doc_type": "auth_api_token",
+    "format": "html",
+    "local_path": "docs/pipedrive/how-to-find-api-token.html",
+    "provider": "pipedrive",
+    "retrieved_at": "2026-05-12T00:00:00Z",
+    "service": "crm",
+    "size_bytes": 1367150,
+    "source_url": "https://pipedrive.readme.io/docs/how-to-find-the-api-token",
+    "status": "ok"
+  },
+  {
+    "doc_type": "api_v2_overview",
+    "format": "html",
+    "local_path": "docs/pipedrive/api-v2-overview.html",
+    "provider": "pipedrive",
+    "retrieved_at": "2026-05-12T00:00:00Z",
+    "service": "crm",
+    "size_bytes": 1368033,
+    "source_url": "https://pipedrive.readme.io/docs/pipedrive-api-v2",
+    "status": "ok"
   }
 ]
