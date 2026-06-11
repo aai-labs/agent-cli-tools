@@ -21,6 +21,7 @@ The safe suite MUST pass before completing substantive code changes. Live tests 
 - For bugs, add a regression test at the deepest layer that still reproduces the failure.
 - Keep tests deterministic. Do not depend on network access, real credentials, wall-clock timing, or provider state outside ignored live E2E tests.
 - Preserve provider JSON response shapes in fixtures; use representative provider responses rather than simplified invented envelopes.
+- Assert `_aai.pagination` status, continuation values, and next-command guidance for changed collection behavior.
 - Prefer explicit setup, one primary action, and assertions on observable results.
 
 ## Unit and integration tests
@@ -35,7 +36,7 @@ For new or changed provider commands, cover the applicable contracts:
 - Request method, path, query parameters, and body shape
 - Provider error propagation and structured error output
 - Pagination aggregation and `--limit` handling for list/search commands
-- Response-shape preservation after aggregation
+- Response-shape preservation after aggregation, except the documented `_aai` metadata and bare-array `results` wrapper
 
 Use fake or local HTTP boundaries where practical. Do not mock internal functions merely to assert call counts; assert the resulting request, response, or output contract.
 

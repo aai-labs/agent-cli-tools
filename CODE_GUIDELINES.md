@@ -11,7 +11,7 @@ These are easy for agents to get wrong; treat them as **MUST** unless the user o
 - **Service modules own provider behavior** — keep provider-specific paths, versions, query parameters, bodies, pagination, and response shaping in `src/services/<provider>.rs`.
 - **Shared HTTP owns cross-provider mechanics** — auth application, request execution, and common HTTP behavior belong in `src/http.rs`; service modules MUST NOT duplicate them.
 - **Structured output** — successful results go to stdout as JSON; failures go to stderr as structured JSON. Diagnostic prose MUST NOT corrupt stdout.
-- **Preserve provider responses** — return provider JSON directly where practical. When aggregating pages, replace only the page-local result array and retain the surrounding response shape.
+- **Preserve provider responses** — return provider JSON directly where practical. When aggregating pages, replace only the page-local result array and retain the surrounding response shape. Reserve `_aai` for CLI metadata; bare provider arrays MAY be wrapped under `results` so `_aai.pagination` remains visible.
 - **JSON and typed flags compose** — create/update commands that accept `--json` SHOULD merge typed flags predictably, with explicit typed flags taking precedence.
 - **Credentials stay local** — secrets MUST NOT appear in source, fixtures, logs, command examples, or committed config. Use ignored files under `local/` for live profiles.
 - **Errors** — use typed errors and actionable context; assertions are for true invariants, not provider or user input failures.

@@ -3,6 +3,9 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 #[derive(Debug, Parser)]
 #[command(name = "aai-cli")]
 #[command(about = "Agent-friendly CLI wrappers for common work APIs")]
+#[command(
+    long_about = "Agent-friendly CLI wrappers for common work APIs.\n\nEvery successful service response includes `_aai.pagination` with pagination status, continuation values, and instructions for retrieving more results. Bare provider arrays are wrapped under `results` so this metadata is always visible."
+)]
 pub struct Cli {
     #[arg(long, global = true, env = "AAI_PROFILE")]
     pub profile: Option<String>,
@@ -2104,6 +2107,15 @@ mod tests {
             let help = String::from_utf8(help).unwrap();
             assert!(help.contains("request"), "{service} help lacks request");
         }
+    }
+
+    #[test]
+    fn pagination_contract_is_discoverable_in_top_level_help() {
+        let mut help = Vec::new();
+        Cli::command().write_long_help(&mut help).unwrap();
+        let help = String::from_utf8(help).unwrap();
+        assert!(help.contains("_aai.pagination"));
+        assert!(help.contains("retrieving more results"));
     }
 }
 

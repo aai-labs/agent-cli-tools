@@ -941,6 +941,11 @@ async fn paginate_cursor(
         if first_page.is_none() {
             first_page = Some(page.clone());
         }
+        cursor = page
+            .pointer("/additional_data/next_cursor")
+            .and_then(Value::as_str)
+            .filter(|value| !value.is_empty())
+            .map(ToString::to_string);
         for value in values_at(&page, array_path) {
             if values.len() >= limit as usize {
                 break;
@@ -950,16 +955,16 @@ async fn paginate_cursor(
         if values.len() >= limit as usize {
             break;
         }
-        cursor = page
-            .pointer("/additional_data/next_cursor")
-            .and_then(Value::as_str)
-            .filter(|value| !value.is_empty())
-            .map(ToString::to_string);
         if cursor.is_none() {
             break;
         }
     }
 
+    set_optional_at(
+        &mut first_page,
+        &["additional_data", "next_cursor"],
+        cursor.map(Value::String),
+    );
     Ok(aggregate_response(first_page, array_path, values))
 }
 
@@ -989,6 +994,7 @@ async fn paginate_start(
 
     let page_size = limit.clamp(1, 500);
     let mut start = 0u64;
+    let mut continuation: Option<u64>;
     let mut first_page = None;
     let mut values = Vec::new();
 
@@ -1010,6 +1016,9 @@ async fn paginate_start(
         if first_page.is_none() {
             first_page = Some(page.clone());
         }
+        continuation = page
+            .pointer("/additional_data/pagination/next_start")
+            .and_then(Value::as_u64);
         for value in values_at(&page, array_path) {
             if values.len() >= limit as usize {
                 break;
@@ -1019,15 +1028,17 @@ async fn paginate_start(
         if values.len() >= limit as usize {
             break;
         }
-        let next_start = page
-            .pointer("/additional_data/pagination/next_start")
-            .and_then(Value::as_u64);
-        match next_start {
+        match continuation {
             Some(value) => start = value,
             None => break,
         }
     }
 
+    set_optional_at(
+        &mut first_page,
+        &["additional_data", "pagination", "next_start"],
+        continuation.map(|value| json!(value)),
+    );
     Ok(aggregate_response(first_page, array_path, values))
 }
 
@@ -1194,6 +1205,25 @@ fn aggregate_response(first_page: Option<Value>, array_path: &[&str], values: Ve
     let mut response = first_page.unwrap_or_else(|| json!({}));
     set_array_at(&mut response, array_path, values);
     response
+}
+
+fn set_optional_at(response: &mut Option<Value>, path: &[&str], value: Option<Value>) {
+    let Some(response) = response.as_mut() else {
+        return;
+    };
+    let mut current = response;
+    for segment in &path[..path.len() - 1] {
+        let object = input::ensure_object(current);
+        current = object
+            .entry((*segment).to_string())
+            .or_insert_with(|| Value::Object(Default::default()));
+    }
+    let object = input::ensure_object(current);
+    if let Some(value) = value {
+        object.insert(path[path.len() - 1].to_string(), value);
+    } else {
+        object.remove(path[path.len() - 1]);
+    }
 }
 
 fn set_array_at(response: &mut Value, path: &[&str], values: Vec<Value>) {
@@ -1405,6 +1435,17 @@ mod tests {
             vec![json!({"item": {"id": 1}}), json!({"item": {"id": 2}})],
         );
         assert_eq!(response["data"]["items"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn optional_continuation_removes_stale_first_page_value() {
+        let mut response = Some(json!({
+            "additional_data": {"next_cursor": "stale"}
+        }));
+        set_optional_at(&mut response, &["additional_data", "next_cursor"], None);
+        assert!(response.unwrap()["additional_data"]
+            .get("next_cursor")
+            .is_none());
     }
 
     #[test]

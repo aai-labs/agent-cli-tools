@@ -48,7 +48,9 @@ impl ApiClient {
         url: String,
         body: Option<Value>,
     ) -> Result<Value, AppError> {
-        Self::request_with(&self.client, service, operation, profile, method, url, body).await
+        Self::request_with(&self.client, service, operation, profile, method, url, body)
+            .await
+            .map(|(value, _)| value)
     }
 
     pub async fn request_no_redirect(
@@ -60,7 +62,7 @@ impl ApiClient {
         url: String,
         body: Option<Value>,
     ) -> Result<Value, AppError> {
-        Self::request_with(
+        let (value, next_url) = Self::request_with(
             &self.no_redirect_client,
             service,
             operation,
@@ -69,7 +71,8 @@ impl ApiClient {
             url,
             body,
         )
-        .await
+        .await?;
+        Ok(attach_provider_next_url(value, next_url))
     }
 
     async fn request_with(
@@ -80,7 +83,7 @@ impl ApiClient {
         method: Method,
         url: String,
         body: Option<Value>,
-    ) -> Result<Value, AppError> {
+    ) -> Result<(Value, Option<String>), AppError> {
         let mut request = client.request(method, &url);
         request = apply_auth(request, service, operation, profile)?;
         request = request.header("Accept", "application/json");
@@ -92,6 +95,11 @@ impl ApiClient {
             AppError::internal(service, operation, format!("request failed: {err}"))
         })?;
         let status = response.status();
+        let next_url = response
+            .headers()
+            .get(reqwest::header::LINK)
+            .and_then(|value| value.to_str().ok())
+            .and_then(link_next_url);
         let text = response.text().await.map_err(|err| {
             AppError::internal(
                 service,
@@ -106,7 +114,7 @@ impl ApiClient {
         };
 
         if status.is_success() {
-            Ok(parsed)
+            Ok((parsed, next_url))
         } else {
             Err(AppError::api(
                 service,
@@ -255,6 +263,41 @@ impl ApiClient {
     }
 }
 
+fn link_next_url(link: &str) -> Option<String> {
+    link.split(',').find_map(|part| {
+        let part = part.trim();
+        if !part.contains("rel=\"next\"") && !part.contains("rel=next") {
+            return None;
+        }
+        let start = part.find('<')? + 1;
+        let end = part[start..].find('>')? + start;
+        Some(part[start..end].to_string())
+    })
+}
+
+fn attach_provider_next_url(value: Value, next_url: Option<String>) -> Value {
+    let Some(next_url) = next_url else {
+        return value;
+    };
+    match value {
+        Value::Object(mut object) => {
+            object.insert(
+                "_aai_provider_next_url".to_string(),
+                Value::String(next_url),
+            );
+            Value::Object(object)
+        }
+        Value::Array(results) => serde_json::json!({
+            "results": results,
+            "_aai_provider_next_url": next_url,
+        }),
+        other => serde_json::json!({
+            "result": other,
+            "_aai_provider_next_url": next_url,
+        }),
+    }
+}
+
 fn apply_auth(
     request: RequestBuilder,
     service: &'static str,
@@ -346,6 +389,17 @@ mod tests {
 
         assert_eq!(request.headers()["x-api-token"], "pd-token");
         assert!(!request.headers().contains_key("authorization"));
+    }
+
+    #[test]
+    fn extracts_next_link_header() {
+        assert_eq!(
+            link_next_url(
+                r#"<https://api.github.com/items?page=1>; rel="prev", <https://api.github.com/items?page=3>; rel="next""#
+            )
+            .as_deref(),
+            Some("https://api.github.com/items?page=3")
+        );
     }
 
     #[tokio::test]

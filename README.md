@@ -57,7 +57,7 @@ Run an installed binary:
 aai-cli --profile github-work github issues list
 ```
 
-All successful command output is JSON. Errors are JSON on stderr and include `code`, `service`, `operation`, `status`, and `details`.
+All successful command output is JSON. Errors are JSON on stderr and include `code`, `service`, `operation`, `status`, and `details`. Successful service responses always include `_aai.pagination` with pagination status and instructions.
 
 ## Generic Authenticated Requests
 
@@ -78,9 +78,9 @@ aai-cli --profile jira-work jira request post /rest/api/3/issue \
 
 Supported services are `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, and REST-backed `email` and `calendar` profiles. SMTP/IMAP and CalDAV profiles are intentionally excluded.
 
-The path must be relative to the selected profile's provider base URL. Absolute URLs, embedded query strings/fragments, redirects, and GET/HEAD bodies are rejected. Mutating methods require `--allow-write`. Authentication is always applied from the selected profile, and provider JSON is returned unchanged.
+The path must be relative to the selected profile's provider base URL. Absolute URLs, embedded query strings/fragments, redirects, and GET/HEAD bodies are rejected. Mutating methods require `--allow-write`. Authentication is always applied from the selected profile. Provider fields are preserved, with `_aai.pagination` added and bare arrays wrapped under `results`.
 
-Generic requests return one provider response. Follow provider pagination explicitly with query parameters or use a typed list/search command when aggregation is required.
+Generic requests return one provider response. Follow the returned `_aai.pagination.next_command` or continuation parameters, or use a typed list/search command when aggregation is required.
 
 ## Configuration
 
@@ -309,7 +309,7 @@ aai-cli confluence pages create \
 
 ### Search And Pagination
 
-List and search commands return aggregated JSON up to `--limit`; agents do not need to manually follow provider pagination for the supported Jira and Confluence list/search commands.
+List and search commands return provider JSON or aggregated JSON up to `--limit`. Every service response includes `_aai.pagination`; run its `next_command` when present, or follow its instruction when the provider did not expose a trustworthy continuation marker.
 
 Jira enhanced search requires bounded JQL. Prefer project-, key-, assignee-, status-, or date-bounded queries:
 

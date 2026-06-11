@@ -4,7 +4,7 @@ This file documents implemented CLI behavior for agents. Provider API snapshots 
 
 ## General Contract
 
-- Successful command output is JSON on stdout.
+- Successful command output is JSON on stdout. Service responses include `_aai.pagination`.
 - Failed command output is JSON on stderr with `code`, `service`, `operation`, `status`, and `details`.
 - Pass `--config` and `--profile` explicitly unless `AAI_CONFIG` and `AAI_PROFILE` are set by the runtime.
 - Use encrypted secret references in config. Do not print token values, local configs with inline secrets, encrypted secret files, or key files.
@@ -50,7 +50,7 @@ Supported services: `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, an
 
 The endpoint path must be relative to the configured provider base. Absolute URLs, redirects, embedded queries/fragments, and backslashes are rejected to prevent sending profile authentication to another origin. GET and HEAD reject `--json`; writes require `--allow-write`. Query arguments are repeatable and must use `key=value`.
 
-The command returns one provider JSON response unchanged. It does not aggregate pagination; use provider continuation parameters explicitly or a typed list/search command.
+The command returns one provider response and does not aggregate pagination. Follow `_aai.pagination.next_command` when present, use its continuation parameters explicitly, or use a typed list/search command.
 
 ## Jira
 
@@ -220,7 +220,39 @@ aai-cli pipedrive mailbox threads messages <thread-id>
 
 ## Pagination
 
-For implemented Jira, Confluence, and Pipedrive list/search commands, `aai-cli` follows provider pagination and aggregates results until it reaches `--limit` or the provider has no next page.
+Every successful service response contains:
+
+```json
+{
+  "_aai": {
+    "pagination": {
+      "status": "more_available",
+      "has_more": true,
+      "returned_count": 50,
+      "continuation": {
+        "source": "additional_data.next_cursor",
+        "parameters": [{"key": "cursor", "value": "abc"}],
+        "next_url": null
+      },
+      "next_command": "aai-cli pipedrive request get /api/v2/deals --query cursor=abc",
+      "instruction": "Run next_command to retrieve more results."
+    }
+  }
+}
+```
+
+Pagination statuses:
+
+- `more_available`: a provider continuation marker or typed-command truncation indicates more results.
+- `complete`: the provider explicitly indicates that no more results exist.
+- `unknown`: the response is a collection, but the provider did not expose a trustworthy continuation marker.
+- `not_applicable`: the response does not appear to be a result collection.
+
+Provider response fields remain at their original locations, except bare provider arrays are wrapped under `results` so `_aai.pagination` can always be included. `_aai` is reserved for CLI metadata.
+
+When `next_command` is present, run it to retrieve more results. Generic requests preserve existing query filters while replacing or adding continuation parameters. Typed commands that aggregate to `--limit` may suggest rerunning with a larger limit; this retrieves the previous results plus additional results rather than only the next page. If `status` is `unknown`, increase `--limit` or use a generic authenticated request with the provider's documented pagination parameters.
+
+For implemented Jira, Confluence, GitHub, Bitbucket, and Pipedrive list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
 
 Covered operations:
 

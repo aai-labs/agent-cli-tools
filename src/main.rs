@@ -4,6 +4,7 @@ mod config_commands;
 mod error;
 mod http;
 mod input;
+mod pagination;
 mod secrets;
 mod services;
 
@@ -35,6 +36,7 @@ async fn main() -> ExitCode {
 }
 
 async fn run() -> Result<serde_json::Value, AppError> {
+    let command_args = std::env::args().collect::<Vec<_>>();
     let cli = Cli::parse();
     match cli.command {
         cli::Command::Config(command) => config_commands::dispatch(cli.config.as_deref(), command),
@@ -45,7 +47,8 @@ async fn run() -> Result<serde_json::Value, AppError> {
                 cli.secrets_file.as_deref(),
                 cli.key_file.as_deref(),
             )?;
-            services::dispatch(&ctx, command).await
+            let value = services::dispatch(&ctx, command).await?;
+            Ok(pagination::annotate(value, &command_args))
         }
     }
 }
