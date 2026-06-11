@@ -9,7 +9,10 @@ use crate::{
     config::Context,
     error::AppError,
     http::ApiClient,
-    services::shared::{provider, CtxProfile},
+    services::{
+        generic_request,
+        shared::{google_base, provider, zoho_mail_base, CtxProfile},
+    },
 };
 
 pub(crate) async fn dispatch(
@@ -18,6 +21,31 @@ pub(crate) async fn dispatch(
     command: EmailCommand,
 ) -> Result<Value, AppError> {
     match command.resource {
+        EmailResource::Request(args) => {
+            if matches!(
+                ctx.profile().transport.as_deref(),
+                Some("smtp_imap" | "imap_smtp")
+            ) || matches!(ctx.profile().auth_type.as_deref(), Some("app_password"))
+            {
+                return Err(AppError::invalid_input(
+                    "email",
+                    "request",
+                    "generic requests require a REST email profile; SMTP/IMAP is not supported",
+                ));
+            }
+            let base = match provider(ctx.profile(), "email", "request")? {
+                "google" => google_base(ctx.profile()),
+                "zoho" => zoho_mail_base(ctx.profile()),
+                other => {
+                    return Err(AppError::invalid_input(
+                        "email",
+                        "request",
+                        format!("unsupported REST email provider {other}"),
+                    ))
+                }
+            };
+            generic_request::dispatch(client, ctx, "email", base, args).await
+        }
         EmailResource::Messages(command) => {
             if matches!(
                 ctx.profile().transport.as_deref(),

@@ -59,6 +59,29 @@ aai-cli --profile github-work github issues list
 
 All successful command output is JSON. Errors are JSON on stderr and include `code`, `service`, `operation`, `status`, and `details`.
 
+## Generic Authenticated Requests
+
+Typed commands remain the preferred interface for common workflows. For reports and uncommon provider endpoints, every HTTP-backed service also exposes an authenticated `request` escape hatch:
+
+```bash
+aai-cli --profile pipedrive-work pipedrive request get /api/v2/deals \
+  --query status=won \
+  --query sort_by=update_time
+
+aai-cli --profile github-work github request get /repos/acme/app/issues \
+  --query state=closed
+
+aai-cli --profile jira-work jira request post /rest/api/3/issue \
+  --allow-write \
+  --json -
+```
+
+Supported services are `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, and REST-backed `email` and `calendar` profiles. SMTP/IMAP and CalDAV profiles are intentionally excluded.
+
+The path must be relative to the selected profile's provider base URL. Absolute URLs, embedded query strings/fragments, redirects, and GET/HEAD bodies are rejected. Mutating methods require `--allow-write`. Authentication is always applied from the selected profile, and provider JSON is returned unchanged.
+
+Generic requests return one provider response. Follow provider pagination explicitly with query parameters or use a typed list/search command when aggregation is required.
+
 ## Configuration
 
 Default config path:

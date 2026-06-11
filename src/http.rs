@@ -19,6 +19,7 @@ fn multipart_boundary() -> String {
 
 pub struct ApiClient {
     client: Client,
+    no_redirect_client: Client,
 }
 
 impl ApiClient {
@@ -27,7 +28,15 @@ impl ApiClient {
             .user_agent("aai-cli/0.1")
             .build()
             .map_err(|err| AppError::internal("http", "client", err.to_string()))?;
-        Ok(Self { client })
+        let no_redirect_client = Client::builder()
+            .user_agent("aai-cli/0.1")
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .map_err(|err| AppError::internal("http", "client", err.to_string()))?;
+        Ok(Self {
+            client,
+            no_redirect_client,
+        })
     }
 
     pub async fn request(
@@ -39,7 +48,40 @@ impl ApiClient {
         url: String,
         body: Option<Value>,
     ) -> Result<Value, AppError> {
-        let mut request = self.client.request(method, &url);
+        Self::request_with(&self.client, service, operation, profile, method, url, body).await
+    }
+
+    pub async fn request_no_redirect(
+        &self,
+        service: &'static str,
+        operation: &'static str,
+        profile: &Profile,
+        method: Method,
+        url: String,
+        body: Option<Value>,
+    ) -> Result<Value, AppError> {
+        Self::request_with(
+            &self.no_redirect_client,
+            service,
+            operation,
+            profile,
+            method,
+            url,
+            body,
+        )
+        .await
+    }
+
+    async fn request_with(
+        client: &Client,
+        service: &'static str,
+        operation: &'static str,
+        profile: &Profile,
+        method: Method,
+        url: String,
+        body: Option<Value>,
+    ) -> Result<Value, AppError> {
+        let mut request = client.request(method, &url);
         request = apply_auth(request, service, operation, profile)?;
         request = request.header("Accept", "application/json");
         if let Some(body) = body {
@@ -278,6 +320,11 @@ fn apply_auth(
 mod tests {
     use super::*;
     use reqwest::Method;
+    use std::{
+        io::{Read, Write},
+        net::TcpListener,
+        thread,
+    };
 
     #[test]
     fn pipedrive_personal_token_uses_x_api_token_header() {
@@ -299,5 +346,42 @@ mod tests {
 
         assert_eq!(request.headers()["x-api-token"], "pd-token");
         assert!(!request.headers().contains_key("authorization"));
+    }
+
+    #[tokio::test]
+    async fn no_redirect_requests_return_redirect_response_without_following() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0_u8; 1024];
+            let _ = stream.read(&mut request).unwrap();
+            stream
+                .write_all(
+                    b"HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:9/redirected\r\nContent-Length: 0\r\n\r\n",
+                )
+                .unwrap();
+        });
+        let client = ApiClient::new().unwrap();
+        let profile = Profile {
+            auth_type: Some("none".to_string()),
+            ..Profile::default()
+        };
+
+        let error = client
+            .request_no_redirect(
+                "test",
+                "request",
+                &profile,
+                Method::GET,
+                format!("http://{address}/start"),
+                None,
+            )
+            .await
+            .unwrap_err();
+        server.join().unwrap();
+
+        assert_eq!(error.code, "provider_api_error");
+        assert_eq!(error.status, Some(302));
     }
 }

@@ -7,7 +7,10 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{enc, pipedrive_base, CtxProfile},
+    services::{
+        generic_request,
+        shared::{enc, pipedrive_base, CtxProfile},
+    },
 };
 
 pub(crate) async fn dispatch(
@@ -24,6 +27,16 @@ pub(crate) async fn dispatch(
         PipedriveResource::Activities(command) => activities(client, ctx, command).await,
         PipedriveResource::Notes(command) => notes(client, ctx, command).await,
         PipedriveResource::Mailbox(command) => mailbox(client, ctx, command).await,
+        PipedriveResource::Request(args) => {
+            generic_request::dispatch(
+                client,
+                ctx,
+                "pipedrive",
+                pipedrive_base(ctx.profile()),
+                args,
+            )
+            .await
+        }
     }
 }
 

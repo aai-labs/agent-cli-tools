@@ -33,6 +33,25 @@ Validation enforces these provider/auth/reference combinations:
 - GitHub: `bearer_token` with `token_secret`
 - Jira, Confluence, and Bitbucket: `basic_api_token` with `api_token_secret`
 
+## Generic Authenticated Requests
+
+Each HTTP-backed service supports:
+
+```bash
+aai-cli <service> request get <relative-path> [--query key=value ...]
+aai-cli <service> request head <relative-path> [--query key=value ...]
+aai-cli <service> request post <relative-path> --allow-write [--json <path|->] [--query key=value ...]
+aai-cli <service> request put <relative-path> --allow-write [--json <path|->] [--query key=value ...]
+aai-cli <service> request patch <relative-path> --allow-write [--json <path|->] [--query key=value ...]
+aai-cli <service> request delete <relative-path> --allow-write [--json <path|->] [--query key=value ...]
+```
+
+Supported services: `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
+
+The endpoint path must be relative to the configured provider base. Absolute URLs, redirects, embedded queries/fragments, and backslashes are rejected to prevent sending profile authentication to another origin. GET and HEAD reject `--json`; writes require `--allow-write`. Query arguments are repeatable and must use `key=value`.
+
+The command returns one provider JSON response unchanged. It does not aggregate pagination; use provider continuation parameters explicitly or a typed list/search command.
+
 ## Jira
 
 ### Issues

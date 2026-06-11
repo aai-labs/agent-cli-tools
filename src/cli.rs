@@ -123,6 +123,33 @@ pub struct SecretKeyArg {
 }
 
 #[derive(Debug, Args)]
+pub struct GenericRequest {
+    #[arg(value_enum)]
+    pub method: GenericHttpMethod,
+    /// Relative provider endpoint path. Absolute URLs are rejected.
+    pub path: String,
+    /// Query parameter as key=value. Repeat for multiple parameters.
+    #[arg(long = "query")]
+    pub query: Vec<String>,
+    /// JSON body, inline or from a path; use - to read stdin.
+    #[arg(long)]
+    pub json: Option<String>,
+    /// Required for POST, PUT, PATCH, and DELETE.
+    #[arg(long)]
+    pub allow_write: bool,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum GenericHttpMethod {
+    Get,
+    Head,
+    Post,
+    Put,
+    Patch,
+    Delete,
+}
+
+#[derive(Debug, Args)]
 pub struct JiraCommand {
     #[command(subcommand)]
     pub resource: JiraResource,
@@ -135,6 +162,8 @@ pub enum JiraResource {
     Sprints(JiraSprintsCommand),
     Boards(JiraBoardsCommand),
     Users(JiraUsersCommand),
+    /// Call an uncommon Jira REST endpoint with profile authentication.
+    Request(GenericRequest),
 }
 
 #[derive(Debug, Args)]
@@ -392,6 +421,8 @@ pub struct ConfluenceCommand {
 pub enum ConfluenceResource {
     Spaces(ConfluenceSpacesCommand),
     Pages(ConfluencePagesCommand),
+    /// Call an uncommon Confluence REST endpoint with profile authentication.
+    Request(GenericRequest),
 }
 
 #[derive(Debug, Args)]
@@ -586,6 +617,8 @@ pub enum BitbucketResource {
     Commits(BitbucketCommitsCommand),
     Source(BitbucketSourceCommand),
     Pipelines(BitbucketPipelinesCommand),
+    /// Call an uncommon Bitbucket REST endpoint with profile authentication.
+    Request(GenericRequest),
 }
 
 #[derive(Debug, Args)]
@@ -945,6 +978,8 @@ pub enum GithubResource {
     Actions(GithubActionsCommand),
     Branches(GithubBranchesCommand),
     Source(GithubSourceCommand),
+    /// Call an uncommon GitHub REST endpoint with profile authentication.
+    Request(GenericRequest),
 }
 
 #[derive(Debug, Args)]
@@ -1149,6 +1184,8 @@ pub struct EmailCommand {
 #[derive(Debug, Subcommand)]
 pub enum EmailResource {
     Messages(EmailMessagesCommand),
+    /// Call an uncommon REST email endpoint. SMTP/IMAP profiles are rejected.
+    Request(GenericRequest),
 }
 
 #[derive(Debug, Args)]
@@ -1186,6 +1223,8 @@ pub struct CalendarCommand {
 #[derive(Debug, Subcommand)]
 pub enum CalendarResource {
     Events(CalendarEventsCommand),
+    /// Call an uncommon REST calendar endpoint. CalDAV profiles are rejected.
+    Request(GenericRequest),
 }
 
 #[derive(Debug, Args)]
@@ -1280,6 +1319,8 @@ pub enum PipedriveResource {
     Notes(PipedriveNotesCommand),
     /// Inspect synced email messages and threads.
     Mailbox(PipedriveMailboxCommand),
+    /// Call an uncommon Pipedrive REST endpoint with profile authentication.
+    Request(GenericRequest),
 }
 
 #[derive(Debug, Args)]
@@ -2041,6 +2082,28 @@ mod tests {
         assert!(help.contains("profiles"));
         assert!(help.contains("default-profile"));
         assert!(help.contains("without exposing credentials"));
+    }
+
+    #[test]
+    fn generic_request_is_discoverable_for_http_services() {
+        for service in [
+            "jira",
+            "confluence",
+            "bitbucket",
+            "github",
+            "email",
+            "calendar",
+            "pipedrive",
+        ] {
+            let mut command = Cli::command();
+            let service_command = command
+                .find_subcommand_mut(service)
+                .expect("service command");
+            let mut help = Vec::new();
+            service_command.write_long_help(&mut help).unwrap();
+            let help = String::from_utf8(help).unwrap();
+            assert!(help.contains("request"), "{service} help lacks request");
+        }
     }
 }
 

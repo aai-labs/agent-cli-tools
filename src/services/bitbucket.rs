@@ -7,8 +7,9 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{
-        bitbucket_base, bitbucket_repo, enc, workspace, write_download, CtxProfile,
+    services::{
+        generic_request,
+        shared::{bitbucket_base, bitbucket_repo, enc, workspace, write_download, CtxProfile},
     },
 };
 
@@ -18,6 +19,16 @@ pub(crate) async fn dispatch(
     command: BitbucketCommand,
 ) -> Result<Value, AppError> {
     match command.resource {
+        BitbucketResource::Request(args) => {
+            generic_request::dispatch(
+                client,
+                ctx,
+                "bitbucket",
+                bitbucket_base(ctx.profile()),
+                args,
+            )
+            .await
+        }
         BitbucketResource::Repos(command) => match command.action {
             ListGetAction::List(args) => {
                 let workspace = workspace(ctx.profile(), "repos.list")?;

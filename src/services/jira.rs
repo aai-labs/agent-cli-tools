@@ -7,7 +7,10 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{enc, pick, site_url, write_download, CtxProfile},
+    services::{
+        generic_request,
+        shared::{enc, pick, site_url, write_download, CtxProfile},
+    },
 };
 
 pub(crate) async fn dispatch(
@@ -16,6 +19,10 @@ pub(crate) async fn dispatch(
     command: JiraCommand,
 ) -> Result<Value, AppError> {
     match command.resource {
+        JiraResource::Request(args) => {
+            let base = site_url(ctx.profile(), "jira", "request")?;
+            generic_request::dispatch(client, ctx, "jira", base, args).await
+        }
         JiraResource::Issues(command) => match command.action {
             JiraIssuesAction::List(args) => {
                 let jql = build_jql(&args);

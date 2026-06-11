@@ -7,7 +7,10 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{enc, github_base, github_repo, write_download, CtxProfile},
+    services::{
+        generic_request,
+        shared::{enc, github_base, github_repo, write_download, CtxProfile},
+    },
 };
 
 const GITHUB_PER_PAGE_MAX: u32 = 100;
@@ -20,6 +23,9 @@ pub(crate) async fn dispatch(
     command: GithubCommand,
 ) -> Result<Value, AppError> {
     match command.resource {
+        GithubResource::Request(args) => {
+            generic_request::dispatch(client, ctx, "github", github_base(ctx.profile()), args).await
+        }
         GithubResource::Repos(command) => match command.action {
             GithubReposAction::List(args) => {
                 let url = if let Some(org) = ctx.profile().org.as_deref() {

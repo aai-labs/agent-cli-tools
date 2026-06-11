@@ -7,7 +7,10 @@ use crate::{
     error::AppError,
     http::ApiClient,
     input,
-    services::shared::{enc, pick, site_url, write_download, CtxProfile},
+    services::{
+        generic_request,
+        shared::{enc, pick, site_url, write_download, CtxProfile},
+    },
 };
 
 pub(crate) async fn dispatch(
@@ -16,6 +19,10 @@ pub(crate) async fn dispatch(
     command: ConfluenceCommand,
 ) -> Result<Value, AppError> {
     match command.resource {
+        ConfluenceResource::Request(args) => {
+            let base = site_url(ctx.profile(), "confluence", "request")?;
+            generic_request::dispatch(client, ctx, "confluence", base, args).await
+        }
         ConfluenceResource::Spaces(command) => match command.action {
             ConfluenceSpacesAction::List(args) => {
                 let url = spaces_list_url(
