@@ -1,5 +1,6 @@
 mod cli;
 mod config;
+mod config_commands;
 mod error;
 mod http;
 mod input;
@@ -35,11 +36,16 @@ async fn main() -> ExitCode {
 
 async fn run() -> Result<serde_json::Value, AppError> {
     let cli = Cli::parse();
-    let ctx = config::Context::load(
-        cli.config.as_deref(),
-        cli.profile.as_deref(),
-        cli.secrets_file.as_deref(),
-        cli.key_file.as_deref(),
-    )?;
-    services::dispatch(&ctx, cli.command).await
+    match cli.command {
+        cli::Command::Config(command) => config_commands::dispatch(cli.config.as_deref(), command),
+        command => {
+            let ctx = config::Context::load(
+                cli.config.as_deref(),
+                cli.profile.as_deref(),
+                cli.secrets_file.as_deref(),
+                cli.key_file.as_deref(),
+            )?;
+            services::dispatch(&ctx, command).await
+        }
+    }
 }

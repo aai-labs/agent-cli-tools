@@ -13,6 +13,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks eas
 - Email: Gmail REST profiles and Zoho SMTP/IMAP profiles.
 - Calendar: Google Calendar REST profiles and Zoho CalDAV profiles.
 - Pipedrive CRM: leads, persons, organizations, deals, labels, activities, notes, and synced email history.
+- Persistent profile inspection, editing, validation, and default-profile management.
 - Local encrypted secrets: XChaCha20-Poly1305 secret store for tokens and app passwords.
 
 ## Quick Start
@@ -141,6 +142,34 @@ base_url = "https://api.pipedrive.com"
 ```
 
 Pipedrive tenant hostnames are also supported as `base_url`, for example `https://aai-labs.pipedrive.com`.
+
+### Profile Management
+
+Profile commands edit the configured `AAI_CONFIG` TOML file atomically. They preserve unrelated profiles and settings and return only non-secret metadata plus secret-reference names.
+
+```bash
+aai-cli config profiles list
+aai-cli config profiles get pipedrive-work
+aai-cli config profiles set pipedrive-work \
+  --provider pipedrive \
+  --auth-type pipedrive_personal_token \
+  --base-url https://aai-labs.pipedrive.com \
+  --api-token-secret pipedrive.api_token
+aai-cli config profiles validate pipedrive-work
+aai-cli config profiles remove pipedrive-work
+
+aai-cli config default-profile get
+aai-cli config default-profile set pipedrive-work
+```
+
+For complex profiles, pass a JSON object inline, from a file, or through stdin. Typed flags override matching JSON fields.
+
+```bash
+printf '%s' '{"provider":"pipedrive","auth_type":"pipedrive_personal_token","api_token_secret":"pipedrive.api_token","base_url":"https://aai-labs.pipedrive.com"}' |
+  aai-cli config profiles set pipedrive-work --json -
+```
+
+Profile editing accepts credential references only: `token_secret`, `api_token_secret`, and `password_secret`. Direct credential fields and environment-backed credential fields are rejected and never printed. Store their values with `aai-cli secrets set`.
 
 ## Secrets
 

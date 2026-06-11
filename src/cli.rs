@@ -26,7 +26,75 @@ pub enum Command {
     Calendar(CalendarCommand),
     /// Manage Pipedrive CRM records, history, activities, notes, and synced email.
     Pipedrive(PipedriveCommand),
+    /// Inspect and edit persistent profiles without exposing credentials.
+    Config(ConfigCommand),
     Secrets(SecretsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfigCommand {
+    #[command(subcommand)]
+    pub resource: ConfigResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfigResource {
+    /// Inspect, create, update, validate, or remove profiles.
+    Profiles(ConfigProfilesCommand),
+    /// Inspect or change the configured default profile.
+    DefaultProfile(ConfigDefaultProfileCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfigProfilesCommand {
+    #[command(subcommand)]
+    pub action: ConfigProfilesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfigProfilesAction {
+    List,
+    Get(ConfigProfileName),
+    Set(ConfigProfileSet),
+    Remove(ConfigProfileName),
+    Validate(ConfigProfileName),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfigProfileName {
+    pub name: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfigProfileSet {
+    pub name: String,
+    /// JSON object, inline or from a path; use - to read stdin.
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub provider: Option<String>,
+    #[arg(long)]
+    pub auth_type: Option<String>,
+    #[arg(long)]
+    pub base_url: Option<String>,
+    #[arg(long)]
+    pub api_token_secret: Option<String>,
+    #[arg(long)]
+    pub token_secret: Option<String>,
+    #[arg(long)]
+    pub password_secret: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfigDefaultProfileCommand {
+    #[command(subcommand)]
+    pub action: ConfigDefaultProfileAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfigDefaultProfileAction {
+    Get,
+    Set(ConfigProfileName),
 }
 
 #[derive(Debug, Args)]
@@ -1958,6 +2026,21 @@ mod tests {
         assert!(help.contains("mailbox messages get"));
         assert!(help.contains("activities"));
         assert!(help.contains("notes"));
+    }
+
+    #[test]
+    fn config_profile_commands_are_discoverable_in_help() {
+        let mut command = Cli::command();
+        let config = command
+            .find_subcommand_mut("config")
+            .expect("config command");
+        let mut help = Vec::new();
+        config.write_long_help(&mut help).unwrap();
+        let help = String::from_utf8(help).unwrap();
+
+        assert!(help.contains("profiles"));
+        assert!(help.contains("default-profile"));
+        assert!(help.contains("without exposing credentials"));
     }
 }
 

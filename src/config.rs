@@ -102,7 +102,7 @@ impl Context {
     }
 }
 
-fn config_path(config_arg: Option<&str>) -> Result<PathBuf, AppError> {
+pub(crate) fn config_path(config_arg: Option<&str>) -> Result<PathBuf, AppError> {
     if let Some(path) = config_arg {
         return Ok(PathBuf::from(path));
     }

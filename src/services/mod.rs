@@ -21,6 +21,7 @@ pub async fn dispatch(ctx: &Context, command: Command) -> Result<Value, AppError
         Command::Email(command) => email::dispatch(&client, ctx, command).await,
         Command::Calendar(command) => calendar::dispatch(&client, ctx, command).await,
         Command::Pipedrive(command) => pipedrive::dispatch(&client, ctx, command).await,
+        Command::Config(_) => unreachable!("config commands are dispatched before context loading"),
         Command::Secrets(command) => crate::secrets::dispatch(ctx, command),
     }
 }

@@ -11,6 +11,28 @@ This file documents implemented CLI behavior for agents. Provider API snapshots 
 - For destructive actions, prefer `get` or `list` first and verify the returned ID/key.
 - For test resources, clean up with the matching delete/close/decline command.
 
+## Configuration
+
+Configuration commands operate on `--config`, `AAI_CONFIG`, or the default `~/.config/aai-cli/config.toml` path. Writes atomically replace the TOML file while preserving unrelated settings.
+
+```bash
+aai-cli config profiles list
+aai-cli config profiles get <profile-name>
+aai-cli config profiles set <profile-name> [--json <path|->] [--provider PROVIDER] [--auth-type TYPE] [--base-url URL] [--api-token-secret KEY] [--token-secret KEY] [--password-secret KEY]
+aai-cli config profiles validate <profile-name>
+aai-cli config profiles remove <profile-name>
+aai-cli config default-profile get
+aai-cli config default-profile set <profile-name>
+```
+
+`profiles set` patches existing metadata; typed flags override matching JSON fields. JSON accepts known non-secret profile metadata and the secret references `token_secret`, `api_token_secret`, and `password_secret`. Direct or environment-backed token/password fields are rejected. Profile list/get/validate output never includes those fields.
+
+Validation enforces these provider/auth/reference combinations:
+
+- Pipedrive: `pipedrive_personal_token` with `api_token_secret`
+- GitHub: `bearer_token` with `token_secret`
+- Jira, Confluence, and Bitbucket: `basic_api_token` with `api_token_secret`
+
 ## Jira
 
 ### Issues
