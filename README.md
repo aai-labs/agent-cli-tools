@@ -12,7 +12,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks eas
 - GitHub: repositories, issues, pull requests, PR comments, close/decline.
 - Email: Gmail REST profiles and Zoho SMTP/IMAP profiles.
 - Calendar: Google Calendar REST profiles and Zoho CalDAV profiles.
-- Pipedrive CRM: leads, persons, organizations, deals, and labels.
+- Pipedrive CRM: leads, persons, organizations, deals, labels, activities, notes, and synced email history.
 - Local encrypted secrets: XChaCha20-Poly1305 secret store for tokens and app passwords.
 
 ## Quick Start
@@ -139,6 +139,8 @@ api_token_secret = "pipedrive.api_token"
 # Optional; defaults to https://api.pipedrive.com
 base_url = "https://api.pipedrive.com"
 ```
+
+Pipedrive tenant hostnames are also supported as `base_url`, for example `https://aai-labs.pipedrive.com`.
 
 ## Secrets
 

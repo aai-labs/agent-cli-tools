@@ -24,6 +24,7 @@ pub enum Command {
     Github(GithubCommand),
     Email(EmailCommand),
     Calendar(CalendarCommand),
+    /// Manage Pipedrive CRM records, history, activities, notes, and synced email.
     Pipedrive(PipedriveCommand),
     Secrets(SecretsCommand),
 }
@@ -733,6 +734,11 @@ pub struct CalendarEventUpdate {
 }
 
 #[derive(Debug, Args)]
+#[command(
+    about = "Manage Pipedrive CRM records and communication history",
+    long_about = "Manage Pipedrive leads, persons, organizations, deals, labels, activities, notes, and synced email history.\n\nUse `deals view`, `persons view`, or `organizations view` for a combined record, activities, and notes response. Add `--include-mail` to include associated email history.",
+    after_help = "Examples:\n  aai-cli pipedrive deals view 123 --include-mail\n  aai-cli pipedrive persons activities 456 --limit 25\n  aai-cli pipedrive notes list --deal-id 123\n  aai-cli pipedrive mailbox messages get 789 --include-body"
+)]
 pub struct PipedriveCommand {
     #[command(subcommand)]
     pub resource: PipedriveResource,
@@ -740,11 +746,22 @@ pub struct PipedriveCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum PipedriveResource {
+    /// Manage leads in the Leads Inbox.
     Leads(PipedriveLeadsCommand),
+    /// Manage persons (contacts) and inspect their full CRM history.
     Persons(PipedrivePersonsCommand),
+    /// Manage organizations and inspect their full CRM history.
     Organizations(PipedriveOrganizationsCommand),
+    /// Manage deals and inspect their full CRM history.
     Deals(PipedriveDealsCommand),
+    /// List and manage CRM labels.
     Labels(PipedriveLabelsCommand),
+    /// List or get activities across CRM records.
+    Activities(PipedriveActivitiesCommand),
+    /// List or get notes across CRM records.
+    Notes(PipedriveNotesCommand),
+    /// Inspect synced email messages and threads.
+    Mailbox(PipedriveMailboxCommand),
 }
 
 #[derive(Debug, Args)]
@@ -844,11 +861,25 @@ pub struct PipedrivePersonsCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum PipedrivePersonsAction {
+    /// List persons with optional filters.
     List(PipedrivePersonList),
+    /// Search persons by text.
     Search(PipedrivePersonSearch),
+    /// Get one person record.
     Get(PipedriveGetWithLabels),
+    /// Get a person with activities, notes, and optional associated email.
+    View(PipedriveAssociatedView),
+    /// List activities associated with a person.
+    Activities(PipedriveAssociatedList),
+    /// List notes associated with a person.
+    Notes(PipedriveAssociatedList),
+    /// List synced email messages associated with a person.
+    MailMessages(PipedriveAssociatedList),
+    /// Create a person from flags and/or JSON.
     Create(PipedrivePersonWrite),
+    /// Update a person from flags and/or JSON.
     Update(PipedrivePersonUpdate),
+    /// Delete a person.
     Delete(PipedriveIdArg),
 }
 
@@ -933,11 +964,25 @@ pub struct PipedriveOrganizationsCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum PipedriveOrganizationsAction {
+    /// List organizations with optional filters.
     List(PipedriveOrganizationList),
+    /// Search organizations by text.
     Search(PipedriveOrganizationSearch),
+    /// Get one organization record.
     Get(PipedriveGetWithLabels),
+    /// Get an organization with activities, notes, and optional associated email.
+    View(PipedriveAssociatedView),
+    /// List activities associated with an organization.
+    Activities(PipedriveAssociatedList),
+    /// List notes associated with an organization.
+    Notes(PipedriveAssociatedList),
+    /// List synced email messages associated with an organization.
+    MailMessages(PipedriveAssociatedList),
+    /// Create an organization from flags and/or JSON.
     Create(PipedriveOrganizationWrite),
+    /// Update an organization from flags and/or JSON.
     Update(PipedriveOrganizationUpdate),
+    /// Delete an organization.
     Delete(PipedriveIdArg),
 }
 
@@ -1008,11 +1053,25 @@ pub struct PipedriveDealsCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum PipedriveDealsAction {
+    /// List deals with optional filters.
     List(PipedriveDealList),
+    /// Search deals by text.
     Search(PipedriveDealSearch),
+    /// Get one deal record.
     Get(PipedriveGetWithLabels),
+    /// Get a deal with activities, notes, and optional associated email.
+    View(PipedriveAssociatedView),
+    /// List activities associated with a deal.
+    Activities(PipedriveAssociatedList),
+    /// List notes associated with a deal.
+    Notes(PipedriveAssociatedList),
+    /// List synced email messages associated with a deal.
+    MailMessages(PipedriveAssociatedList),
+    /// Create a deal from flags and/or JSON.
     Create(PipedriveDealWrite),
+    /// Update a deal from flags and/or JSON.
     Update(PipedriveDealUpdate),
+    /// Delete a deal.
     Delete(PipedriveIdArg),
 }
 
@@ -1173,6 +1232,191 @@ pub struct PipedriveIdArg {
 }
 
 #[derive(Debug, Args)]
+pub struct PipedriveAssociatedList {
+    /// Pipedrive record ID.
+    pub id: String,
+    /// Maximum associated records to aggregate.
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+#[command(
+    about = "Get a complete CRM view of a record",
+    long_about = "Returns one JSON object containing the CRM record, associated activities, and associated notes. Use --include-mail to also include synced email history."
+)]
+pub struct PipedriveAssociatedView {
+    /// Pipedrive record ID.
+    pub id: String,
+    /// Maximum records to aggregate for each associated history category.
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Include synced email messages associated with the record.
+    #[arg(long)]
+    pub include_mail: bool,
+    /// Include label details on the primary CRM record.
+    #[arg(long)]
+    pub include_labels: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveActivitiesCommand {
+    #[command(subcommand)]
+    pub action: PipedriveActivitiesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveActivitiesAction {
+    /// List activities, optionally filtered by linked CRM records.
+    List(Box<PipedriveActivityList>),
+    /// Get one activity.
+    Get(PipedriveIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveActivityList {
+    /// Maximum activities to aggregate.
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub filter_id: Option<String>,
+    #[arg(long)]
+    pub ids: Option<String>,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub deal_id: Option<String>,
+    #[arg(long)]
+    pub lead_id: Option<String>,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    /// Filter by completion state.
+    #[arg(long)]
+    pub done: Option<bool>,
+    #[arg(long)]
+    pub updated_since: Option<String>,
+    #[arg(long)]
+    pub updated_until: Option<String>,
+    #[arg(long)]
+    pub sort_by: Option<String>,
+    #[arg(long, value_enum)]
+    pub sort_direction: Option<PipedriveSortDirection>,
+    /// Include activity attendees in responses.
+    #[arg(long)]
+    pub include_attendees: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveNotesCommand {
+    #[command(subcommand)]
+    pub action: PipedriveNotesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveNotesAction {
+    /// List notes, optionally filtered by linked CRM records.
+    List(PipedriveNoteList),
+    /// Get one note.
+    Get(PipedriveIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveNoteList {
+    /// Maximum notes to aggregate.
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub user_id: Option<String>,
+    #[arg(long)]
+    pub lead_id: Option<String>,
+    #[arg(long)]
+    pub deal_id: Option<String>,
+    #[arg(long)]
+    pub person_id: Option<String>,
+    #[arg(long)]
+    pub org_id: Option<String>,
+    #[arg(long)]
+    pub sort: Option<String>,
+    #[arg(long)]
+    pub start_date: Option<String>,
+    #[arg(long)]
+    pub end_date: Option<String>,
+    #[arg(long)]
+    pub updated_since: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveMailboxCommand {
+    #[command(subcommand)]
+    pub resource: PipedriveMailboxResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveMailboxResource {
+    /// Get individual synced email messages.
+    Messages(PipedriveMailboxMessagesCommand),
+    /// List and inspect synced email threads.
+    Threads(PipedriveMailboxThreadsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveMailboxMessagesCommand {
+    #[command(subcommand)]
+    pub action: PipedriveMailboxMessagesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveMailboxMessagesAction {
+    /// Get one synced email message, optionally including its full body.
+    Get(PipedriveMailMessageGet),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveMailMessageGet {
+    /// Pipedrive mail message ID.
+    pub id: String,
+    /// Include the full message body, not only metadata and snippet.
+    #[arg(long)]
+    pub include_body: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveMailboxThreadsCommand {
+    #[command(subcommand)]
+    pub action: PipedriveMailboxThreadsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PipedriveMailboxThreadsAction {
+    /// List synced email threads in a mailbox folder.
+    List(PipedriveMailThreadList),
+    /// Get one synced email thread.
+    Get(PipedriveIdArg),
+    /// List every message in a synced email thread.
+    Messages(PipedriveIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PipedriveMailThreadList {
+    /// Mailbox folder to list.
+    #[arg(long, value_enum, default_value_t = PipedriveMailFolder::Inbox)]
+    pub folder: PipedriveMailFolder,
+    /// Maximum threads to aggregate.
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Clone, Debug, ValueEnum)]
+pub enum PipedriveMailFolder {
+    Inbox,
+    Drafts,
+    Sent,
+    Archive,
+}
+
+#[derive(Debug, Args)]
 pub struct PipedriveGetWithLabels {
     pub id: String,
     #[arg(long)]
@@ -1242,6 +1486,29 @@ pub struct RepoLimitArg {
     pub repo: Option<String>,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    #[test]
+    fn pipedrive_history_commands_are_discoverable_in_help() {
+        let mut command = Cli::command();
+        let pipedrive = command
+            .find_subcommand_mut("pipedrive")
+            .expect("pipedrive command");
+        let mut help = Vec::new();
+        pipedrive.write_long_help(&mut help).unwrap();
+        let help = String::from_utf8(help).unwrap();
+
+        assert!(help.contains("synced email"));
+        assert!(help.contains("deals view"));
+        assert!(help.contains("mailbox messages get"));
+        assert!(help.contains("activities"));
+        assert!(help.contains("notes"));
+    }
 }
 
 #[derive(Debug, Subcommand)]

@@ -21,6 +21,9 @@ pub(crate) async fn dispatch(
         PipedriveResource::Organizations(command) => organizations(client, ctx, command).await,
         PipedriveResource::Deals(command) => deals(client, ctx, command).await,
         PipedriveResource::Labels(command) => labels(client, ctx, command).await,
+        PipedriveResource::Activities(command) => activities(client, ctx, command).await,
+        PipedriveResource::Notes(command) => notes(client, ctx, command).await,
+        PipedriveResource::Mailbox(command) => mailbox(client, ctx, command).await,
     }
 }
 
@@ -169,6 +172,18 @@ async fn persons(
             )
             .await
         }
+        PipedrivePersonsAction::View(args) => {
+            associated_view(client, ctx, "persons", "person_id", args).await
+        }
+        PipedrivePersonsAction::Activities(args) => {
+            associated_activities(client, ctx, "persons.activities", "person_id", args).await
+        }
+        PipedrivePersonsAction::Notes(args) => {
+            associated_notes(client, ctx, "persons.notes", "person_id", args).await
+        }
+        PipedrivePersonsAction::MailMessages(args) => {
+            associated_mail(client, ctx, "persons.mail_messages", "persons", args).await
+        }
         PipedrivePersonsAction::Create(args) => {
             let body = person_create_body(args)?;
             request_json(
@@ -254,6 +269,25 @@ async fn organizations(
                 "/api/v2/organizations",
                 &args.id,
                 query,
+            )
+            .await
+        }
+        PipedriveOrganizationsAction::View(args) => {
+            associated_view(client, ctx, "organizations", "org_id", args).await
+        }
+        PipedriveOrganizationsAction::Activities(args) => {
+            associated_activities(client, ctx, "organizations.activities", "org_id", args).await
+        }
+        PipedriveOrganizationsAction::Notes(args) => {
+            associated_notes(client, ctx, "organizations.notes", "org_id", args).await
+        }
+        PipedriveOrganizationsAction::MailMessages(args) => {
+            associated_mail(
+                client,
+                ctx,
+                "organizations.mail_messages",
+                "organizations",
+                args,
             )
             .await
         }
@@ -352,6 +386,18 @@ async fn deals(
             query.push_bool("include_labels", args.include_labels);
             get_with_query(client, ctx, "deals.get", "/api/v2/deals", &args.id, query).await
         }
+        PipedriveDealsAction::View(args) => {
+            associated_view(client, ctx, "deals", "deal_id", args).await
+        }
+        PipedriveDealsAction::Activities(args) => {
+            associated_activities(client, ctx, "deals.activities", "deal_id", args).await
+        }
+        PipedriveDealsAction::Notes(args) => {
+            associated_notes(client, ctx, "deals.notes", "deal_id", args).await
+        }
+        PipedriveDealsAction::MailMessages(args) => {
+            associated_mail(client, ctx, "deals.mail_messages", "deals", args).await
+        }
         PipedriveDealsAction::Create(args) => {
             let body = deal_create_body(args)?;
             request_json(
@@ -381,6 +427,258 @@ async fn deals(
             delete(client, ctx, "deals.delete", "/api/v2/deals", &args.id).await
         }
     }
+}
+
+async fn activities(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveActivitiesCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        PipedriveActivitiesAction::List(args) => {
+            let mut query = Query::new();
+            query.push("filter_id", args.filter_id.as_deref());
+            query.push("ids", args.ids.as_deref());
+            query.push("owner_id", args.owner_id.as_deref());
+            query.push("deal_id", args.deal_id.as_deref());
+            query.push("lead_id", args.lead_id.as_deref());
+            query.push("person_id", args.person_id.as_deref());
+            query.push("org_id", args.org_id.as_deref());
+            query.push_optional_bool("done", args.done);
+            query.push("updated_since", args.updated_since.as_deref());
+            query.push("updated_until", args.updated_until.as_deref());
+            query.push("sort_by", args.sort_by.as_deref());
+            query.push(
+                "sort_direction",
+                sort_direction(args.sort_direction.as_ref()),
+            );
+            if args.include_attendees {
+                query.push_value("include_fields", "attendees");
+            }
+            list_v2(
+                client,
+                ctx,
+                "activities.list",
+                "/api/v2/activities",
+                query,
+                args.limit,
+            )
+            .await
+        }
+        PipedriveActivitiesAction::Get(args) => {
+            get(
+                client,
+                ctx,
+                "activities.get",
+                "/api/v2/activities",
+                &args.id,
+            )
+            .await
+        }
+    }
+}
+
+async fn notes(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveNotesCommand,
+) -> Result<Value, AppError> {
+    match command.action {
+        PipedriveNotesAction::List(args) => {
+            let mut query = Query::new();
+            query.push("user_id", args.user_id.as_deref());
+            query.push("lead_id", args.lead_id.as_deref());
+            query.push("deal_id", args.deal_id.as_deref());
+            query.push("person_id", args.person_id.as_deref());
+            query.push("org_id", args.org_id.as_deref());
+            query.push("sort", args.sort.as_deref());
+            query.push("start_date", args.start_date.as_deref());
+            query.push("end_date", args.end_date.as_deref());
+            query.push("updated_since", args.updated_since.as_deref());
+            list_v1(client, ctx, "notes.list", "/v1/notes", query, args.limit).await
+        }
+        PipedriveNotesAction::Get(args) => {
+            get(client, ctx, "notes.get", "/v1/notes", &args.id).await
+        }
+    }
+}
+
+async fn mailbox(
+    client: &ApiClient,
+    ctx: &Context,
+    command: PipedriveMailboxCommand,
+) -> Result<Value, AppError> {
+    match command.resource {
+        PipedriveMailboxResource::Messages(command) => match command.action {
+            PipedriveMailboxMessagesAction::Get(args) => {
+                let mut query = Query::new();
+                if args.include_body {
+                    query.push_value("include_body", "1");
+                }
+                get_with_query(
+                    client,
+                    ctx,
+                    "mailbox.messages.get",
+                    "/v1/mailbox/mailMessages",
+                    &args.id,
+                    query,
+                )
+                .await
+            }
+        },
+        PipedriveMailboxResource::Threads(command) => match command.action {
+            PipedriveMailboxThreadsAction::List(args) => {
+                let mut query = Query::new();
+                query.push_value("folder", mail_folder(&args.folder));
+                list_v1(
+                    client,
+                    ctx,
+                    "mailbox.threads.list",
+                    "/v1/mailbox/mailThreads",
+                    query,
+                    args.limit,
+                )
+                .await
+            }
+            PipedriveMailboxThreadsAction::Get(args) => {
+                get(
+                    client,
+                    ctx,
+                    "mailbox.threads.get",
+                    "/v1/mailbox/mailThreads",
+                    &args.id,
+                )
+                .await
+            }
+            PipedriveMailboxThreadsAction::Messages(args) => {
+                request_json(
+                    client,
+                    ctx,
+                    "mailbox.threads.messages",
+                    Method::GET,
+                    &format!("/v1/mailbox/mailThreads/{}/mailMessages", enc(&args.id)),
+                    None,
+                )
+                .await
+            }
+        },
+    }
+}
+
+async fn associated_view(
+    client: &ApiClient,
+    ctx: &Context,
+    resource: &'static str,
+    filter_key: &'static str,
+    args: PipedriveAssociatedView,
+) -> Result<Value, AppError> {
+    let mut resource_query = Query::new();
+    resource_query.push_bool("include_labels", args.include_labels);
+    let record = get_with_query(
+        client,
+        ctx,
+        match resource {
+            "deals" => "deals.view",
+            "persons" => "persons.view",
+            _ => "organizations.view",
+        },
+        &format!("/api/v2/{resource}"),
+        &args.id,
+        resource_query,
+    )
+    .await?;
+    let activities = associated_activities(
+        client,
+        ctx,
+        "view.activities",
+        filter_key,
+        PipedriveAssociatedList {
+            id: args.id.clone(),
+            limit: args.limit,
+        },
+    )
+    .await?;
+    let notes = associated_notes(
+        client,
+        ctx,
+        "view.notes",
+        filter_key,
+        PipedriveAssociatedList {
+            id: args.id.clone(),
+            limit: args.limit,
+        },
+    )
+    .await?;
+    let mut response = json!({
+        "record": record,
+        "activities": activities,
+        "notes": notes,
+    });
+    if args.include_mail {
+        let mail = associated_mail(
+            client,
+            ctx,
+            "view.mail_messages",
+            resource,
+            PipedriveAssociatedList {
+                id: args.id,
+                limit: args.limit,
+            },
+        )
+        .await?;
+        input::ensure_object(&mut response).insert("mail_messages".to_string(), mail);
+    }
+    Ok(response)
+}
+
+async fn associated_activities(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    filter_key: &'static str,
+    args: PipedriveAssociatedList,
+) -> Result<Value, AppError> {
+    let mut query = Query::new();
+    query.push_value(filter_key, &args.id);
+    list_v2(
+        client,
+        ctx,
+        operation,
+        "/api/v2/activities",
+        query,
+        args.limit,
+    )
+    .await
+}
+
+async fn associated_notes(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    filter_key: &'static str,
+    args: PipedriveAssociatedList,
+) -> Result<Value, AppError> {
+    let mut query = Query::new();
+    query.push_value(filter_key, &args.id);
+    list_v1(client, ctx, operation, "/v1/notes", query, args.limit).await
+}
+
+async fn associated_mail(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    resource: &'static str,
+    args: PipedriveAssociatedList,
+) -> Result<Value, AppError> {
+    list_v1(
+        client,
+        ctx,
+        operation,
+        &format!("/v1/{resource}/{}/mailMessages", enc(&args.id)),
+        Query::new(),
+        args.limit,
+    )
+    .await
 }
 
 async fn labels(
@@ -940,6 +1238,15 @@ fn search_deal_status(value: Option<&PipedriveSearchDealStatus>) -> Option<&'sta
     })
 }
 
+fn mail_folder(value: &PipedriveMailFolder) -> &'static str {
+    match value {
+        PipedriveMailFolder::Inbox => "inbox",
+        PipedriveMailFolder::Drafts => "drafts",
+        PipedriveMailFolder::Sent => "sent",
+        PipedriveMailFolder::Archive => "archive",
+    }
+}
+
 #[derive(Debug, Default)]
 struct Query(Vec<(String, String)>);
 
@@ -961,6 +1268,12 @@ impl Query {
     fn push_bool(&mut self, key: &str, value: bool) {
         if value {
             self.push_value(key, "true");
+        }
+    }
+
+    fn push_optional_bool(&mut self, key: &str, value: Option<bool>) {
+        if let Some(value) = value {
+            self.push_value(key, if value { "true" } else { "false" });
         }
     }
 

@@ -101,6 +101,8 @@ Prefer `append` unless sibling ordering is required. Atlassian warns that `befor
 
 Use Pipedrive's API resource terms directly: `leads`, `persons`, `organizations`, `deals`, and `labels`.
 
+Configure `profile.base_url` with either the default API hostname (`https://api.pipedrive.com`) or a tenant hostname such as `https://aai-labs.pipedrive.com`.
+
 ```bash
 aai-cli pipedrive leads list [--limit N] [--owner-id ID] [--person-id ID] [--organization-id ID] [--filter-id ID] [--updated-since TS] [--sort SORT] [--archived]
 aai-cli pipedrive leads search --term TEXT [--fields LIST] [--exact-match] [--person-id ID] [--organization-id ID] [--limit N]
@@ -115,6 +117,10 @@ aai-cli pipedrive leads convert <lead-id> [--json <path|->]
 aai-cli pipedrive persons list [--limit N] [--filter-id ID] [--ids CSV] [--owner-id ID] [--org-id ID] [--deal-id ID] [--updated-since TS] [--updated-until TS] [--sort-by FIELD] [--sort-direction asc|desc] [--include-labels]
 aai-cli pipedrive persons search --term TEXT [--fields LIST] [--exact-match] [--organization-id ID] [--limit N]
 aai-cli pipedrive persons get <person-id> [--include-labels]
+aai-cli pipedrive persons view <person-id> [--limit N] [--include-labels] [--include-mail]
+aai-cli pipedrive persons activities <person-id> [--limit N]
+aai-cli pipedrive persons notes <person-id> [--limit N]
+aai-cli pipedrive persons mail-messages <person-id> [--limit N]
 aai-cli pipedrive persons create [--json <path|->] --name TEXT [--org-id ID] [--email EMAIL] [--phone PHONE] [--label-ids CSV]
 aai-cli pipedrive persons update <person-id> [--json <path|->] [--name TEXT] [--org-id ID] [--email EMAIL] [--phone PHONE] [--label-ids CSV]
 aai-cli pipedrive persons delete <person-id>
@@ -124,6 +130,10 @@ aai-cli pipedrive persons delete <person-id>
 aai-cli pipedrive organizations list [--limit N] [--filter-id ID] [--ids CSV] [--owner-id ID] [--updated-since TS] [--updated-until TS] [--sort-by FIELD] [--sort-direction asc|desc] [--include-labels]
 aai-cli pipedrive organizations search --term TEXT [--fields LIST] [--exact-match] [--limit N]
 aai-cli pipedrive organizations get <organization-id> [--include-labels]
+aai-cli pipedrive organizations view <organization-id> [--limit N] [--include-labels] [--include-mail]
+aai-cli pipedrive organizations activities <organization-id> [--limit N]
+aai-cli pipedrive organizations notes <organization-id> [--limit N]
+aai-cli pipedrive organizations mail-messages <organization-id> [--limit N]
 aai-cli pipedrive organizations create [--json <path|->] --name TEXT [--address TEXT] [--label-ids CSV]
 aai-cli pipedrive organizations update <organization-id> [--json <path|->] [--name TEXT] [--address TEXT] [--label-ids CSV]
 aai-cli pipedrive organizations delete <organization-id>
@@ -133,6 +143,10 @@ aai-cli pipedrive organizations delete <organization-id>
 aai-cli pipedrive deals list [--limit N] [--filter-id ID] [--ids CSV] [--owner-id ID] [--person-id ID] [--org-id ID] [--pipeline-id ID] [--stage-id ID] [--status open|won|lost|deleted] [--updated-since TS] [--updated-until TS] [--sort-by FIELD] [--sort-direction asc|desc] [--include-labels]
 aai-cli pipedrive deals search --term TEXT [--fields LIST] [--exact-match] [--person-id ID] [--organization-id ID] [--status open|won|lost] [--limit N]
 aai-cli pipedrive deals get <deal-id> [--include-labels]
+aai-cli pipedrive deals view <deal-id> [--limit N] [--include-labels] [--include-mail]
+aai-cli pipedrive deals activities <deal-id> [--limit N]
+aai-cli pipedrive deals notes <deal-id> [--limit N]
+aai-cli pipedrive deals mail-messages <deal-id> [--limit N]
 aai-cli pipedrive deals create [--json <path|->] --title TEXT [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
 aai-cli pipedrive deals update <deal-id> [--json <path|->] [--title TEXT] [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
 aai-cli pipedrive deals delete <deal-id>
@@ -146,6 +160,21 @@ aai-cli pipedrive labels leads delete <label-id>
 aai-cli pipedrive labels deals list
 aai-cli pipedrive labels persons list
 aai-cli pipedrive labels organizations list
+```
+
+Use `view` for a combined JSON response containing the CRM record, activities, and notes. Add `--include-mail` to include associated email history; this requires Pipedrive email synchronization and permission to view those messages.
+
+```bash
+aai-cli pipedrive activities list [--deal-id ID] [--lead-id ID] [--person-id ID] [--org-id ID] [--owner-id ID] [--done true|false] [--updated-since TS] [--updated-until TS] [--sort-by FIELD] [--sort-direction asc|desc] [--include-attendees] [--limit N]
+aai-cli pipedrive activities get <activity-id>
+
+aai-cli pipedrive notes list [--deal-id ID] [--lead-id ID] [--person-id ID] [--org-id ID] [--user-id ID] [--sort SORT] [--start-date DATE] [--end-date DATE] [--updated-since TS] [--limit N]
+aai-cli pipedrive notes get <note-id>
+
+aai-cli pipedrive mailbox messages get <message-id> [--include-body]
+aai-cli pipedrive mailbox threads list [--folder inbox|drafts|sent|archive] [--limit N]
+aai-cli pipedrive mailbox threads get <thread-id>
+aai-cli pipedrive mailbox threads messages <thread-id>
 ```
 
 ## Pagination
@@ -168,6 +197,10 @@ Covered operations:
 - `pipedrive organizations search`
 - `pipedrive deals list`
 - `pipedrive deals search`
+- `pipedrive activities list`
+- `pipedrive notes list`
+- associated activities, notes, and mail-message lists
+- `pipedrive mailbox threads list`
 
 Agents should set the smallest useful `--limit`. Large limits can increase latency and provider rate-limit pressure.
 
