@@ -43,6 +43,8 @@ cargo build
 scripts/run-tests.sh safe
 ```
 
+GitHub Actions runs the same safe suite on pull requests and pushes to `main`.
+
 Run through Cargo:
 
 ```bash
