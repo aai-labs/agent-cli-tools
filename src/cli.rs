@@ -64,6 +64,9 @@ pub struct JiraCommand {
 pub enum JiraResource {
     Issues(JiraIssuesCommand),
     Projects(JiraProjectsCommand),
+    Sprints(JiraSprintsCommand),
+    Boards(JiraBoardsCommand),
+    Users(JiraUsersCommand),
 }
 
 #[derive(Debug, Args)]
@@ -75,27 +78,97 @@ pub struct JiraIssuesCommand {
 #[derive(Debug, Subcommand)]
 pub enum JiraIssuesAction {
     List(JiraIssueList),
-    Search(JiraIssueSearch),
     Get(IdArg),
     Create(JiraIssueCreate),
     Update(JiraIssueUpdate),
     Delete(IdArg),
+    Comments(JiraIssueCommentsCommand),
+    Attachments(JiraIssueAttachmentsCommand),
 }
 
 #[derive(Debug, Args)]
-pub struct JiraIssueList {
-    #[arg(long)]
-    pub jql: Option<String>,
-    #[arg(long)]
-    pub fields: Option<String>,
+pub struct JiraIssueCommentsCommand {
+    #[command(subcommand)]
+    pub action: JiraIssueCommentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraIssueCommentsAction {
+    List(JiraIssueCommentsList),
+    Get(JiraIssueCommentsGet),
+    Create(JiraIssueCommentsCreate),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueCommentsList {
+    pub issue: String,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
 }
 
 #[derive(Debug, Args)]
-pub struct JiraIssueSearch {
+pub struct JiraIssueCommentsGet {
+    pub issue: String,
+    pub comment: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueCommentsCreate {
+    pub issue: String,
     #[arg(long)]
-    pub jql: String,
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueAttachmentsCommand {
+    #[command(subcommand)]
+    pub action: JiraIssueAttachmentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraIssueAttachmentsAction {
+    List(JiraIssueAttachmentsList),
+    Download(JiraAttachmentDownload),
+    Upload(JiraAttachmentUpload),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueAttachmentsList {
+    pub issue: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraAttachmentDownload {
+    pub attachment_id: String,
+    #[arg(long)]
+    pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraAttachmentUpload {
+    pub issue: String,
+    #[arg(long)]
+    pub file: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIssueList {
+    #[arg(long)]
+    pub project: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub assignee: Option<String>,
+    #[arg(long = "type")]
+    pub issue_type: Option<String>,
+    #[arg(long)]
+    pub sprint: Option<String>,
+    #[arg(long)]
+    pub text: Option<String>,
+    #[arg(long = "updated-since")]
+    pub updated_since: Option<String>,
     #[arg(long)]
     pub fields: Option<String>,
     #[arg(long, default_value_t = 50)]
@@ -134,6 +207,114 @@ pub struct JiraProjectsCommand {
 }
 
 #[derive(Debug, Args)]
+pub struct JiraSprintsCommand {
+    #[command(subcommand)]
+    pub action: JiraSprintsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraSprintsAction {
+    List(JiraSprintsList),
+    Get(JiraSprintsGet),
+    Create(JiraSprintsCreate),
+    Issues(JiraSprintsIssuesCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsIssuesCommand {
+    #[command(subcommand)]
+    pub action: JiraSprintsIssuesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraSprintsIssuesAction {
+    Add(JiraSprintsIssuesAdd),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsIssuesAdd {
+    pub sprint: u64,
+    #[arg(long)]
+    pub issues: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsList {
+    #[arg(long)]
+    pub board: u64,
+    #[arg(long)]
+    pub state: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsGet {
+    pub id: u64,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraSprintsCreate {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub board: Option<u64>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub goal: Option<String>,
+    #[arg(long = "start-date")]
+    pub start_date: Option<String>,
+    #[arg(long = "end-date")]
+    pub end_date: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraBoardsCommand {
+    #[command(subcommand)]
+    pub action: JiraBoardsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraBoardsAction {
+    List(JiraBoardsList),
+    Get(JiraBoardsGet),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraBoardsList {
+    #[arg(long = "type")]
+    pub board_type: Option<String>,
+    #[arg(long)]
+    pub project: Option<String>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraBoardsGet {
+    pub id: u64,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraUsersCommand {
+    #[command(subcommand)]
+    pub action: JiraUsersAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraUsersAction {
+    Get(JiraUsersGet),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraUsersGet {
+    pub account_id: String,
+}
+
+#[derive(Debug, Args)]
 pub struct ConfluenceCommand {
     #[command(subcommand)]
     pub resource: ConfluenceResource,
@@ -143,13 +324,30 @@ pub struct ConfluenceCommand {
 pub enum ConfluenceResource {
     Spaces(ConfluenceSpacesCommand),
     Pages(ConfluencePagesCommand),
-    Search(ConfluenceSearch),
 }
 
 #[derive(Debug, Args)]
 pub struct ConfluenceSpacesCommand {
     #[command(subcommand)]
-    pub action: ListGetAction,
+    pub action: ConfluenceSpacesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfluenceSpacesAction {
+    List(ConfluenceSpacesList),
+    Get(IdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluenceSpacesList {
+    #[arg(long = "type")]
+    pub space_type: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub key: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
@@ -160,12 +358,95 @@ pub struct ConfluencePagesCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum ConfluencePagesAction {
-    List(LimitArg),
+    List(ConfluencePagesList),
     Get(IdArg),
     Create(ConfluencePageCreate),
     Update(ConfluencePageUpdate),
     Move(ConfluencePageMove),
     Delete(IdArg),
+    Comments(ConfluencePageCommentsCommand),
+    Attachments(ConfluencePageAttachmentsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageCommentsCommand {
+    #[command(subcommand)]
+    pub action: ConfluencePageCommentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfluencePageCommentsAction {
+    List(ConfluencePageCommentsList),
+    Create(ConfluencePageCommentsCreate),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageCommentsList {
+    pub page_id: String,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageCommentsCreate {
+    pub page_id: String,
+    #[arg(long)]
+    pub body: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long = "reply-to")]
+    pub reply_to: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsCommand {
+    #[command(subcommand)]
+    pub action: ConfluencePageAttachmentsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfluencePageAttachmentsAction {
+    List(ConfluencePageAttachmentsList),
+    Download(ConfluencePageAttachmentsDownload),
+    Upload(ConfluencePageAttachmentsUpload),
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsList {
+    pub page_id: String,
+    #[arg(long, default_value_t = 25)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsDownload {
+    pub page_id: String,
+    pub attachment_id: String,
+    #[arg(long)]
+    pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePageAttachmentsUpload {
+    pub page_id: String,
+    #[arg(long)]
+    pub file: String,
+    #[arg(long)]
+    pub comment: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ConfluencePagesList {
+    #[arg(long)]
+    pub space: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub parent: Option<String>,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
@@ -224,16 +505,6 @@ impl ConfluenceMovePosition {
 }
 
 #[derive(Debug, Args)]
-pub struct ConfluenceSearch {
-    #[arg(long, conflicts_with = "query")]
-    pub cql: Option<String>,
-    #[arg(long, conflicts_with = "cql")]
-    pub query: Option<String>,
-    #[arg(long, default_value_t = 25)]
-    pub limit: u32,
-}
-
-#[derive(Debug, Args)]
 pub struct BitbucketCommand {
     #[command(subcommand)]
     pub resource: BitbucketResource,
@@ -243,6 +514,9 @@ pub struct BitbucketCommand {
 pub enum BitbucketResource {
     Repos(BitbucketReposCommand),
     Prs(BitbucketPrsCommand),
+    Branches(BitbucketBranchesCommand),
+    Commits(BitbucketCommitsCommand),
+    Source(BitbucketSourceCommand),
     Pipelines(BitbucketPipelinesCommand),
 }
 
@@ -266,6 +540,10 @@ pub enum BitbucketPullRequestAction {
     Delete(NumberArg),
     Close(NumberArg),
     Decline(NumberArg),
+    Diff(BitbucketPrDiff),
+    Diffstat(BitbucketPrDiffstat),
+    Commits(BitbucketPrCommits),
+    Activity(BitbucketPrActivity),
     Comments(BitbucketPrCommentsCommand),
 }
 
@@ -293,6 +571,8 @@ pub struct BitbucketPrCommentList {
     pub repo: Option<String>,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
+    #[arg(long)]
+    pub inline_only: bool,
 }
 
 #[derive(Debug, Args)]
@@ -318,6 +598,174 @@ pub struct BitbucketPrCommentWrite {
     pub json: Option<String>,
     #[arg(long)]
     pub body: Option<String>,
+    #[arg(long)]
+    pub inline_path: Option<String>,
+    #[arg(long)]
+    pub inline_from: Option<u64>,
+    #[arg(long)]
+    pub inline_to: Option<u64>,
+    #[arg(long)]
+    pub parent_id: Option<u64>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrDiff {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub output: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrDiffstat {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrCommits {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketPrActivity {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketBranchesCommand {
+    #[command(subcommand)]
+    pub action: BitbucketBranchesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketBranchesAction {
+    List(BitbucketBranchList),
+    Get(BitbucketBranchGet),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketBranchList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long, conflicts_with_all = ["name_prefix", "query"])]
+    pub name_contains: Option<String>,
+    #[arg(long, conflicts_with_all = ["name_contains", "query"])]
+    pub name_prefix: Option<String>,
+    #[arg(
+        long,
+        hide = true,
+        help = "Advanced escape hatch: raw Bitbucket BBQL expression for the ?q= filter (e.g. 'name ~ \"^feature/\"'). Prefer --name-contains or --name-prefix."
+    )]
+    pub query: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketBranchGet {
+    pub name: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketCommitsCommand {
+    #[command(subcommand)]
+    pub action: BitbucketCommitsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketCommitsAction {
+    List(BitbucketCommitList),
+    Get(BitbucketCommitGet),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketCommitList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub branch: Option<String>,
+    #[arg(long)]
+    pub include: Option<String>,
+    #[arg(long)]
+    pub exclude: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketCommitGet {
+    pub sha: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketSourceCommand {
+    #[command(subcommand)]
+    pub action: BitbucketSourceAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum BitbucketSourceAction {
+    Get(BitbucketSourceGet),
+    History(BitbucketSourceHistory),
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketSourceGet {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, conflicts_with = "meta")]
+    pub output: Option<String>,
+    #[arg(long, conflicts_with = "output")]
+    pub meta: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct BitbucketSourceHistory {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
@@ -427,6 +875,8 @@ pub enum GithubResource {
     Issues(GithubIssuesCommand),
     Prs(GithubPrsCommand),
     Actions(GithubActionsCommand),
+    Branches(GithubBranchesCommand),
+    Source(GithubSourceCommand),
 }
 
 #[derive(Debug, Args)]
@@ -1527,7 +1977,315 @@ pub enum GithubPullRequestAction {
     Delete(NumberArg),
     Close(NumberArg),
     Decline(NumberArg),
-    Comments(BitbucketPrCommentsCommand),
+    Diff(GithubPrDiff),
+    Files(GithubPrFiles),
+    Commits(GithubPrCommits),
+    Timeline(GithubPrTimeline),
+    Comments(GithubPrCommentsCommand),
+    #[command(name = "review-comments")]
+    ReviewComments(GithubPrReviewCommentsCommand),
+    Reviews(GithubPrReviewsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrDiff {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub output: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrFiles {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommits {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrTimeline {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentsCommand {
+    #[command(subcommand)]
+    pub action: GithubPrCommentAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubPrCommentAction {
+    List(GithubPrCommentList),
+    Get(GithubPrCommentGet),
+    Create(GithubPrCommentWrite),
+    Update(GithubPrCommentWrite),
+    Delete(GithubPrCommentGet),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentList {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentGet {
+    pub pr: u64,
+    pub comment: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrCommentWrite {
+    pub pr: u64,
+    #[arg(long)]
+    pub comment: Option<u64>,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentsCommand {
+    #[command(subcommand)]
+    pub action: GithubPrReviewCommentAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubPrReviewCommentAction {
+    List(GithubPrReviewCommentList),
+    Get(GithubPrReviewCommentGet),
+    Create(GithubPrReviewCommentCreate),
+    Update(GithubPrReviewCommentUpdate),
+    Delete(GithubPrReviewCommentGet),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentList {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentGet {
+    pub pr: u64,
+    pub comment: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentCreate {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+    #[arg(long)]
+    pub path: Option<String>,
+    #[arg(long)]
+    pub line: Option<u64>,
+    #[arg(long)]
+    pub side: Option<String>,
+    #[arg(long = "start-line")]
+    pub start_line: Option<u64>,
+    #[arg(long = "start-side")]
+    pub start_side: Option<String>,
+    #[arg(long = "commit-id")]
+    pub commit_id: Option<String>,
+    #[arg(long = "in-reply-to")]
+    pub in_reply_to: Option<u64>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCommentUpdate {
+    pub pr: u64,
+    #[arg(long)]
+    pub comment: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewsCommand {
+    #[command(subcommand)]
+    pub action: GithubPrReviewAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubPrReviewAction {
+    List(GithubPrReviewList),
+    Get(GithubPrReviewGet),
+    Create(GithubPrReviewCreate),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewList {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewGet {
+    pub pr: u64,
+    pub review: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubPrReviewCreate {
+    pub pr: u64,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub body: Option<String>,
+    #[arg(long)]
+    pub event: Option<String>,
+    #[arg(long = "commit-id")]
+    pub commit_id: Option<String>,
+    #[arg(long = "comments-json")]
+    pub comments_json: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubBranchesCommand {
+    #[command(subcommand)]
+    pub action: GithubBranchesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubBranchesAction {
+    List(GithubBranchList),
+    Get(GithubBranchGet),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubBranchList {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long, conflicts_with = "name_prefix")]
+    pub name_contains: Option<String>,
+    #[arg(long, conflicts_with = "name_contains")]
+    pub name_prefix: Option<String>,
+    #[arg(long)]
+    pub protected: Option<bool>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubBranchGet {
+    pub name: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubSourceCommand {
+    #[command(subcommand)]
+    pub action: GithubSourceAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GithubSourceAction {
+    Get(GithubSourceGet),
+    History(GithubSourceHistory),
+}
+
+#[derive(Debug, Args)]
+pub struct GithubSourceGet {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, conflicts_with = "meta")]
+    pub output: Option<String>,
+    #[arg(long, conflicts_with = "output")]
+    pub meta: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct GithubSourceHistory {
+    pub commit: String,
+    pub path: String,
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]

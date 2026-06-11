@@ -181,6 +181,18 @@ pub(crate) fn enc(value: &str) -> String {
     urlencoding::encode(value).into_owned()
 }
 
+pub(crate) fn pick(src: &Value, keys: &[&str]) -> Value {
+    let mut out = serde_json::Map::new();
+    if let Some(obj) = src.as_object() {
+        for k in keys {
+            if let Some(v) = obj.get(*k) {
+                out.insert((*k).to_string(), v.clone());
+            }
+        }
+    }
+    Value::Object(out)
+}
+
 pub(crate) fn write_download(
     service: &'static str,
     operation: &'static str,

@@ -156,13 +156,7 @@ fn jira_issue_crud_and_projects() {
 
     let _ = cli_required(
         "AAI_E2E_JIRA_PROFILE",
-        &[
-            "jira",
-            "issues",
-            "list",
-            "--jql",
-            &format!("key = {issue_key}"),
-        ],
+        &["jira", "issues", "list", "--project", &project],
     );
     let fetched = cli_required(
         "AAI_E2E_JIRA_PROFILE",
@@ -178,6 +172,219 @@ fn jira_issue_crud_and_projects() {
         "AAI_E2E_JIRA_PROFILE",
         &["jira", "issues", "delete", &issue_key],
     );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable project"]
+fn jira_issue_comments_crud() {
+    let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {
+        return;
+    };
+    let summary = unique("aai-e2e-jira-comments");
+
+    let created = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "create",
+            "--project",
+            &project,
+            "--summary",
+            &summary,
+            "--description",
+            "comments crud fixture created by aai-cli live e2e",
+        ],
+    );
+    let issue_key = str_at(&created, &["key"]).to_string();
+
+    let empty = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "comments", "list", &issue_key],
+    );
+    assert_eq!(
+        empty
+            .get("comments")
+            .and_then(Value::as_array)
+            .map(Vec::len),
+        Some(0),
+        "expected zero comments on freshly created issue: {empty}"
+    );
+
+    let created_comment = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "comments",
+            "create",
+            &issue_key,
+            "--body",
+            "agent comment from aai-cli live e2e",
+        ],
+    );
+    let comment_id = str_at(&created_comment, &["id"]).to_string();
+
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "comments", "list", &issue_key],
+    );
+    assert_eq!(
+        listed
+            .get("comments")
+            .and_then(Value::as_array)
+            .map(Vec::len),
+        Some(1),
+        "expected one comment after create: {listed}"
+    );
+
+    let fetched_comment = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "comments", "get", &issue_key, &comment_id],
+    );
+    assert_eq!(str_at(&fetched_comment, &["id"]), comment_id);
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "delete", &issue_key],
+    );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable Agile board"]
+fn jira_sprint_crud() {
+    let Some(board) = env_or_skip("AAI_E2E_JIRA_BOARD") else {
+        return;
+    };
+    let name = unique("aai-e2e-sprint");
+
+    let created = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira", "sprints", "create", "--board", &board, "--name", &name,
+        ],
+    );
+    let sprint_id = u64_at(&created, &["id"]).to_string();
+
+    let fetched = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "sprints", "get", &sprint_id],
+    );
+    assert_eq!(str_at(&fetched, &["name"]), name);
+
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira", "sprints", "list", "--board", &board, "--state", "future",
+        ],
+    );
+    let values = listed
+        .get("values")
+        .and_then(Value::as_array)
+        .expect("values array");
+    assert!(
+        values.iter().any(
+            |v| v.get("id").and_then(Value::as_u64).map(|n| n.to_string())
+                == Some(sprint_id.clone())
+        ),
+        "created sprint {sprint_id} not found in list: {listed}"
+    );
+
+    // No `delete sprint` command in this slice; the disposable sprint is left in `future` state on the test board.
+    // The update slice will add a state=closed path and full teardown.
+}
+
+#[test]
+#[ignore = "requires live Jira credentials, a disposable project, and a Scrum board"]
+fn jira_sprint_issues_add() {
+    let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {
+        return;
+    };
+    let Some(board) = env_or_skip("AAI_E2E_JIRA_BOARD") else {
+        return;
+    };
+
+    let issue = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "create",
+            "--project",
+            &project,
+            "--summary",
+            &unique("aai-e2e-sprint-issue"),
+            "--description",
+            "added to sprint by aai-cli live e2e",
+        ],
+    );
+    let issue_key = str_at(&issue, &["key"]).to_string();
+
+    let sprint = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "sprints",
+            "create",
+            "--board",
+            &board,
+            "--name",
+            &unique("aai-e2e-sprint"),
+        ],
+    );
+    let sprint_id = u64_at(&sprint, &["id"]).to_string();
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira", "sprints", "issues", "add", &sprint_id, "--issues", &issue_key,
+        ],
+    );
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "delete", &issue_key],
+    );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable Agile board"]
+fn jira_board_read() {
+    let Some(board) = env_or_skip("AAI_E2E_JIRA_BOARD") else {
+        return;
+    };
+
+    let fetched = cli_required("AAI_E2E_JIRA_PROFILE", &["jira", "boards", "get", &board]);
+    assert_eq!(u64_at(&fetched, &["id"]).to_string(), board);
+
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "boards", "list", "--limit", "100"],
+    );
+    let values = listed
+        .get("values")
+        .and_then(Value::as_array)
+        .expect("values array");
+    assert!(
+        values.iter().any(
+            |v| v.get("id").and_then(Value::as_u64).map(|n| n.to_string()) == Some(board.clone())
+        ),
+        "board {board} not found in list: {listed}"
+    );
+}
+
+#[test]
+#[ignore = "requires live Jira credentials"]
+fn jira_user_read() {
+    let Some(account_id) = env_or_skip("AAI_E2E_JIRA_ACCOUNT_ID") else {
+        return;
+    };
+
+    let fetched = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "users", "get", &account_id],
+    );
+    assert_eq!(str_at(&fetched, &["accountId"]), account_id);
 }
 
 #[test]
@@ -225,6 +432,267 @@ fn confluence_page_crud_and_spaces() {
         "AAI_E2E_CONFLUENCE_PROFILE",
         &["confluence", "pages", "delete", &page_id],
     );
+}
+
+#[test]
+#[ignore = "requires live Confluence credentials and a disposable page"]
+fn confluence_page_comments_crud() {
+    let Some(space_id) = env_or_skip("AAI_E2E_CONFLUENCE_SPACE_ID") else {
+        return;
+    };
+    let title = unique("aai-e2e-comments");
+
+    let created_page = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "create",
+            "--space-id",
+            &space_id,
+            "--title",
+            &title,
+            "--body",
+            "page for comments e2e",
+        ],
+    );
+    let page_id = str_at(&created_page, &["id"]).to_string();
+
+    // list before any comments
+    let empty = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "comments", "list", &page_id],
+    );
+    assert_eq!(empty["page_comments"].as_array().unwrap().len(), 0);
+
+    // create top-level comment
+    let top = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "comments",
+            "create",
+            &page_id,
+            "--body",
+            "top-level comment from e2e",
+        ],
+    );
+    let comment_id = str_at(&top, &["id"]).to_string();
+
+    // create reply
+    let reply = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "comments",
+            "create",
+            &page_id,
+            "--body",
+            "reply from e2e",
+            "--reply-to",
+            &comment_id,
+        ],
+    );
+    let reply_id = str_at(&reply, &["id"]).to_string();
+    assert_eq!(str_at(&reply, &["parentCommentId"]), comment_id);
+
+    // list should show top-level with nested reply
+    let listed = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "comments", "list", &page_id],
+    );
+    let page_comments = listed["page_comments"].as_array().unwrap();
+    assert_eq!(page_comments.len(), 1);
+    let replies = page_comments[0]["replies"].as_array().unwrap();
+    assert_eq!(replies.len(), 1);
+    assert_eq!(str_at(&replies[0], &["id"]), reply_id);
+
+    let _ = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "delete", &page_id],
+    );
+}
+
+#[test]
+#[ignore = "requires live Confluence credentials and a disposable space"]
+fn confluence_page_attachments_crud() {
+    let Some(space_id) = env_or_skip("AAI_E2E_CONFLUENCE_SPACE_ID") else {
+        return;
+    };
+    let title = unique("aai-e2e-attachments");
+
+    let created_page = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "create",
+            "--space-id",
+            &space_id,
+            "--title",
+            &title,
+            "--body",
+            "page for attachments e2e",
+        ],
+    );
+    let page_id = str_at(&created_page, &["id"]).to_string();
+
+    // write a temp file to upload
+    let tmp = std::env::temp_dir().join("aai_e2e_attachment.txt");
+    std::fs::write(&tmp, b"hello from aai-cli e2e").unwrap();
+    let tmp_path = tmp.to_str().unwrap();
+
+    // list before any attachments — expect empty
+    let empty = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "attachments", "list", &page_id],
+    );
+    assert_eq!(empty["results"].as_array().unwrap().len(), 0);
+
+    // upload
+    let uploaded = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "attachments",
+            "upload",
+            &page_id,
+            "--file",
+            tmp_path,
+            "--comment",
+            "e2e upload",
+        ],
+    );
+    let attachment_id = str_at(&uploaded, &["id"]).to_string();
+
+    // list should show the uploaded attachment
+    let listed = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "attachments", "list", &page_id],
+    );
+    let results = listed["results"].as_array().unwrap();
+    assert_eq!(results.len(), 1);
+    assert_eq!(str_at(&results[0], &["id"]), attachment_id);
+
+    // download to a temp path and verify content
+    let dl_path = std::env::temp_dir().join("aai_e2e_downloaded.txt");
+    let dl_path_str = dl_path.to_str().unwrap();
+    let _ = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &[
+            "confluence",
+            "pages",
+            "attachments",
+            "download",
+            &page_id,
+            &attachment_id,
+            "--output",
+            dl_path_str,
+        ],
+    );
+    let content = std::fs::read(&dl_path).unwrap();
+    assert!(!content.is_empty());
+
+    let _ = cli_required(
+        "AAI_E2E_CONFLUENCE_PROFILE",
+        &["confluence", "pages", "delete", &page_id],
+    );
+    let _ = std::fs::remove_file(&tmp);
+    let _ = std::fs::remove_file(&dl_path);
+}
+
+#[test]
+#[ignore = "requires live Jira credentials and a disposable project"]
+fn jira_issue_attachments_crud() {
+    let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {
+        return;
+    };
+
+    let created_issue = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "create",
+            "--project",
+            &project,
+            "--summary",
+            &unique("aai-e2e-attachments"),
+            "--issue-type",
+            "Task",
+        ],
+    );
+    let issue_key = str_at(&created_issue, &["key"]).to_string();
+
+    // write a temp file
+    let tmp = std::env::temp_dir().join("aai_e2e_jira_attachment.txt");
+    std::fs::write(&tmp, b"hello from jira e2e").unwrap();
+    let tmp_path = tmp.to_str().unwrap();
+
+    // list before upload — expect empty
+    let empty = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "attachments", "list", &issue_key],
+    );
+    assert_eq!(empty["total"].as_u64().unwrap(), 0);
+
+    // upload
+    let uploaded_arr = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "attachments",
+            "upload",
+            &issue_key,
+            "--file",
+            tmp_path,
+        ],
+    );
+    // Jira returns an array on upload success
+    let attachment_id = uploaded_arr
+        .as_array()
+        .and_then(|a| a.first())
+        .and_then(|o| o.get("id"))
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
+
+    // list should show the uploaded attachment
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "attachments", "list", &issue_key],
+    );
+    assert_eq!(listed["total"].as_u64().unwrap(), 1);
+    assert_eq!(str_at(&listed["attachments"][0], &["id"]), attachment_id);
+
+    // download
+    let dl_path = std::env::temp_dir().join("aai_e2e_jira_downloaded.txt");
+    let dl_path_str = dl_path.to_str().unwrap();
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "issues",
+            "attachments",
+            "download",
+            &attachment_id,
+            "--output",
+            dl_path_str,
+        ],
+    );
+    let content = std::fs::read(&dl_path).unwrap();
+    assert!(!content.is_empty());
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "delete", &issue_key],
+    );
+    let _ = std::fs::remove_file(&tmp);
+    let _ = std::fs::remove_file(&dl_path);
 }
 
 #[test]
@@ -280,6 +748,7 @@ fn github_issue_crud_repos_and_optional_prs() {
         ],
     );
     let pr_number = u64_at(&created_pr, &["number"]).to_string();
+    let head_sha = find_string(&created_pr, &["head", "sha"]);
     let _ = cli_required("AAI_E2E_GITHUB_PROFILE", &["github", "prs", "list"]);
     let _ = cli_required(
         "AAI_E2E_GITHUB_PROFILE",
@@ -308,7 +777,153 @@ fn github_issue_crud_repos_and_optional_prs() {
     );
     let _ = cli_required(
         "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "diff", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "files", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "commits", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "timeline", &pr_number, "--limit", "10"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "reviews", "list", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "prs", "review-comments", "list", &pr_number],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "prs",
+            "reviews",
+            "create",
+            &pr_number,
+            "--event",
+            "COMMENT",
+            "--body",
+            "review summary from aai-cli live e2e",
+        ],
+    );
+    if let (Some(commit_sha), Some(inline_path)) =
+        (head_sha.clone(), env_or_skip("AAI_E2E_GITHUB_SOURCE_PATH"))
+    {
+        let inline = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "create",
+                &pr_number,
+                "--body",
+                "inline review comment from aai-cli live e2e",
+                "--path",
+                &inline_path,
+                "--line",
+                "1",
+                "--commit-id",
+                &commit_sha,
+            ],
+        );
+        let inline_id = u64_at(&inline, &["id"]).to_string();
+        let _ = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "get",
+                &pr_number,
+                &inline_id,
+            ],
+        );
+        let _ = cli_required(
+            "AAI_E2E_GITHUB_PROFILE",
+            &[
+                "github",
+                "prs",
+                "review-comments",
+                "delete",
+                &pr_number,
+                &inline_id,
+            ],
+        );
+    }
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
         &["github", "prs", "close", &pr_number],
+    );
+}
+
+#[test]
+#[ignore = "requires live GitHub credentials and read-only repo metadata"]
+fn github_read_only_endpoints() {
+    let branches = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "list", "--limit", "10"],
+    );
+    let branch_name = env_or_skip("AAI_E2E_GITHUB_BRANCH").or_else(|| {
+        branches
+            .get("values")
+            .and_then(Value::as_array)
+            .and_then(|values| values.first())
+            .and_then(|branch| branch.get("name"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+    });
+    let Some(branch_name) = branch_name else {
+        eprintln!("skipping live E2E branch: no branch name available");
+        return;
+    };
+    let branch = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "get", &branch_name],
+    );
+    let commit_sha = env_or_skip("AAI_E2E_GITHUB_COMMIT_SHA")
+        .or_else(|| find_string(&branch, &["sha"]))
+        .unwrap_or_else(|| branch_name.clone());
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "branches", "list", "--name-prefix", &branch_name],
+    );
+    let Some(source_path) = env_or_skip("AAI_E2E_GITHUB_SOURCE_PATH") else {
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &["github", "source", "get", &commit_sha, &source_path],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "source",
+            "get",
+            &commit_sha,
+            &source_path,
+            "--meta",
+        ],
+    );
+    let _ = cli_required(
+        "AAI_E2E_GITHUB_PROFILE",
+        &[
+            "github",
+            "source",
+            "history",
+            &commit_sha,
+            &source_path,
+            "--limit",
+            "5",
+        ],
     );
 }
 
@@ -358,6 +973,22 @@ fn bitbucket_repos_and_optional_prs() {
         "AAI_E2E_BITBUCKET_PROFILE",
         &["bitbucket", "prs", "get", &pr_number, "--repo", &repo],
     );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "diff", &pr_number, "--repo", &repo],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "diffstat", &pr_number, "--repo", &repo],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "commits", &pr_number, "--repo", &repo],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "prs", "activity", &pr_number, "--repo", &repo],
+    );
     let comment = cli_required(
         "AAI_E2E_BITBUCKET_PROFILE",
         &[
@@ -399,9 +1030,134 @@ fn bitbucket_repos_and_optional_prs() {
             &repo,
         ],
     );
+    if let Some(inline_path) = env_or_skip("AAI_E2E_BITBUCKET_SOURCE_PATH") {
+        let _ = cli_required(
+            "AAI_E2E_BITBUCKET_PROFILE",
+            &[
+                "bitbucket",
+                "prs",
+                "comments",
+                "create",
+                &pr_number,
+                "--repo",
+                &repo,
+                "--body",
+                "inline comment from aai-cli live e2e",
+                "--inline-path",
+                &inline_path,
+                "--inline-to",
+                "1",
+            ],
+        );
+        let _ = cli_required(
+            "AAI_E2E_BITBUCKET_PROFILE",
+            &[
+                "bitbucket",
+                "prs",
+                "comments",
+                "list",
+                &pr_number,
+                "--repo",
+                &repo,
+                "--inline-only",
+            ],
+        );
+    }
     let _ = cli_required(
         "AAI_E2E_BITBUCKET_PROFILE",
         &["bitbucket", "prs", "decline", &pr_number, "--repo", &repo],
+    );
+}
+
+#[test]
+#[ignore = "requires live Bitbucket credentials and read-only repo metadata"]
+fn bitbucket_read_only_endpoints() {
+    let Some(repo) = env_or_skip("AAI_E2E_BITBUCKET_REPO") else {
+        return;
+    };
+    let branches = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "branches", "list", "--repo", &repo],
+    );
+    let branch_name = env_or_skip("AAI_E2E_BITBUCKET_BRANCH").or_else(|| {
+        branches
+            .get("values")
+            .and_then(Value::as_array)
+            .and_then(|values| values.first())
+            .and_then(|branch| branch.get("name"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+    });
+    let Some(branch_name) = branch_name else {
+        eprintln!("skipping live E2E branch: no branch name available");
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "branches",
+            "get",
+            &branch_name,
+            "--repo",
+            &repo,
+        ],
+    );
+    let commits = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "commits",
+            "list",
+            "--repo",
+            &repo,
+            "--branch",
+            &branch_name,
+        ],
+    );
+    let commit_sha = env_or_skip("AAI_E2E_BITBUCKET_COMMIT_SHA").or_else(|| {
+        commits
+            .get("values")
+            .and_then(Value::as_array)
+            .and_then(|values| values.first())
+            .and_then(|commit| commit.get("hash"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+    });
+    let Some(commit_sha) = commit_sha else {
+        eprintln!("skipping live E2E branch: no commit SHA available");
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &["bitbucket", "commits", "get", &commit_sha, "--repo", &repo],
+    );
+    let Some(source_path) = env_or_skip("AAI_E2E_BITBUCKET_SOURCE_PATH") else {
+        return;
+    };
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "source",
+            "get",
+            &commit_sha,
+            &source_path,
+            "--repo",
+            &repo,
+        ],
+    );
+    let _ = cli_required(
+        "AAI_E2E_BITBUCKET_PROFILE",
+        &[
+            "bitbucket",
+            "source",
+            "history",
+            &commit_sha,
+            &source_path,
+            "--repo",
+            &repo,
+        ],
     );
 }
 

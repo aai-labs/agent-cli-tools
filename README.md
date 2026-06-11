@@ -8,8 +8,8 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks eas
 
 - Jira Cloud: issues and projects.
 - Confluence Cloud: spaces and pages, including storage-format page bodies.
-- Bitbucket Cloud: repositories, pull requests, PR comments, close/decline.
-- GitHub: repositories, issues, pull requests, PR comments, close/decline.
+- Bitbucket Cloud: repositories, branches, commits, source files at SHA, pull requests, PR diff/diffstat/commits/activity, PR comments (including inline), close/decline.
+- GitHub: repositories, branches, source files at ref/SHA, issues, pull requests, PR diff/files/commits/timeline, PR comments (issue-level), inline review comments, grouped PR reviews, close/decline, GitHub Actions runs and jobs (with log download).
 - Email: Gmail REST profiles and Zoho SMTP/IMAP profiles.
 - Calendar: Google Calendar REST profiles and Zoho CalDAV profiles.
 - Pipedrive CRM: leads, persons, organizations, deals, labels, activities, notes, and synced email history.
@@ -187,7 +187,7 @@ Resolution precedence is direct config value, env var, then encrypted secret ref
 ## Authentication Notes
 
 - GitHub uses `bearer_token` with `token_secret` or `token_env`.
-- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token.
+- Jira and Confluence Cloud use `basic_api_token` with Atlassian account `email` plus API token. The same Jira credentials work for sprint and board commands, which hit the Jira Software (Agile) API at `/rest/agile/1.0/...`; sprint list/create require a `--board <id>` flag since boards are not yet modeled in profile config.
 - Bitbucket Cloud API/personal tokens use `basic_api_token` with Atlassian account `email` plus Bitbucket API token.
 - Bitbucket repository/workspace access tokens are distinct from user API tokens and should be modeled separately with bearer auth when added.
 - Google Gmail and Calendar REST profiles use `bearer_token`.
@@ -266,11 +266,11 @@ aai-cli jira issues search --jql 'key = ENG-123' --fields key,summary,status
 
 Jira search defaults to agent-useful fields: `key,summary,status,issuetype,assignee,created,updated,description,project`. Use `--fields` to reduce payload size.
 
-Confluence search supports raw CQL or a text query helper:
+Confluence list commands return a **trimmed response** (per-resource allowlist) — `_links`, icons, `description`, and full page bodies are dropped. Filter `pages list` and `spaces list` with structured flags; CQL is not exposed. Multi-value flags accept comma-separated values (e.g. `--key DOCS,ENG`).
 
 ```bash
-aai-cli confluence search --cql 'space = OOP and type = page' --limit 25
-aai-cli confluence search --query 'release notes' --limit 10
+aai-cli confluence pages list --space DOCS --status current --limit 10
+aai-cli confluence spaces list --type global
 ```
 
 Confluence page moves are relative to a target page. Use `append` to make the page a child of the target. Use `before` or `after` only when you intentionally want sibling ordering; moving relative to top-level pages can make pages hard to find in the UI.
@@ -295,27 +295,47 @@ Use `local/logs/` for local smoke-test downloads; it is ignored by git.
 
 ### Supported Commands
 
+Jira list commands return a **trimmed response** (per-resource allowlist) to keep output small for agent consumers — `expand`, `self`, avatar URLs, and other UI-only fields are dropped. Pagination metadata (`maxResults`, `startAt`, `isLast`, `total`) is preserved. Call the corresponding `get` command if you need the full raw shape.
+
+`jira issues list` filters are structured flags; JQL is built internally. Multi-value flags accept comma-separated lists (e.g. `--status "To Do,In Progress"`). `--assignee me` expands to `currentUser()`. `--sprint current/future/closed` map to the corresponding JQL sprint functions; a numeric value is treated as a sprint ID. `--updated-since` accepts a relative duration (`7d`, `30d`, `1y`) or an ISO date (`2026-05-01`).
+
 ```bash
-aai-cli jira issues list [--jql JQL] [--fields FIELD_LIST] [--limit N]
-aai-cli jira issues search --jql JQL [--fields FIELD_LIST] [--limit N]
+aai-cli jira issues list [--project KEY] [--status NAMES] [--assignee me|<accountId>] [--type NAMES] [--sprint current|future|closed|<id>] [--text TEXT] [--updated-since DATE_OR_RELATIVE] [--fields FIELD_LIST] [--limit N]
 aai-cli jira issues get <issue-key-or-id>
 aai-cli jira issues create [--json <path|->] [--project KEY] [--summary TEXT] [--description TEXT]
 aai-cli jira issues update <issue-key-or-id> [--json <path|->] [--summary TEXT] [--description TEXT]
 aai-cli jira issues delete <issue-key-or-id>
+aai-cli jira issues comments list <issue-key-or-id> [--limit N]
+aai-cli jira issues comments get <issue-key-or-id> <comment-id>
+aai-cli jira issues comments create <issue-key-or-id> [--json <path|->] [--body TEXT]
+aai-cli jira issues attachments list <issue-key-or-id>
+aai-cli jira issues attachments download <attachment-id> --output <path>
+aai-cli jira issues attachments upload <issue-key-or-id> --file <path>
 aai-cli jira projects list
 aai-cli jira projects get <project-key-or-id>
+aai-cli jira sprints list --board <board-id> [--state STATE] [--limit N]
+aai-cli jira sprints get <sprint-id>
+aai-cli jira sprints create [--json <path|->] [--board <board-id>] [--name TEXT] [--goal TEXT] [--start-date ISO_8601] [--end-date ISO_8601]
+aai-cli jira sprints issues add <sprint-id> --issues KEY1[,KEY2,...]
+aai-cli jira boards list [--type scrum|kanban|simple] [--project KEY] [--name TEXT] [--limit N]
+aai-cli jira boards get <board-id>
+aai-cli jira users get <account-id>
 
-aai-cli confluence spaces list
+aai-cli confluence spaces list [--type global|personal|collaboration|knowledge_base] [--status current|archived] [--key KEY1[,KEY2,...]] [--limit N]
 aai-cli confluence spaces get <space-id-or-key>
-aai-cli confluence search --cql CQL [--limit N]
-aai-cli confluence search --query TEXT [--limit N]
-aai-cli confluence pages list
+aai-cli confluence pages list [--space <space-id-or-key>] [--status current|archived|deleted|trashed] [--parent <page-id>] [--title TEXT] [--limit N]
 aai-cli confluence pages get <page-id>
 aai-cli confluence pages create [--json <path|->] --space-id <space-id-or-key> --title TEXT [--body STORAGE_HTML]
 aai-cli confluence pages create [--json <path|->] --space-key <space-key> --title TEXT [--body STORAGE_HTML]
 aai-cli confluence pages update <page-id> [--json <path|->] [--title TEXT] [--body STORAGE_HTML] [--version N]
 aai-cli confluence pages move <page-id> --target-id <target-page-id> [--position append|before|after]
 aai-cli confluence pages delete <page-id>
+aai-cli confluence pages comments list <page-id> [--limit N]
+aai-cli confluence pages comments create <page-id> --body TEXT [--reply-to <comment-id>]
+aai-cli confluence pages comments create <page-id> --json <path|-> [--reply-to <comment-id>]
+aai-cli confluence pages attachments list <page-id> [--limit N]
+aai-cli confluence pages attachments download <page-id> <attachment-id> --output <path>
+aai-cli confluence pages attachments upload <page-id> --file <path> [--comment TEXT]
 
 aai-cli bitbucket repos list
 aai-cli bitbucket repos get <repo-slug|workspace/repo-slug>
@@ -325,11 +345,21 @@ aai-cli bitbucket prs create [--repo <repo-slug|workspace/repo-slug>] --title TE
 aai-cli bitbucket prs delete <number> [--repo <repo-slug|workspace/repo-slug>]
 aai-cli bitbucket prs close <number> [--repo <repo-slug|workspace/repo-slug>]
 aai-cli bitbucket prs decline <number> [--repo <repo-slug|workspace/repo-slug>]
-aai-cli bitbucket prs comments list <pr-number> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket prs diff <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--output PATH]
+aai-cli bitbucket prs diffstat <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs commits <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs activity <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
+aai-cli bitbucket prs comments list <pr-number> [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--inline-only]
 aai-cli bitbucket prs comments get <pr-number> <comment-id> [--repo <repo-slug|workspace/repo-slug>]
-aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
-aai-cli bitbucket prs comments update <pr-number> --comment <comment-id> [--repo <repo-slug|workspace/repo-slug>] --body TEXT
+aai-cli bitbucket prs comments create <pr-number> [--repo <repo-slug|workspace/repo-slug>] --body TEXT [--inline-path FILE] [--inline-from LINE] [--inline-to LINE] [--parent-id COMMENT_ID]
+aai-cli bitbucket prs comments update <pr-number> --comment <comment-id> [--repo <repo-slug|workspace/repo-slug>] --body TEXT [--inline-path FILE] [--inline-from LINE] [--inline-to LINE] [--parent-id COMMENT_ID]
 aai-cli bitbucket prs comments delete <pr-number> <comment-id> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket branches list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--name-contains TEXT | --name-prefix TEXT]
+aai-cli bitbucket branches get <branch-name> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket commits list [--repo <repo-slug|workspace/repo-slug>] [--limit N] [--branch BRANCH] [--include REV] [--exclude REV]
+aai-cli bitbucket commits get <sha> [--repo <repo-slug|workspace/repo-slug>]
+aai-cli bitbucket source get <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--output PATH] [--meta]
+aai-cli bitbucket source history <commit> <path> [--repo <repo-slug|workspace/repo-slug>] [--limit N]
 aai-cli bitbucket pipelines list [--repo <repo-slug|workspace/repo-slug>] [--branch BRANCH] [--status STATUS] [--limit N]
 aai-cli bitbucket pipelines get <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
 aai-cli bitbucket pipelines steps list <pipeline-uuid> [--repo <repo-slug|workspace/repo-slug>]
@@ -349,11 +379,27 @@ aai-cli github prs create [--owner OWNER] [--repo REPO] --title TEXT --head BRAN
 aai-cli github prs delete <number> [--owner OWNER] [--repo REPO]
 aai-cli github prs close <number> [--owner OWNER] [--repo REPO]
 aai-cli github prs decline <number> [--owner OWNER] [--repo REPO]
+aai-cli github prs diff <pr-number> [--owner OWNER] [--repo REPO] [--output PATH]
+aai-cli github prs files <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs commits <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs timeline <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
 aai-cli github prs comments list <pr-number> [--owner OWNER] [--repo REPO]
 aai-cli github prs comments get <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
 aai-cli github prs comments create <pr-number> [--owner OWNER] [--repo REPO] --body TEXT
 aai-cli github prs comments update <pr-number> --comment <comment-id> [--owner OWNER] [--repo REPO] --body TEXT
 aai-cli github prs comments delete <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs review-comments list <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs review-comments get <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs review-comments create <pr-number> [--owner OWNER] [--repo REPO] --body TEXT --path FILE --commit-id SHA [--line N] [--side LEFT|RIGHT] [--start-line N] [--start-side LEFT|RIGHT] [--in-reply-to COMMENT_ID]
+aai-cli github prs review-comments update <pr-number> --comment <comment-id> [--owner OWNER] [--repo REPO] --body TEXT
+aai-cli github prs review-comments delete <pr-number> <comment-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs reviews list <pr-number> [--owner OWNER] [--repo REPO] [--limit N]
+aai-cli github prs reviews get <pr-number> <review-id> [--owner OWNER] [--repo REPO]
+aai-cli github prs reviews create <pr-number> [--owner OWNER] [--repo REPO] [--event APPROVE|REQUEST_CHANGES|COMMENT|PENDING] [--body TEXT] [--commit-id SHA] [--comments-json JSON_ARRAY_OR_PATH]
+aai-cli github branches list [--owner OWNER] [--repo REPO] [--limit N] [--name-contains TEXT | --name-prefix TEXT] [--protected true|false]
+aai-cli github branches get <branch-name> [--owner OWNER] [--repo REPO]
+aai-cli github source get <commit> <path> [--owner OWNER] [--repo REPO] [--output PATH] [--meta]
+aai-cli github source history <commit> <path> [--owner OWNER] [--repo REPO] [--limit N]
 aai-cli github actions runs list [--owner OWNER] [--repo REPO] [--branch BRANCH] [--status STATUS] [--event EVENT] [--limit N]
 aai-cli github actions runs get <run-id> [--owner OWNER] [--repo REPO]
 aai-cli github actions runs logs download <run-id> --output PATH [--owner OWNER] [--repo REPO]
@@ -445,8 +491,21 @@ Optional PR test variables:
 ```bash
 AAI_E2E_GITHUB_PR_HEAD=e2e-branch
 AAI_E2E_GITHUB_PR_BASE=main
+AAI_E2E_GITHUB_BRANCH=main
+AAI_E2E_GITHUB_COMMIT_SHA=
+AAI_E2E_GITHUB_SOURCE_PATH=README.md
 AAI_E2E_BITBUCKET_PR_SOURCE=e2e-branch
 AAI_E2E_BITBUCKET_PR_DESTINATION=main
+AAI_E2E_BITBUCKET_SOURCE_PATH=README.md
+AAI_E2E_BITBUCKET_BRANCH=main
+AAI_E2E_BITBUCKET_COMMIT_SHA=
+```
+
+Run read-only endpoint coverage:
+
+```bash
+scripts/run-tests.sh live bitbucket_read_only_endpoints
+scripts/run-tests.sh live github_read_only_endpoints
 ```
 
 ## API Docs
