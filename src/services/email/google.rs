@@ -11,6 +11,8 @@ use crate::{
     services::shared::{enc, google_base, CtxProfile},
 };
 
+use super::mime::find_body_in_gmail_payload;
+
 pub(crate) async fn messages(
     client: &ApiClient,
     ctx: &Context,
@@ -19,12 +21,22 @@ pub(crate) async fn messages(
     match action {
         EmailMessagesAction::List(args) => {
             let user = ctx.profile().user_id.as_deref().unwrap_or("me");
-            let url = format!(
+            let mut q_parts: Vec<String> = Vec::new();
+            if let Some(after) = &args.received_after {
+                q_parts.push(format!("after:{}", after.replace('-', "/")));
+            }
+            if let Some(before) = &args.received_before {
+                q_parts.push(format!("before:{}", before.replace('-', "/")));
+            }
+            let mut url = format!(
                 "{}/gmail/v1/users/{}/messages?maxResults={}",
                 google_base(ctx.profile()),
                 enc(user),
                 args.limit
             );
+            if !q_parts.is_empty() {
+                url.push_str(&format!("&q={}", urlencoding::encode(&q_parts.join(" "))));
+            }
             client
                 .request(
                     "email",
@@ -44,7 +56,7 @@ pub(crate) async fn messages(
                 enc(user),
                 enc(&args.id)
             );
-            client
+            let raw = client
                 .request(
                     "email",
                     "messages.get",
@@ -53,7 +65,8 @@ pub(crate) async fn messages(
                     url,
                     None,
                 )
-                .await
+                .await?;
+            Ok(extract_gmail_message(raw))
         }
         EmailMessagesAction::Send(args) => {
             let user = ctx.profile().user_id.as_deref().unwrap_or("me");
@@ -94,6 +107,50 @@ pub(crate) async fn messages(
                 .await
         }
     }
+}
+
+fn extract_gmail_message(v: Value) -> Value {
+    let id = v.get("id").and_then(|x| x.as_str()).unwrap_or("").to_string();
+    let thread_id = v.get("threadId").and_then(|x| x.as_str()).unwrap_or("").to_string();
+    let snippet = v.get("snippet").and_then(|x| x.as_str()).unwrap_or("").to_string();
+
+    let empty = vec![];
+    let headers = v
+        .get("payload")
+        .and_then(|p| p.get("headers"))
+        .and_then(|h| h.as_array())
+        .unwrap_or(&empty);
+
+    let header = |name: &str| -> String {
+        headers
+            .iter()
+            .find(|h| h.get("name").and_then(|n| n.as_str()) == Some(name))
+            .and_then(|h| h.get("value"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string()
+    };
+
+    let subject = header("Subject");
+    let from = header("From");
+    let to = header("To");
+    let date = header("Date");
+
+    let payload = v.get("payload");
+    let (body, body_type) = payload
+        .and_then(|p| find_body_in_gmail_payload(p))
+        .unwrap_or_else(|| (snippet.clone(), "snippet"));
+
+    json!({
+        "id": id,
+        "thread_id": thread_id,
+        "subject": subject,
+        "from": from,
+        "to": to,
+        "date": date,
+        "body": body,
+        "body_type": body_type,
+    })
 }
 
 fn send_body(args: EmailSend) -> Result<Value, AppError> {

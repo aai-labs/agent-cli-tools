@@ -17,29 +17,72 @@ pub(crate) async fn messages(
     action: EmailMessagesAction,
 ) -> Result<Value, AppError> {
     match action {
-        EmailMessagesAction::List(args) => list(ctx, args.limit),
+        EmailMessagesAction::List(args) => list(ctx, &args),
         EmailMessagesAction::Get(args) => get(ctx, &args.id),
         EmailMessagesAction::Send(args) => send(ctx, args),
         EmailMessagesAction::Delete(args) => delete(ctx, &args.id),
     }
 }
 
-fn list(ctx: &Context, limit: u32) -> Result<Value, AppError> {
+fn list(ctx: &Context, args: &EmailMessageList) -> Result<Value, AppError> {
+    let mut criteria_parts: Vec<String> = Vec::new();
+    if let Some(after) = &args.received_after {
+        criteria_parts.push(format!(
+            "SINCE {}",
+            date_to_imap(after, "messages.list")?
+        ));
+    }
+    if let Some(before) = &args.received_before {
+        criteria_parts.push(format!(
+            "BEFORE {}",
+            date_to_imap(before, "messages.list")?
+        ));
+    }
+    let query = if criteria_parts.is_empty() {
+        "ALL".to_string()
+    } else {
+        criteria_parts.join(" ")
+    };
     let mut session = imap_session(ctx, &folder(ctx, false))?;
     let mut ids = session
-        .uid_search("ALL")
+        .uid_search(query)
         .map_err(|err| AppError::internal("email", "messages.list", err.to_string()))?
         .into_iter()
         .collect::<Vec<_>>();
     ids.sort_unstable();
     ids.reverse();
-    ids.truncate(limit as usize);
+    ids.truncate(args.limit as usize);
     let _ = session.logout();
     Ok(json!({
         "transport": "smtp_imap",
         "folder": folder(ctx, false),
         "ids": ids,
     }))
+}
+
+fn date_to_imap(s: &str, op: &'static str) -> Result<String, AppError> {
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    let date = s.split('T').next().unwrap_or(s);
+    let parts: Vec<u32> = date
+        .split('-')
+        .map(|p| p.parse::<u32>())
+        .collect::<Result<_, _>>()
+        .map_err(|_| AppError::invalid_input("email", op, format!("invalid date: {s}")))?;
+    if parts.len() != 3 || parts[1] < 1 || parts[1] > 12 {
+        return Err(AppError::invalid_input(
+            "email",
+            op,
+            format!("invalid date: {s}"),
+        ));
+    }
+    Ok(format!(
+        "{:02}-{}-{}",
+        parts[2],
+        MONTHS[(parts[1] - 1) as usize],
+        parts[0]
+    ))
 }
 
 fn get(ctx: &Context, id: &str) -> Result<Value, AppError> {

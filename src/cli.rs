@@ -1199,10 +1199,20 @@ pub struct EmailMessagesCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum EmailMessagesAction {
-    List(LimitArg),
+    List(EmailMessageList),
     Get(IdArg),
     Send(EmailSend),
     Delete(IdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct EmailMessageList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub received_after: Option<String>,
+    #[arg(long)]
+    pub received_before: Option<String>,
 }
 
 #[derive(Debug, Args)]

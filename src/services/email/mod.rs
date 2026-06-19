@@ -1,4 +1,5 @@
 pub(crate) mod google;
+pub(super) mod mime;
 pub(crate) mod smtp_imap;
 pub(crate) mod zoho;
 
