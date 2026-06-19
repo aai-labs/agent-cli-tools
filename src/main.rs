@@ -4,6 +4,7 @@ mod config_commands;
 mod error;
 mod http;
 mod input;
+mod oauth;
 mod pagination;
 mod secrets;
 mod services;

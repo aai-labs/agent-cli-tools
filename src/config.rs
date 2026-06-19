@@ -25,6 +25,13 @@ pub struct Profile {
     pub token: Option<String>,
     pub token_env: Option<String>,
     pub token_secret: Option<String>,
+    pub refresh_token: Option<String>,
+    pub refresh_token_env: Option<String>,
+    pub refresh_token_secret: Option<String>,
+    pub client_id: Option<String>,
+    pub client_secret: Option<String>,
+    pub client_secret_env: Option<String>,
+    pub client_secret_secret: Option<String>,
     pub api_token: Option<String>,
     pub api_token_env: Option<String>,
     pub api_token_secret: Option<String>,
@@ -135,6 +142,12 @@ fn apply_env_overrides(profile: &mut Profile, profile_name: &str) {
     if profile.token.is_none() {
         profile.token = profile.token_env.as_deref().and_then(env_value);
     }
+    if profile.refresh_token.is_none() {
+        profile.refresh_token = profile.refresh_token_env.as_deref().and_then(env_value);
+    }
+    if profile.client_secret.is_none() {
+        profile.client_secret = profile.client_secret_env.as_deref().and_then(env_value);
+    }
     if profile.api_token.is_none() {
         profile.api_token = profile.api_token_env.as_deref().and_then(env_value);
     }
@@ -171,6 +184,16 @@ fn apply_secret_overrides(ctx: &mut Context) -> Result<(), AppError> {
     if ctx.profile.token.is_none() {
         if let Some(key) = ctx.profile.token_secret.clone() {
             ctx.profile.token = secrets::get(ctx, &key)?;
+        }
+    }
+    if ctx.profile.refresh_token.is_none() {
+        if let Some(key) = ctx.profile.refresh_token_secret.clone() {
+            ctx.profile.refresh_token = secrets::get(ctx, &key)?;
+        }
+    }
+    if ctx.profile.client_secret.is_none() {
+        if let Some(key) = ctx.profile.client_secret_secret.clone() {
+            ctx.profile.client_secret = secrets::get(ctx, &key)?;
         }
     }
     if ctx.profile.api_token.is_none() {

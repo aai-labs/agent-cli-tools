@@ -1,15 +1,16 @@
 # Email Token Refresh
 
-How to generate fresh access tokens for Gmail and Zoho Mail REST, and write them into the encrypted secrets file.
+How to provision Gmail and Zoho Mail REST for use with `aai-cli`. The tool automatically exchanges a refresh token for a fresh access token on every request — no manual token rotation needed.
 
 ---
 
 ## Gmail
 
-### One-time setup (first time only)
+### One-time setup
 
 1. Go to `https://console.cloud.google.com/` → create or select a project
-2. Enable the **Gmail API** (APIs & Services → Enable APIs → search "Gmail API")
+2. Enable the **Gmail API**: APIs & Services → Enable APIs & Services → search "Gmail API" → Enable
+   > If you skip this step the tool will return a `SERVICE_DISABLED` 403 error even with valid credentials.
 3. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**
 4. Application type: **Desktop app** → give it a name → Create
 5. Note your `client_id` and `client_secret`
@@ -35,29 +36,32 @@ curl -X POST https://oauth2.googleapis.com/token \
   -d grant_type=authorization_code
 ```
 
-Save the `refresh_token` from the response somewhere safe — you only see it once.
+Save the `refresh_token` from the response — you only see it once.
 
-### Refresh the access token (repeat when expired, ~1 hour TTL)
+### Write credentials to the secrets file
 
 ```bash
-curl -X POST https://oauth2.googleapis.com/token \
-  -d client_id=CLIENT_ID \
-  -d client_secret=CLIENT_SECRET \
-  -d refresh_token=REFRESH_TOKEN \
-  -d grant_type=refresh_token
+aai-cli --config local/e2e.config.toml secrets set google.client_secret --value "CLIENT_SECRET"
+aai-cli --config local/e2e.config.toml secrets set google.gmail_refresh_token --value "REFRESH_TOKEN"
 ```
 
-Copy the `access_token` from the response, then write it to the secrets file:
+### config.toml profile
 
-```bash
-aai-cli --config local/e2e.config.toml secrets set google.gmail_token --value "ACCESS_TOKEN"
+```toml
+[profiles.gmail-work]
+provider = "google"
+auth_type = "bearer_token"
+client_id = "YOUR_CLIENT_ID.apps.googleusercontent.com"
+client_secret_secret = "google.client_secret"
+refresh_token_secret = "google.gmail_refresh_token"
+user_id = "me"
 ```
 
 ---
 
 ## Zoho Mail REST
 
-### One-time setup (first time only)
+### One-time setup
 
 1. Go to `https://api-console.zoho.com/`
 2. Click **Self Client** → **Create Now** (if not already created)
@@ -83,21 +87,43 @@ curl -X POST "https://accounts.zoho.com/oauth/v2/token" \
 
 Save the `refresh_token` from the response — it does not expire.
 
-### Refresh the access token (repeat when expired, ~1 hour TTL)
+### Write credentials to the secrets file
 
 ```bash
-curl -X POST "https://accounts.zoho.com/oauth/v2/token" \
-  -d grant_type=refresh_token \
-  -d client_id=CLIENT_ID \
-  -d client_secret=CLIENT_SECRET \
-  -d refresh_token=REFRESH_TOKEN
+aai-cli --config local/e2e.config.toml secrets set zoho.client_secret --value "CLIENT_SECRET"
+aai-cli --config local/e2e.config.toml secrets set zoho.mail_refresh_token --value "REFRESH_TOKEN"
 ```
 
-Copy the `access_token` from the response, then write it to the secrets file:
+### config.toml profile
+
+```toml
+[profiles.zoho-mail-rest]
+provider = "zoho"
+auth_type = "zoho_oauth"
+account_id = "YOUR_ACCOUNT_ID"
+client_id = "YOUR_CLIENT_ID"
+client_secret_secret = "zoho.client_secret"
+refresh_token_secret = "zoho.mail_refresh_token"
+```
+
+To find your `account_id`, run once with a valid access token:
 
 ```bash
-aai-cli --config local/e2e.config.toml secrets set zoho.mail_rest_token --value "ACCESS_TOKEN"
+curl -H "Authorization: Zoho-oauthtoken ACCESS_TOKEN" \
+  "https://mail.zoho.com/api/accounts"
 ```
+
+---
+
+## How token refresh works in aai-cli
+
+Every outgoing request automatically:
+
+1. Reads `refresh_token`, `client_id`, and `client_secret` from the profile (via secrets file)
+2. POSTs to the provider's token endpoint to obtain a fresh access token
+3. Uses that access token for the actual API request
+
+No manual refresh step or cron job is needed. If a stored access token (`token_secret`) is present instead of refresh credentials, it is used directly as a fallback.
 
 ---
 
@@ -106,6 +132,7 @@ aai-cli --config local/e2e.config.toml secrets set zoho.mail_rest_token --value 
 | | Gmail | Zoho Mail REST |
 |---|---|---|
 | Refresh token TTL | Until revoked | Never expires |
-| Access token TTL | ~1 hour | ~1 hour |
-| Secrets key | `google.gmail_token` | `zoho.mail_rest_token` |
-| Profile | `gmail-work` | `zoho-mail-rest` |
+| Access token TTL | ~1 hour (auto-refreshed) | ~1 hour (auto-refreshed) |
+| `client_secret` secret key | `google.client_secret` | `zoho.client_secret` |
+| `refresh_token` secret key | `google.gmail_refresh_token` | `zoho.mail_refresh_token` |
+| Profile name | `gmail-work` | `zoho-mail-rest` |

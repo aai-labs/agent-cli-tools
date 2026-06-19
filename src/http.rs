@@ -84,8 +84,10 @@ impl ApiClient {
         url: String,
         body: Option<Value>,
     ) -> Result<(Value, Option<String>), AppError> {
+        let token = crate::oauth::resolve_token(profile, client, service, operation).await?;
+        let effective = crate::config::Profile { token: Some(token), ..profile.clone() };
         let mut request = client.request(method, &url);
-        request = apply_auth(request, service, operation, profile)?;
+        request = apply_auth(request, service, operation, &effective)?;
         request = request.header("Accept", "application/json");
         if let Some(body) = body {
             request = request.json(&body);
@@ -150,8 +152,10 @@ impl ApiClient {
         url: String,
         accept: &str,
     ) -> Result<Vec<u8>, AppError> {
+        let token = crate::oauth::resolve_token(profile, &self.client, service, operation).await?;
+        let effective = crate::config::Profile { token: Some(token), ..profile.clone() };
         let mut request = self.client.request(Method::GET, &url);
-        request = apply_auth(request, service, operation, profile)?;
+        request = apply_auth(request, service, operation, &effective)?;
         request = request.header("Accept", accept);
 
         let response = request.send().await.map_err(|err| {
@@ -227,13 +231,15 @@ impl ApiClient {
         // closing boundary
         body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
 
+        let token = crate::oauth::resolve_token(profile, &self.client, service, operation).await?;
+        let effective = crate::config::Profile { token: Some(token), ..profile.clone() };
         let content_type = format!("multipart/form-data; boundary={boundary}");
         let mut request = self
             .client
             .post(&url)
             .body(body)
             .header("Content-Type", content_type);
-        request = apply_auth(request, service, operation, profile)?;
+        request = apply_auth(request, service, operation, &effective)?;
         request = request.header("X-Atlassian-Token", "no-check");
 
         let response = request
