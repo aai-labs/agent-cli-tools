@@ -29,6 +29,8 @@ pub enum Command {
     Calendar(CalendarCommand),
     /// Manage Pipedrive CRM records, history, activities, notes, and synced email.
     Pipedrive(PipedriveCommand),
+    /// Read and write Google Sheets spreadsheets and cell data.
+    Sheets(SheetsCommand),
     /// Inspect and edit persistent profiles without exposing credentials.
     Config(ConfigCommand),
     Secrets(SecretsCommand),
@@ -2454,6 +2456,86 @@ pub struct GithubSourceHistory {
     pub repo: Option<String>,
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct SheetsCommand {
+    #[command(subcommand)]
+    pub resource: SheetsResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SheetsResource {
+    /// Discover spreadsheets in Drive, or get metadata (sheet tabs) for a specific spreadsheet.
+    Spreadsheets(SpreadsheetsCommand),
+    /// Read, write, or clear cell values in a spreadsheet range.
+    Values(ValuesCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct SpreadsheetsCommand {
+    #[command(subcommand)]
+    pub action: SpreadsheetsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SpreadsheetsAction {
+    /// List all Google Sheets spreadsheets in Drive.
+    List(SpreadsheetsListArgs),
+    /// Get spreadsheet metadata including all sheet tab names and IDs.
+    Get(SpreadsheetsGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct SpreadsheetsListArgs {
+    /// Pagination token from a previous response to fetch the next page.
+    #[arg(long)]
+    pub page_token: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct SpreadsheetsGetArgs {
+    pub spreadsheet_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ValuesCommand {
+    #[command(subcommand)]
+    pub action: ValuesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ValuesAction {
+    /// Read cell values from a range (e.g. 'Sheet1'!A1:D5).
+    Get(ValuesGetArgs),
+    /// Write cell values to a range.
+    Update(ValuesUpdateArgs),
+    /// Clear cell values from a range (formatting is preserved).
+    Clear(ValuesClearArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ValuesGetArgs {
+    pub spreadsheet_id: String,
+    /// A1 notation range, e.g. 'Sheet1'!A1:D5 or 'Inventory'!2:2
+    pub range: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ValuesUpdateArgs {
+    pub spreadsheet_id: String,
+    /// A1 notation range, e.g. 'Sheet1'!A1:D5
+    pub range: String,
+    /// JSON array of arrays: [["A1","B1"],["A2","B2"]]
+    #[arg(long)]
+    pub values: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ValuesClearArgs {
+    pub spreadsheet_id: String,
+    /// A1 notation range, e.g. 'Sheet1'!A1:D5
+    pub range: String,
 }
 
 #[derive(Debug, Args)]

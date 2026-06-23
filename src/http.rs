@@ -85,7 +85,10 @@ impl ApiClient {
         body: Option<Value>,
     ) -> Result<(Value, Option<String>), AppError> {
         let token = crate::oauth::resolve_token(profile, client, service, operation).await?;
-        let effective = crate::config::Profile { token: Some(token), ..profile.clone() };
+        let effective = crate::config::Profile {
+            token: Some(token),
+            ..profile.clone()
+        };
         let mut request = client.request(method, &url);
         request = apply_auth(request, service, operation, &effective)?;
         request = request.header("Accept", "application/json");
@@ -153,7 +156,10 @@ impl ApiClient {
         accept: &str,
     ) -> Result<Vec<u8>, AppError> {
         let token = crate::oauth::resolve_token(profile, &self.client, service, operation).await?;
-        let effective = crate::config::Profile { token: Some(token), ..profile.clone() };
+        let effective = crate::config::Profile {
+            token: Some(token),
+            ..profile.clone()
+        };
         let mut request = self.client.request(Method::GET, &url);
         request = apply_auth(request, service, operation, &effective)?;
         request = request.header("Accept", accept);
@@ -232,7 +238,10 @@ impl ApiClient {
         body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
 
         let token = crate::oauth::resolve_token(profile, &self.client, service, operation).await?;
-        let effective = crate::config::Profile { token: Some(token), ..profile.clone() };
+        let effective = crate::config::Profile {
+            token: Some(token),
+            ..profile.clone()
+        };
         let content_type = format!("multipart/form-data; boundary={boundary}");
         let mut request = self
             .client

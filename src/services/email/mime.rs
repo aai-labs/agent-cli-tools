@@ -7,7 +7,14 @@ pub(super) fn decode_base64url(s: &str) -> String {
         .decode(s)
         .ok()
         .and_then(|b| String::from_utf8(b).ok())
-        .unwrap_or_else(|| String::from_utf8_lossy(&general_purpose::URL_SAFE_NO_PAD.decode(s).unwrap_or_default()).into_owned())
+        .unwrap_or_else(|| {
+            String::from_utf8_lossy(
+                &general_purpose::URL_SAFE_NO_PAD
+                    .decode(s)
+                    .unwrap_or_default(),
+            )
+            .into_owned()
+        })
 }
 
 pub(super) fn decode_base64_standard(s: &str) -> String {
@@ -16,7 +23,14 @@ pub(super) fn decode_base64_standard(s: &str) -> String {
         .decode(&cleaned)
         .ok()
         .and_then(|b| String::from_utf8(b).ok())
-        .unwrap_or_else(|| String::from_utf8_lossy(&general_purpose::STANDARD.decode(&cleaned).unwrap_or_default()).into_owned())
+        .unwrap_or_else(|| {
+            String::from_utf8_lossy(
+                &general_purpose::STANDARD
+                    .decode(&cleaned)
+                    .unwrap_or_default(),
+            )
+            .into_owned()
+        })
 }
 
 pub(super) fn decode_qp(s: &str) -> String {
@@ -154,7 +168,9 @@ pub(super) fn extract_boundary(content_type: &str) -> Option<String> {
 
 /// Walk a Gmail API payload node recursively to find the best readable body.
 /// Prefers text/plain over text/html.
-pub(super) fn find_body_in_gmail_payload(part: &serde_json::Value) -> Option<(String, &'static str)> {
+pub(super) fn find_body_in_gmail_payload(
+    part: &serde_json::Value,
+) -> Option<(String, &'static str)> {
     use serde_json::Value;
 
     let mime = part.get("mimeType").and_then(|v| v.as_str()).unwrap_or("");
@@ -195,8 +211,13 @@ pub(super) fn extract_readable_body(raw: &str) -> (String, &'static str) {
     let (header_text, body_text) = split_rfc822(raw);
     let headers = parse_rfc822_headers(header_text);
 
-    let content_type = headers.get("content-type").map(|s| s.as_str()).unwrap_or("text/plain");
-    let encoding = headers.get("content-transfer-encoding").map(|s| s.to_lowercase());
+    let content_type = headers
+        .get("content-type")
+        .map(|s| s.as_str())
+        .unwrap_or("text/plain");
+    let encoding = headers
+        .get("content-transfer-encoding")
+        .map(|s| s.to_lowercase());
     let encoding = encoding.as_deref().unwrap_or("7bit");
 
     if content_type.starts_with("multipart/") {
@@ -225,8 +246,13 @@ fn extract_multipart_body(body: &str, boundary: &str) -> (String, &'static str) 
         }
         let (header_text, part_body) = split_rfc822(part);
         let headers = parse_rfc822_headers(header_text);
-        let ct = headers.get("content-type").map(|s| s.as_str()).unwrap_or("");
-        let enc = headers.get("content-transfer-encoding").map(|s| s.to_lowercase());
+        let ct = headers
+            .get("content-type")
+            .map(|s| s.as_str())
+            .unwrap_or("");
+        let enc = headers
+            .get("content-transfer-encoding")
+            .map(|s| s.to_lowercase());
         let enc = enc.as_deref().unwrap_or("7bit");
 
         if ct.starts_with("text/plain") {

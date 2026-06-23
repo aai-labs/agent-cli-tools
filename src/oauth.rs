@@ -15,6 +15,10 @@ pub(crate) async fn resolve_token(
     service: &'static str,
     operation: &'static str,
 ) -> Result<String, AppError> {
+    if matches!(profile.auth_type.as_deref(), Some("none")) {
+        return Ok(String::new());
+    }
+
     if let (Some(refresh_token), Some(client_id), Some(client_secret)) = (
         profile.refresh_token.as_deref(),
         profile.client_id.as_deref(),

@@ -1,6 +1,6 @@
 # Email Token Refresh
 
-How to provision Gmail and Zoho Mail REST for use with `aai-cli`. The tool automatically exchanges a refresh token for a fresh access token on every request — no manual token rotation needed.
+How to provision Google sheets, Gmail and Zoho Mail REST for use with `aai-cli`. The tool automatically exchanges a refresh token for a fresh access token on every request — no manual token rotation needed.
 
 ---
 
@@ -115,6 +115,64 @@ curl -H "Authorization: Zoho-oauthtoken ACCESS_TOKEN" \
 
 ---
 
+## Google Sheets
+
+### One-time setup
+
+1. Go to `https://console.cloud.google.com/` → create or select a project
+2. Enable both APIs: APIs & Services → Enable APIs & Services → search each name → Enable
+   - **Google Sheets API** — required for all `sheets` commands
+   - **Google Drive API** — required for `spreadsheets list`
+   > If you skip this step the tool will return a `SERVICE_DISABLED` 403 error even with valid credentials.
+3. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**
+4. Application type: **Desktop app** → give it a name → Create
+5. Note your `client_id` and `client_secret`
+
+### Get a refresh token (one-time, lasts until revoked)
+
+Run this URL in a browser (replace `CLIENT_ID`):
+
+```
+https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/spreadsheets%20https://www.googleapis.com/auth/drive.metadata.readonly&access_type=offline&prompt=consent
+```
+
+Sign in → Allow → copy the authorization code shown on screen.
+
+Exchange it for tokens (replace `CLIENT_ID`, `CLIENT_SECRET`, `AUTH_CODE`):
+
+```bash
+curl -X POST https://oauth2.googleapis.com/token \
+  -d client_id=CLIENT_ID \
+  -d client_secret=CLIENT_SECRET \
+  -d code=AUTH_CODE \
+  -d redirect_uri=urn:ietf:wg:oauth:2.0:oob \
+  -d grant_type=authorization_code
+```
+
+Save the `refresh_token` from the response — you only see it once.
+
+### Write credentials to the secrets file
+
+```bash
+aai-cli --config local/e2e.config.toml secrets set google.client_secret --value "CLIENT_SECRET"
+aai-cli --config local/e2e.config.toml secrets set google.sheets_refresh_token --value "REFRESH_TOKEN"
+```
+
+If reusing an existing Gmail OAuth app, `google.client_secret` is already set — skip that line.
+
+### config.toml profile
+
+```toml
+[profiles.google-sheets-work]
+provider = "google"
+auth_type = "bearer_token"
+client_id = "YOUR_CLIENT_ID.apps.googleusercontent.com"
+client_secret_secret = "google.client_secret"
+refresh_token_secret = "google.sheets_refresh_token"
+```
+
+---
+
 ## How token refresh works in aai-cli
 
 Every outgoing request automatically:
@@ -129,10 +187,10 @@ No manual refresh step or cron job is needed. If a stored access token (`token_s
 
 ## Quick reference
 
-| | Gmail | Zoho Mail REST |
-|---|---|---|
-| Refresh token TTL | Until revoked | Never expires |
-| Access token TTL | ~1 hour (auto-refreshed) | ~1 hour (auto-refreshed) |
-| `client_secret` secret key | `google.client_secret` | `zoho.client_secret` |
-| `refresh_token` secret key | `google.gmail_refresh_token` | `zoho.mail_refresh_token` |
-| Profile name | `gmail-work` | `zoho-mail-rest` |
+| | Gmail | Zoho Mail REST | Google Sheets |
+|---|---|---|---|
+| Refresh token TTL | Until revoked | Never expires | Until revoked |
+| Access token TTL | ~1 hour (auto-refreshed) | ~1 hour (auto-refreshed) | ~1 hour (auto-refreshed) |
+| `client_secret` secret key | `google.client_secret` | `zoho.client_secret` | `google.client_secret` |
+| `refresh_token` secret key | `google.gmail_refresh_token` | `zoho.mail_refresh_token` | `google.sheets_refresh_token` |
+| Profile name | `gmail-work` | `zoho-mail-rest` | `google-sheets-work` |
