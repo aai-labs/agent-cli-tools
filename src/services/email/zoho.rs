@@ -202,7 +202,7 @@ fn filter_by_received_time(
                 Some(t) => t,
                 None => return true,
             };
-            after_ms.map_or(true, |a| ts >= a) && before_ms.map_or(true, |b| ts < b)
+            after_ms.is_none_or(|a| ts >= a) && before_ms.is_none_or(|b| ts < b)
         })
         .take(limit as usize)
         .cloned()

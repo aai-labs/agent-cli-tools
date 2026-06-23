@@ -150,7 +150,7 @@ fn extract_gmail_message(v: Value) -> Value {
 
     let payload = v.get("payload");
     let (body, body_type) = payload
-        .and_then(|p| find_body_in_gmail_payload(p))
+        .and_then(find_body_in_gmail_payload)
         .unwrap_or_else(|| (snippet.clone(), "snippet"));
 
     json!({
