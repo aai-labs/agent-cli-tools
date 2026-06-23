@@ -149,6 +149,10 @@ pub(crate) fn google_base(profile: &Profile) -> String {
         .unwrap_or_else(|| "https://www.googleapis.com".to_string())
 }
 
+pub(crate) fn sheets_base() -> &'static str {
+    "https://sheets.googleapis.com"
+}
+
 pub(crate) fn zoho_mail_base(profile: &Profile) -> String {
     profile
         .base_url
