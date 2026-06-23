@@ -27,7 +27,8 @@ async fn spreadsheets(
 ) -> Result<Value, AppError> {
     match action {
         SpreadsheetsAction::List(args) => {
-            let page_token_param = args.page_token
+            let page_token_param = args
+                .page_token
                 .as_deref()
                 .map(|t| format!("&pageToken={}", enc(t)))
                 .unwrap_or_default();
@@ -37,7 +38,14 @@ async fn spreadsheets(
                 page_token_param
             );
             client
-                .request("sheets", "spreadsheets.list", ctx.profile(), Method::GET, url, None)
+                .request(
+                    "sheets",
+                    "spreadsheets.list",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
                 .await
         }
         SpreadsheetsAction::Get(args) => {
@@ -47,7 +55,14 @@ async fn spreadsheets(
                 enc(&args.spreadsheet_id)
             );
             client
-                .request("sheets", "spreadsheets.get", ctx.profile(), Method::GET, url, None)
+                .request(
+                    "sheets",
+                    "spreadsheets.get",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
                 .await
         }
     }
@@ -67,18 +82,24 @@ async fn values(
                 enc(&args.range)
             );
             client
-                .request("sheets", "values.get", ctx.profile(), Method::GET, url, None)
+                .request(
+                    "sheets",
+                    "values.get",
+                    ctx.profile(),
+                    Method::GET,
+                    url,
+                    None,
+                )
                 .await
         }
         ValuesAction::Update(args) => {
-            let parsed_values: Value =
-                serde_json::from_str(&args.values).map_err(|err| {
-                    AppError::invalid_input(
-                        "sheets",
-                        "values.update",
-                        format!("--values must be a JSON array of arrays: {err}"),
-                    )
-                })?;
+            let parsed_values: Value = serde_json::from_str(&args.values).map_err(|err| {
+                AppError::invalid_input(
+                    "sheets",
+                    "values.update",
+                    format!("--values must be a JSON array of arrays: {err}"),
+                )
+            })?;
             if !parsed_values.is_array() {
                 return Err(AppError::invalid_input(
                     "sheets",
@@ -98,7 +119,14 @@ async fn values(
                 enc(&args.range)
             );
             client
-                .request("sheets", "values.update", ctx.profile(), Method::PUT, url, Some(body))
+                .request(
+                    "sheets",
+                    "values.update",
+                    ctx.profile(),
+                    Method::PUT,
+                    url,
+                    Some(body),
+                )
                 .await
         }
         ValuesAction::Clear(args) => {

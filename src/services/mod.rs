@@ -6,8 +6,8 @@ pub(crate) mod generic_request;
 pub(crate) mod github;
 pub(crate) mod jira;
 pub(crate) mod pipedrive;
-pub(crate) mod sheets;
 pub(crate) mod shared;
+pub(crate) mod sheets;
 
 use serde_json::Value;
 

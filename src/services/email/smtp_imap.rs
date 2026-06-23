@@ -27,16 +27,10 @@ pub(crate) async fn messages(
 fn list(ctx: &Context, args: &EmailMessageList) -> Result<Value, AppError> {
     let mut criteria_parts: Vec<String> = Vec::new();
     if let Some(after) = &args.received_after {
-        criteria_parts.push(format!(
-            "SINCE {}",
-            date_to_imap(after, "messages.list")?
-        ));
+        criteria_parts.push(format!("SINCE {}", date_to_imap(after, "messages.list")?));
     }
     if let Some(before) = &args.received_before {
-        criteria_parts.push(format!(
-            "BEFORE {}",
-            date_to_imap(before, "messages.list")?
-        ));
+        criteria_parts.push(format!("BEFORE {}", date_to_imap(before, "messages.list")?));
     }
     let query = if criteria_parts.is_empty() {
         "ALL".to_string()

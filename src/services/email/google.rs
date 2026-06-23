@@ -110,9 +110,21 @@ pub(crate) async fn messages(
 }
 
 fn extract_gmail_message(v: Value) -> Value {
-    let id = v.get("id").and_then(|x| x.as_str()).unwrap_or("").to_string();
-    let thread_id = v.get("threadId").and_then(|x| x.as_str()).unwrap_or("").to_string();
-    let snippet = v.get("snippet").and_then(|x| x.as_str()).unwrap_or("").to_string();
+    let id = v
+        .get("id")
+        .and_then(|x| x.as_str())
+        .unwrap_or("")
+        .to_string();
+    let thread_id = v
+        .get("threadId")
+        .and_then(|x| x.as_str())
+        .unwrap_or("")
+        .to_string();
+    let snippet = v
+        .get("snippet")
+        .and_then(|x| x.as_str())
+        .unwrap_or("")
+        .to_string();
 
     let empty = vec![];
     let headers = v
