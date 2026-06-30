@@ -27,6 +27,7 @@ run_safe() {
   cargo fmt --check
   cargo test
   cargo clippy --all-targets -- -D warnings
+  cargo package --list --allow-dirty | grep -q '^bundled/skills/'
 }
 
 run_live() {

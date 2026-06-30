@@ -27,6 +27,7 @@ pub async fn dispatch(ctx: &Context, command: Command) -> Result<Value, AppError
         Command::Apollo(command) => apollo::dispatch(&client, ctx, command).await,
         Command::Sheets(command) => sheets::dispatch(&client, ctx, command).await,
         Command::Config(_) => unreachable!("config commands are dispatched before context loading"),
+        Command::Skills(_) => unreachable!("skills commands are dispatched before context loading"),
         Command::Secrets(command) => crate::secrets::dispatch(ctx, command),
     }
 }

@@ -8,6 +8,7 @@ mod oauth;
 mod pagination;
 mod secrets;
 mod services;
+mod skills;
 
 use std::process::ExitCode;
 
@@ -41,6 +42,7 @@ async fn run() -> Result<serde_json::Value, AppError> {
     let cli = Cli::parse();
     match cli.command {
         cli::Command::Config(command) => config_commands::dispatch(cli.config.as_deref(), command),
+        cli::Command::Skills(command) => skills::dispatch(command),
         command => {
             let ctx = config::Context::load(
                 cli.config.as_deref(),

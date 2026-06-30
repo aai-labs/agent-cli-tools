@@ -22,6 +22,7 @@ Project features that are not provider services:
 
 - Persistent profile inspection, editing, validation, and default-profile management.
 - Local encrypted secrets using XChaCha20-Poly1305.
+- Bundled Agent Skills that can be discovered, validated, and installed into an active skills directory.
 - Generic authenticated `request` commands for HTTP-backed services.
 
 ## Documentation
@@ -100,6 +101,19 @@ printf '%s' "$GITHUB_TOKEN" | aai-cli --config local/e2e.config.toml secrets set
 ```
 
 Keep credentials and generated local configs under ignored `local/`; never commit them.
+
+## Bundled Agent Skills
+
+`aai-cli` embeds Agent Skills for supported provider workflows. They are inert package assets until installed:
+
+```bash
+aai-cli skills discover
+aai-cli skills validate
+aai-cli skills install aai-github
+aai-cli skills install --all
+```
+
+Skills install to `~/.agents/skills/` by default. Use `--target-dir PATH` for another client directory, `--dry-run` to preview writes, and `--force` to overwrite an existing installed skill.
 
 ## Generic Authenticated Requests
 

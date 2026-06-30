@@ -578,6 +578,21 @@ aai-cli --profile bitbucket-work bitbucket branches list --name-prefix release-
 
 `branches list` prefers `--name-contains TEXT` (substring match) and `--name-prefix TEXT` (anchored match) over raw query languages. An advanced `--query` escape hatch exists for Bitbucket BBQL expressions but is hidden from `--help` to keep the surface agent-friendly.
 
+## Bundled Agent Skills
+
+```bash
+aai-cli skills discover
+aai-cli skills validate [skill-name]
+aai-cli skills install <skill-name> [--target-dir PATH] [--force] [--dry-run]
+aai-cli skills install --all [--target-dir PATH] [--force] [--dry-run]
+```
+
+`discover` lists embedded skill packages and top-level command coverage, including commands without a bundled skill.
+
+`validate` checks bundled skill package names, `SKILL.md` frontmatter, and local markdown references.
+
+`install` extracts bundled skills to `~/.agents/skills/` by default. It refuses to overwrite an existing installed skill unless `--force` is passed. Use `--dry-run` to preview the planned writes without changing the filesystem.
+
 ## List Pagination
 
 For Bitbucket commands that accept `--limit N`, `aai-cli` follows Bitbucket's `next` pagination links and aggregates pages until it has `N` matching items (or no next page). The returned envelope is normalized to:

@@ -12,6 +12,7 @@
 - **Non-obvious patterns** — List and search commands aggregate provider pagination up to `--limit` while preserving the provider response shape.
 - **Non-obvious patterns** — Live E2E tests are ignored by default and require `AAI_E2E_CONFIG`; run them through `scripts/run-tests.sh live`.
 - **Non-obvious patterns** — Keep credentials and generated local configs under ignored `local/`; never commit them.
+- **Non-obvious patterns** — Bundled Agent Skills live under inert `bundled/skills/` package assets; provider command/service changes must update the matching skill and validation coverage when auth, flags, response shape, pagination, or workflows change.
 
 ## Agent work loop
 

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
@@ -35,7 +37,49 @@ pub enum Command {
     Sheets(SheetsCommand),
     /// Inspect and edit persistent profiles without exposing credentials.
     Config(ConfigCommand),
+    /// Discover, validate, and install bundled Agent Skills.
+    Skills(SkillsCommand),
     Secrets(SecretsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct SkillsCommand {
+    #[command(subcommand)]
+    pub action: SkillsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SkillsAction {
+    /// List bundled Agent Skills and command coverage.
+    Discover,
+    /// Install one bundled skill, or every bundled skill with --all.
+    Install(SkillsInstall),
+    /// Validate bundled skill packages.
+    Validate(SkillsValidate),
+}
+
+#[derive(Debug, Args)]
+pub struct SkillsInstall {
+    /// Bundled skill package name to install.
+    pub skill_name: Option<String>,
+    /// Install every bundled skill.
+    #[arg(long, conflicts_with = "skill_name")]
+    pub all: bool,
+    /// Target Agent Skills directory. Defaults to ~/.agents/skills.
+    #[arg(long)]
+    pub target_dir: Option<PathBuf>,
+    /// Overwrite existing installed skill directories.
+    #[arg(long)]
+    pub force: bool,
+    /// Report planned writes without changing the filesystem.
+    #[arg(long)]
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct SkillsValidate {
+    /// Bundled skill package name to validate. Omit to validate all.
+    pub skill_name: Option<String>,
 }
 
 #[derive(Debug, Args)]
