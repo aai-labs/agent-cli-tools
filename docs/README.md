@@ -18,6 +18,18 @@ Run `bash scripts/fetch-api-docs.sh` from the repository root to refresh the sna
 
 ## Developer Guides
 
+Service-level CLI docs live under `docs/services/`:
+
+- [Jira](services/jira.md)
+- [Confluence](services/confluence.md)
+- [Bitbucket](services/bitbucket.md)
+- [GitHub](services/github.md)
+- [Email](services/email.md)
+- [Calendar](services/calendar.md)
+- [Pipedrive](services/pipedrive.md)
+- [Apollo](services/apollo.md)
+- [Google Sheets](services/sheets.md)
+
 Atlassian docs include REST entrypoints, auth/API-token docs, OAuth scopes, webhooks, rate limits, and Jira ADF references. Start with:
 
 - `docs/atlassian/jira/rest-v3-intro.html`
@@ -33,6 +45,8 @@ Google docs include Gmail and Calendar discovery docs, REST references, scopes, 
 Zoho docs include official Mail and Calendar HTML API references. Zoho does not appear to publish official OpenAPI specs for these products, so the saved docs are HTML pages plus the manifest.
 
 Pipedrive docs include official v1 and v2 OpenAPI specs, the API reference, personal API token guide, and v2 overview. The CLI uses v1 for leads/lead labels and v2 for deals, persons, organizations, and search where available.
+
+Apollo docs include an implementation summary for auth, base URLs, rate limits, credits, endpoint groups, and OpenAPI usage in `docs/apollo/api-client.md`.
 
 ## Local Reference Files
 

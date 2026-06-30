@@ -131,6 +131,64 @@ fn find_u64(value: &Value, keys: &[&str]) -> Option<u64> {
 }
 
 #[test]
+#[ignore = "requires live Apollo credentials"]
+fn apollo_read_only_health_profile_and_searches() {
+    let health = cli_required("AAI_E2E_APOLLO_PROFILE", &["apollo", "health"]);
+    assert_eq!(health.get("healthy").and_then(Value::as_bool), Some(true));
+
+    let profile = cli_required("AAI_E2E_APOLLO_PROFILE", &["apollo", "users", "me"]);
+    assert!(
+        profile.is_object(),
+        "expected Apollo user profile object: {profile}"
+    );
+
+    let people = cli_required(
+        "AAI_E2E_APOLLO_PROFILE",
+        &["apollo", "people", "search", "--limit", "1"],
+    );
+    assert!(
+        people.get("_aai").is_some(),
+        "expected pagination metadata on people search: {people}"
+    );
+
+    let contacts = cli_required(
+        "AAI_E2E_APOLLO_PROFILE",
+        &["apollo", "contacts", "search", "--limit", "1"],
+    );
+    assert!(
+        contacts.get("_aai").is_some(),
+        "expected pagination metadata on contacts search: {contacts}"
+    );
+
+    let accounts = cli_required(
+        "AAI_E2E_APOLLO_PROFILE",
+        &["apollo", "accounts", "search", "--limit", "1"],
+    );
+    assert!(
+        accounts.get("_aai").is_some(),
+        "expected pagination metadata on accounts search: {accounts}"
+    );
+
+    let deals = cli_required(
+        "AAI_E2E_APOLLO_PROFILE",
+        &["apollo", "deals", "list", "--limit", "1"],
+    );
+    assert!(
+        deals.get("_aai").is_some(),
+        "expected pagination metadata on deals list: {deals}"
+    );
+
+    let tasks = cli_required(
+        "AAI_E2E_APOLLO_PROFILE",
+        &["apollo", "tasks", "search", "--limit", "1"],
+    );
+    assert!(
+        tasks.get("_aai").is_some(),
+        "expected pagination metadata on tasks search: {tasks}"
+    );
+}
+
+#[test]
 #[ignore = "requires live Jira credentials and a disposable project"]
 fn jira_issue_crud_and_projects() {
     let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {

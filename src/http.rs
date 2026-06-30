@@ -363,6 +363,16 @@ fn apply_auth(
                 })?;
             Ok(request.header("x-api-token", token))
         }
+        "apollo_api_key" | "apollo-api-key" => {
+            let token = profile
+                .api_token
+                .as_deref()
+                .or(profile.token.as_deref())
+                .ok_or_else(|| {
+                    AppError::auth(service, operation, "profile is missing api_token or token")
+                })?;
+            Ok(request.header("x-api-key", token))
+        }
         _ => {
             let token = profile
                 .token
@@ -403,6 +413,31 @@ mod tests {
         .unwrap();
 
         assert_eq!(request.headers()["x-api-token"], "pd-token");
+        assert!(!request.headers().contains_key("authorization"));
+    }
+
+    #[test]
+    fn apollo_api_key_uses_x_api_key_header() {
+        let client = Client::new();
+        let profile = Profile {
+            auth_type: Some("apollo_api_key".to_string()),
+            api_token: Some("apollo-token".to_string()),
+            ..Profile::default()
+        };
+        let request = apply_auth(
+            client.request(
+                Method::GET,
+                "https://api.apollo.io/api/v1/users/api_profile",
+            ),
+            "apollo",
+            "users.me",
+            &profile,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+
+        assert_eq!(request.headers()["x-api-key"], "apollo-token");
         assert!(!request.headers().contains_key("authorization"));
     }
 

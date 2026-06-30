@@ -302,6 +302,13 @@ fn validate_profile_table(
             "pipedrive_personal_token",
             "api_token_secret",
         ),
+        "apollo" => require_auth(
+            profile,
+            operation,
+            auth_type,
+            "apollo_api_key",
+            "api_token_secret",
+        ),
         "github" => require_auth(
             profile,
             operation,
@@ -640,6 +647,7 @@ token_secret = "github.token"
     fn validates_required_provider_auth_and_secret_combinations() {
         let cases = [
             ("pipedrive", "pipedrive_personal_token", "api_token_secret"),
+            ("apollo", "apollo_api_key", "api_token_secret"),
             ("github", "bearer_token", "token_secret"),
             ("jira", "basic_api_token", "api_token_secret"),
             ("confluence", "basic_api_token", "api_token_secret"),

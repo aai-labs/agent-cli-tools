@@ -27,9 +27,15 @@ This project should support credentials supplied by users or agents rather than 
 - Organization/admin access: Some Zoho APIs expose admin-level operations depending on product and scopes. Do not assume a generic service account model across Zoho products.
 - Region-specific accounts: Zoho accounts and API hosts vary by region/data center, so profiles should include an accounts/base URL when needed.
 
+## Apollo
+
+- User API key: Primary implemented model. Profiles use `auth_type = "apollo_api_key"` with `api_token_secret`, and requests send the key in the `x-api-key` header.
+- Key scope and plan access: Apollo API keys can be limited by endpoint access and account plan. Treat `403` as insufficient key scope, missing plan access, or a master-key-only endpoint.
+- Partner OAuth: Apollo documents OAuth bearer tokens for partner integrations, but this CLI does not implement Apollo OAuth acquisition or refresh in this pass.
+
 ## CLI Implications
 
-- Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `github_app`, `oauth_user`, or `service_account`.
+- Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `github_app`, `oauth_user`, or `service_account`.
 - Never infer service-account semantics from a token string alone.
 - Keep provider profiles isolated; do not reuse an Atlassian token across Jira, Confluence, and Bitbucket unless the provider docs explicitly support it.
 - Prefer env var overrides for secrets and config-file fields for non-secret metadata such as site URL, workspace, region, account email, and default scopes.

@@ -29,6 +29,8 @@ pub enum Command {
     Calendar(CalendarCommand),
     /// Manage Pipedrive CRM records, history, activities, notes, and synced email.
     Pipedrive(PipedriveCommand),
+    /// Manage Apollo CRM, search, outreach, workflow, and analytics APIs.
+    Apollo(ApolloCommand),
     /// Read and write Google Sheets spreadsheets and cell data.
     Sheets(SheetsCommand),
     /// Inspect and edit persistent profiles without exposing credentials.
@@ -1812,6 +1814,661 @@ pub struct PipedriveAssociatedList {
     /// Maximum associated records to aggregate.
     #[arg(long, default_value_t = 50)]
     pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+#[command(
+    about = "Manage Apollo CRM, search, outreach, workflow, and analytics APIs",
+    long_about = "Manage Apollo people, organizations, contacts, accounts, deals, tasks, calls, sequences, emails, conversations, and analytics.\n\nCreate, update, search, and bulk commands accept `--json <inline|path|->`. Typed flags set common fields and override matching JSON fields.",
+    after_help = "Examples:\n  aai-cli apollo people search --title CEO --location Berlin --limit 10\n  aai-cli apollo contacts create --email ada@example.com --first-name Ada --last-name Lovelace\n  aai-cli apollo users me\n  aai-cli apollo request get /users/api_profile"
+)]
+pub struct ApolloCommand {
+    #[command(subcommand)]
+    pub resource: ApolloResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloResource {
+    /// Test Apollo API-key authentication.
+    Health,
+    /// Manage people search and enrichment.
+    People(ApolloPeopleCommand),
+    /// Manage organization search and enrichment.
+    Organizations(ApolloOrganizationsCommand),
+    /// Manage Apollo contacts.
+    Contacts(ApolloContactsCommand),
+    /// Manage Apollo accounts.
+    Accounts(ApolloAccountsCommand),
+    /// Manage Apollo deals.
+    Deals(ApolloDealsCommand),
+    /// Manage Apollo tasks.
+    Tasks(ApolloTasksCommand),
+    /// Manage Apollo call records.
+    Calls(ApolloCallsCommand),
+    /// List Apollo notes.
+    Notes(ApolloNotesCommand),
+    /// List users and current API profile.
+    Users(ApolloUsersCommand),
+    /// List Apollo labels.
+    Labels(ApolloListCommand),
+    /// List or create Apollo fields.
+    Fields(ApolloFieldsCommand),
+    /// List Apollo typed custom fields.
+    CustomFields(ApolloListCommand),
+    /// Inspect Apollo API usage.
+    Usage(ApolloUsageCommand),
+    /// Poll Apollo webhook results.
+    Webhooks(ApolloWebhooksCommand),
+    /// Query Apollo analytics reports.
+    Analytics(ApolloAnalyticsCommand),
+    /// Manage Apollo sequences.
+    Sequences(ApolloSequencesCommand),
+    /// Manage Apollo outreach emails.
+    Emails(ApolloEmailsCommand),
+    /// Search Apollo news articles.
+    News(ApolloNewsCommand),
+    /// Search, inspect, and export Apollo conversations.
+    Conversations(ApolloConversationsCommand),
+    /// Call an Apollo REST endpoint with profile authentication.
+    Request(GenericRequest),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloPeopleCommand {
+    #[command(subcommand)]
+    pub action: ApolloPeopleAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloPeopleAction {
+    Search(ApolloSearchArgs),
+    Get(ApolloIdArg),
+    Enrich(ApolloPeopleEnrich),
+    BulkEnrich(ApolloJsonArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloPeopleEnrich {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub first_name: Option<String>,
+    #[arg(long)]
+    pub last_name: Option<String>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub email: Option<String>,
+    #[arg(long)]
+    pub organization_name: Option<String>,
+    #[arg(long)]
+    pub domain: Option<String>,
+    #[arg(long)]
+    pub id: Option<String>,
+    #[arg(long)]
+    pub linkedin_url: Option<String>,
+    #[arg(long)]
+    pub reveal_personal_emails: bool,
+    #[arg(long)]
+    pub reveal_phone_number: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloOrganizationsCommand {
+    #[command(subcommand)]
+    pub action: ApolloOrganizationsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloOrganizationsAction {
+    Search(ApolloSearchArgs),
+    Get(ApolloIdArg),
+    Enrich(ApolloOrganizationEnrich),
+    BulkEnrich(ApolloJsonArgs),
+    JobPostings(ApolloPagedIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloOrganizationEnrich {
+    #[arg(long)]
+    pub domain: Option<String>,
+    #[arg(long)]
+    pub linkedin_url: Option<String>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub website: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloContactsCommand {
+    #[command(subcommand)]
+    pub action: ApolloContactsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloContactsAction {
+    Create(ApolloContactWrite),
+    Get(ApolloIdArg),
+    Search(ApolloSearchArgs),
+    Update(ApolloContactUpdate),
+    BulkCreate(ApolloJsonArgs),
+    BulkUpdate(ApolloJsonArgs),
+    UpdateStages(ApolloIdsUpdate),
+    UpdateOwners(ApolloIdsUpdate),
+    Deals(ApolloIdJsonArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloAccountsCommand {
+    #[command(subcommand)]
+    pub action: ApolloAccountsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloAccountsAction {
+    Create(ApolloAccountWrite),
+    Get(ApolloIdArg),
+    Search(ApolloSearchArgs),
+    Update(ApolloAccountUpdate),
+    BulkCreate(ApolloJsonArgs),
+    BulkUpdate(ApolloJsonArgs),
+    UpdateOwners(ApolloIdsUpdate),
+    Stages,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloDealsCommand {
+    #[command(subcommand)]
+    pub action: ApolloDealsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloDealsAction {
+    Create(ApolloDealWrite),
+    List(ApolloSearchArgs),
+    Get(ApolloIdArg),
+    Update(ApolloDealUpdate),
+    Stages,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloTasksCommand {
+    #[command(subcommand)]
+    pub action: ApolloTasksAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloTasksAction {
+    Create(ApolloTaskWrite),
+    BulkCreate(ApolloJsonArgs),
+    Search(ApolloSearchArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloCallsCommand {
+    #[command(subcommand)]
+    pub action: ApolloCallsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloCallsAction {
+    Create(ApolloCallWrite),
+    Search(ApolloSearchArgs),
+    Update(ApolloCallUpdate),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloNotesCommand {
+    #[command(subcommand)]
+    pub action: ApolloNotesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloNotesAction {
+    List(ApolloNotesList),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloUsersCommand {
+    #[command(subcommand)]
+    pub action: ApolloUsersAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloUsersAction {
+    List(ApolloSearchArgs),
+    Me(ApolloMeArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloListCommand {
+    #[command(subcommand)]
+    pub action: ApolloListAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloListAction {
+    List,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloFieldsCommand {
+    #[command(subcommand)]
+    pub action: ApolloFieldsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloFieldsAction {
+    List(ApolloFieldsList),
+    Create(ApolloFieldWrite),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloUsageCommand {
+    #[command(subcommand)]
+    pub action: ApolloUsageAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloUsageAction {
+    Stats,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloWebhooksCommand {
+    #[command(subcommand)]
+    pub action: ApolloWebhooksAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloWebhooksAction {
+    Result(ApolloIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloAnalyticsCommand {
+    #[command(subcommand)]
+    pub action: ApolloAnalyticsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloAnalyticsAction {
+    Report(ApolloJsonArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloSequencesCommand {
+    #[command(subcommand)]
+    pub action: ApolloSequencesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloSequencesAction {
+    Search(ApolloSearchArgs),
+    Create(ApolloSequenceWrite),
+    Update(ApolloSequenceUpdate),
+    AddContacts(ApolloSequenceContacts),
+    UpdateContactStatus(ApolloSequenceStatus),
+    Activate(ApolloIdArg),
+    Deactivate(ApolloIdArg),
+    Archive(ApolloIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloEmailsCommand {
+    #[command(subcommand)]
+    pub action: ApolloEmailsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloEmailsAction {
+    Draft(ApolloEmailDraft),
+    SendNow(ApolloSendNow),
+    SendStatus(ApolloJsonArgs),
+    Search(ApolloSearchArgs),
+    Stats(ApolloIdArg),
+    Accounts,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloNewsCommand {
+    #[command(subcommand)]
+    pub action: ApolloNewsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloNewsAction {
+    Search(ApolloSearchArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloConversationsCommand {
+    #[command(subcommand)]
+    pub action: ApolloConversationsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ApolloConversationsAction {
+    Search(ApolloConversationSearch),
+    Get(ApolloIdArg),
+    Export(ApolloJsonArgs),
+    GetExport(ApolloIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloJsonArgs {
+    /// JSON object, inline or from a path; use - to read stdin.
+    #[arg(long)]
+    pub json: Option<String>,
+    /// Extra query parameter as key=value. Repeat for multiple parameters.
+    #[arg(long = "query")]
+    pub query: Vec<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloSearchArgs {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub q_keywords: Option<String>,
+    #[arg(long)]
+    pub q_name: Option<String>,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long)]
+    pub location: Option<String>,
+    #[arg(long)]
+    pub domain: Option<String>,
+    #[arg(long)]
+    pub sort_by_field: Option<String>,
+    #[arg(long)]
+    pub sort_ascending: Option<bool>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloIdArg {
+    pub id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloPagedIdArg {
+    pub id: String,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long = "query")]
+    pub query: Vec<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloIdJsonArgs {
+    pub id: String,
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloIdsUpdate {
+    /// Comma-separated Apollo IDs.
+    #[arg(long)]
+    pub ids: String,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub stage_id: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloContactWrite {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub first_name: Option<String>,
+    #[arg(long)]
+    pub last_name: Option<String>,
+    #[arg(long)]
+    pub organization_name: Option<String>,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long)]
+    pub account_id: Option<String>,
+    #[arg(long)]
+    pub email: Option<String>,
+    #[arg(long)]
+    pub website_url: Option<String>,
+    #[arg(long)]
+    pub contact_stage_id: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloContactUpdate {
+    pub id: String,
+    #[command(flatten)]
+    pub write: ApolloContactWrite,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloAccountWrite {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub domain: Option<String>,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub account_stage_id: Option<String>,
+    #[arg(long)]
+    pub phone: Option<String>,
+    #[arg(long)]
+    pub raw_address: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloAccountUpdate {
+    pub id: String,
+    #[command(flatten)]
+    pub write: ApolloAccountWrite,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloDealWrite {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub owner_id: Option<String>,
+    #[arg(long)]
+    pub account_id: Option<String>,
+    #[arg(long)]
+    pub amount: Option<f64>,
+    #[arg(long)]
+    pub opportunity_stage_id: Option<String>,
+    #[arg(long)]
+    pub closed_date: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloDealUpdate {
+    pub id: String,
+    #[command(flatten)]
+    pub write: ApolloDealWrite,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloTaskWrite {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub user_id: Option<String>,
+    #[arg(long)]
+    pub contact_id: Option<String>,
+    #[arg(long = "type")]
+    pub task_type: Option<String>,
+    #[arg(long)]
+    pub priority: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub due_at: Option<String>,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long)]
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloCallWrite {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub contact_id: Option<String>,
+    #[arg(long)]
+    pub account_id: Option<String>,
+    #[arg(long)]
+    pub to_number: Option<String>,
+    #[arg(long)]
+    pub from_number: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub start_time: Option<String>,
+    #[arg(long)]
+    pub end_time: Option<String>,
+    #[arg(long)]
+    pub duration: Option<u64>,
+    #[arg(long)]
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloCallUpdate {
+    pub id: String,
+    #[command(flatten)]
+    pub write: ApolloCallWrite,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloNotesList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub contact_id: Option<String>,
+    #[arg(long)]
+    pub account_id: Option<String>,
+    #[arg(long)]
+    pub opportunity_id: Option<String>,
+    #[arg(long)]
+    pub start_date: Option<String>,
+    #[arg(long)]
+    pub sort_by_field: Option<String>,
+    #[arg(long)]
+    pub sort_direction: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloMeArgs {
+    #[arg(long)]
+    pub include_credit_usage: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloFieldsList {
+    #[arg(long)]
+    pub source: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloFieldWrite {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub label: Option<String>,
+    #[arg(long)]
+    pub modality: Option<String>,
+    #[arg(long = "type")]
+    pub field_type: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloSequenceWrite {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub active: Option<bool>,
+    #[arg(long)]
+    pub user_id: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloSequenceUpdate {
+    pub id: String,
+    #[command(flatten)]
+    pub write: ApolloSequenceWrite,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloSequenceContacts {
+    pub id: String,
+    #[arg(long)]
+    pub contact_ids: String,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub email_account_id: Option<String>,
+    #[arg(long)]
+    pub email_address: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloSequenceStatus {
+    #[arg(long)]
+    pub sequence_ids: String,
+    #[arg(long)]
+    pub contact_ids: String,
+    #[arg(long)]
+    pub mode: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloEmailDraft {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub contact_id: Option<String>,
+    #[arg(long)]
+    pub subject: Option<String>,
+    #[arg(long)]
+    pub body_html: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloSendNow {
+    pub id: String,
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long)]
+    pub surface: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct ApolloConversationSearch {
+    #[command(flatten)]
+    pub json: ApolloJsonArgs,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub conversation_type: Option<String>,
+    #[arg(long)]
+    pub account_id: Option<String>,
+    #[arg(long)]
+    pub sort_by_field: Option<String>,
 }
 
 #[derive(Debug, Args)]

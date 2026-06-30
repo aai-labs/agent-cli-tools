@@ -30,6 +30,7 @@ aai-cli config default-profile set <profile-name>
 Validation enforces these provider/auth/reference combinations:
 
 - Pipedrive: `pipedrive_personal_token` with `api_token_secret`
+- Apollo: `apollo_api_key` with `api_token_secret`
 - GitHub: `bearer_token` with `token_secret`
 - Jira, Confluence, and Bitbucket: `basic_api_token` with `api_token_secret`
 
@@ -46,7 +47,7 @@ aai-cli <service> request patch <relative-path> --allow-write [--json <path|->] 
 aai-cli <service> request delete <relative-path> --allow-write [--json <path|->] [--query key=value ...]
 ```
 
-Supported services: `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
+Supported services: `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, `apollo`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
 
 The endpoint path must be relative to the configured provider base. Absolute URLs, redirects, embedded queries/fragments, and backslashes are rejected to prevent sending profile authentication to another origin. GET and HEAD reject `--json`; writes require `--allow-write`. Query arguments are repeatable and must use `key=value`.
 
@@ -218,6 +219,117 @@ aai-cli pipedrive mailbox threads get <thread-id>
 aai-cli pipedrive mailbox threads messages <thread-id>
 ```
 
+## Apollo
+
+Apollo profiles use API-key auth only:
+
+```toml
+[profiles.apollo-work]
+provider = "apollo"
+auth_type = "apollo_api_key"
+api_token_secret = "apollo.api_token"
+# Optional; defaults to https://api.apollo.io/api/v1
+base_url = "https://api.apollo.io/api/v1"
+```
+
+Apollo's documented API-key health check is outside the main `/api/v1` base and is exposed as `apollo health`. Generic `apollo request` paths remain relative to `profile.base_url`.
+
+```bash
+aai-cli apollo health
+aai-cli apollo request get /users/api_profile
+aai-cli apollo request post /people/match --allow-write --query email=ada@example.com
+```
+
+People and organization commands keep Apollo's provider terms. Lead search is `apollo people search`.
+
+```bash
+aai-cli apollo people search [--limit N] [--q-keywords TEXT] [--title TEXT] [--location TEXT] [--domain DOMAIN] [--query key=value ...]
+aai-cli apollo people get <person-id>
+aai-cli apollo people enrich [--json <path|->] [--email EMAIL] [--first-name TEXT] [--last-name TEXT] [--domain DOMAIN] [--linkedin-url URL] [--reveal-personal-emails] [--reveal-phone-number]
+aai-cli apollo people bulk-enrich [--json <path|->] [--query key=value ...]
+
+aai-cli apollo organizations search [--limit N] [--q-name TEXT] [--location TEXT] [--domain DOMAIN] [--query key=value ...]
+aai-cli apollo organizations get <organization-id>
+aai-cli apollo organizations enrich [--domain DOMAIN] [--linkedin-url URL] [--name TEXT] [--website URL]
+aai-cli apollo organizations bulk-enrich [--json <path|->] [--query key=value ...]
+aai-cli apollo organizations job-postings <organization-id> [--limit N] [--query key=value ...]
+```
+
+CRM and workflow commands:
+
+```bash
+aai-cli apollo contacts create [--json <path|->] [--first-name TEXT] [--last-name TEXT] [--email EMAIL] [--account-id ID] [--title TEXT]
+aai-cli apollo contacts get <contact-id>
+aai-cli apollo contacts search [--json <path|->] [--limit N] [--q-keywords TEXT] [--sort-by-field FIELD] [--sort-ascending true|false]
+aai-cli apollo contacts update <contact-id> [--json <path|->] [--first-name TEXT] [--last-name TEXT] [--email EMAIL]
+aai-cli apollo contacts bulk-create [--json <path|->]
+aai-cli apollo contacts bulk-update [--json <path|->]
+aai-cli apollo contacts update-stages --ids CSV --stage-id ID
+aai-cli apollo contacts update-owners --ids CSV --owner-id ID
+aai-cli apollo contacts deals <contact-id> [--json <path|->]
+
+aai-cli apollo accounts create [--json <path|->] [--name TEXT] [--domain DOMAIN] [--owner-id ID] [--account-stage-id ID]
+aai-cli apollo accounts get <account-id>
+aai-cli apollo accounts search [--json <path|->] [--limit N] [--q-name TEXT] [--sort-by-field FIELD] [--sort-ascending true|false]
+aai-cli apollo accounts update <account-id> [--json <path|->] [--name TEXT] [--domain DOMAIN]
+aai-cli apollo accounts bulk-create [--json <path|->]
+aai-cli apollo accounts bulk-update [--json <path|->]
+aai-cli apollo accounts update-owners --ids CSV --owner-id ID
+aai-cli apollo accounts stages
+
+aai-cli apollo deals create [--json <path|->] [--name TEXT] [--account-id ID] [--amount NUM] [--opportunity-stage-id ID]
+aai-cli apollo deals list [--limit N] [--sort-by-field FIELD]
+aai-cli apollo deals get <deal-id>
+aai-cli apollo deals update <deal-id> [--json <path|->] [--name TEXT] [--amount NUM]
+aai-cli apollo deals stages
+
+aai-cli apollo tasks create [--json <path|->] [--user-id ID] [--contact-id ID] [--type TYPE] [--status STATUS] [--due-at TS]
+aai-cli apollo tasks bulk-create [--json <path|->]
+aai-cli apollo tasks search [--limit N] [--query key=value ...]
+aai-cli apollo calls create [--query key=value ...] [--contact-id ID] [--to-number NUMBER] [--from-number NUMBER]
+aai-cli apollo calls search [--limit N] [--q-keywords TEXT] [--query key=value ...]
+aai-cli apollo calls update <call-id> [--query key=value ...] [--status STATUS] [--note TEXT]
+aai-cli apollo notes list [--limit N] [--contact-id ID] [--account-id ID] [--opportunity-id ID]
+```
+
+Outreach, metadata, and reporting commands:
+
+```bash
+aai-cli apollo users list [--limit N]
+aai-cli apollo users me [--include-credit-usage]
+aai-cli apollo labels list
+aai-cli apollo fields list [--source SOURCE]
+aai-cli apollo fields create [--json <path|->] [--label TEXT] [--modality TEXT] [--type TYPE]
+aai-cli apollo custom-fields list
+aai-cli apollo usage stats
+aai-cli apollo webhooks result <request-id>
+aai-cli apollo analytics report [--json <path|->]
+
+aai-cli apollo sequences search [--limit N] [--q-name TEXT]
+aai-cli apollo sequences create [--json <path|->] [--name TEXT] [--active true|false]
+aai-cli apollo sequences update <sequence-id> [--json <path|->] [--name TEXT] [--active true|false]
+aai-cli apollo sequences add-contacts <sequence-id> --contact-ids CSV [--status STATUS]
+aai-cli apollo sequences update-contact-status --sequence-ids CSV --contact-ids CSV --mode MODE
+aai-cli apollo sequences activate <sequence-id>
+aai-cli apollo sequences deactivate <sequence-id>
+aai-cli apollo sequences archive <sequence-id>
+
+aai-cli apollo emails draft [--json <path|->] [--contact-id ID] [--subject TEXT] [--body-html HTML]
+aai-cli apollo emails send-now <message-id> [--json <path|->] [--surface TEXT]
+aai-cli apollo emails send-status [--json <path|->]
+aai-cli apollo emails search [--limit N] [--q-keywords TEXT] [--query key=value ...]
+aai-cli apollo emails stats <message-id>
+aai-cli apollo emails accounts
+
+aai-cli apollo news search [--limit N] [--query key=value ...]
+aai-cli apollo conversations search [--json <path|->] [--limit N] [--conversation-type TYPE] [--account-id ID]
+aai-cli apollo conversations get <conversation-id>
+aai-cli apollo conversations export [--json <path|->]
+aai-cli apollo conversations get-export <export-id>
+```
+
+For every Apollo command that accepts `--json`, typed flags override matching top-level JSON fields. Repeat `--query key=value` for Apollo parameters that do not have first-class flags.
+
 ## Pagination
 
 Every successful service response contains:
@@ -252,7 +364,7 @@ Provider response fields remain at their original locations, except bare provide
 
 When `next_command` is present, run it to retrieve more results. Generic requests preserve existing query filters while replacing or adding continuation parameters. Typed commands that aggregate to `--limit` may suggest rerunning with a larger limit; this retrieves the previous results plus additional results rather than only the next page. If `status` is `unknown`, increase `--limit` or use a generic authenticated request with the provider's documented pagination parameters.
 
-For implemented Jira, Confluence, GitHub, Bitbucket, and Pipedrive list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
+For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, and Apollo list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
 
 Covered operations:
 
@@ -274,6 +386,20 @@ Covered operations:
 - `pipedrive notes list`
 - associated activities, notes, and mail-message lists
 - `pipedrive mailbox threads list`
+- `apollo people search`
+- `apollo organizations search`
+- `apollo organizations job-postings`
+- `apollo contacts search`
+- `apollo accounts search`
+- `apollo deals list`
+- `apollo tasks search`
+- `apollo calls search`
+- `apollo notes list`
+- `apollo users list`
+- `apollo sequences search`
+- `apollo emails search`
+- `apollo news search`
+- `apollo conversations search`
 
 Agents should set the smallest useful `--limit`. Large limits can increase latency and provider rate-limit pressure.
 
