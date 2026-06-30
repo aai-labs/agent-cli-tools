@@ -44,6 +44,22 @@ impl AppError {
         Self::new("auth_error", service, operation, message)
     }
 
+    pub fn unsupported_auth(
+        service: &'static str,
+        operation: &'static str,
+        message: impl Into<String>,
+        details: Option<Value>,
+    ) -> Self {
+        Self {
+            code: "unsupported_auth",
+            message: message.into(),
+            service,
+            operation,
+            status: None,
+            details,
+        }
+    }
+
     pub fn not_found(
         service: &'static str,
         operation: &'static str,
@@ -119,7 +135,7 @@ impl AppError {
     pub fn exit_code(&self) -> ExitCode {
         let code = match self.code {
             "invalid_input" => 2,
-            "config_error" | "auth_error" => 3,
+            "config_error" | "auth_error" | "unsupported_auth" => 3,
             "provider_api_error" => 4,
             "not_found" => 5,
             "rate_limited" => 6,

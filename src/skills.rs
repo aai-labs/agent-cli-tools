@@ -21,6 +21,7 @@ const SKILL_COMMANDS: &[(&str, &[&str])] = &[
     ("aai-bitbucket", &["bitbucket"]),
     ("aai-confluence", &["confluence"]),
     ("aai-github", &["github"]),
+    ("aai-hubspot", &["hubspot"]),
     ("aai-gmail", &["email"]),
     ("aai-google-sheets", &["sheets"]),
     ("aai-jira", &["jira"]),
@@ -32,6 +33,7 @@ const TOP_LEVEL_COMMANDS: &[&str] = &[
     "confluence",
     "bitbucket",
     "github",
+    "hubspot",
     "email",
     "calendar",
     "pipedrive",
@@ -512,7 +514,7 @@ mod tests {
         let packages = load_packages().expect("load bundled skills");
         let reports = validate_packages(&packages);
 
-        assert_eq!(reports.len(), 7);
+        assert_eq!(reports.len(), 8);
         assert!(
             reports.iter().all(|report| report.valid),
             "invalid reports: {reports:#?}"

@@ -16,6 +16,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks saf
 | Calendar | Google Calendar REST profiles and Zoho CalDAV profiles | [docs/services/calendar.md](docs/services/calendar.md) | [Google Calendar API](https://developers.google.com/calendar/api/v3/reference), [Zoho CalDAV](https://www.zoho.com/calendar/help/caldav-sync.html) |
 | Pipedrive | Leads, persons, organizations, deals, labels, activities, notes, synced email history | [docs/services/pipedrive.md](docs/services/pipedrive.md) | [Pipedrive API](https://developers.pipedrive.com/docs/api/v1), [Pipedrive API v2](https://developers.pipedrive.com/docs/api/v2) |
 | Apollo | People and organization search/enrichment, contacts, accounts, deals, tasks, calls, outreach, conversations, analytics | [docs/services/apollo.md](docs/services/apollo.md) | [Apollo API docs](https://docs.apollo.io/docs/apollo-api-overview), [Apollo OpenAPI](https://docs.apollo.io/openapi/apollo-rest-api.json) |
+| HubSpot | CRM object reads/search, files, events, conversations, visitor identification, custom channels | [docs/services/hubspot.md](docs/services/hubspot.md) | [HubSpot API docs](https://developers.hubspot.com/docs/api/overview) |
 | Google Sheets | Spreadsheet listing plus sheet value reads/writes | [docs/services/sheets.md](docs/services/sheets.md) | [Google Sheets API](https://developers.google.com/sheets/api/reference/rest) |
 
 Project features that are not provider services:
@@ -94,6 +95,15 @@ owner = "acme"
 repo = "app"
 ```
 
+HubSpot profiles use explicit bearer auth models:
+
+```toml
+[profiles.hubspot-work]
+provider = "hubspot"
+auth_type = "hubspot_service_key" # or "hubspot_legacy_private_app"
+token_secret = "hubspot.token"
+```
+
 Store secret values with:
 
 ```bash
@@ -121,11 +131,12 @@ Typed commands are preferred for common workflows. For reports and uncommon prov
 
 ```bash
 aai-cli --profile github-work github request get /repos/acme/app/issues --query state=closed
+aai-cli --profile hubspot-work hubspot request get /crm/v3/objects/contacts
 aai-cli --profile apollo-work apollo request get /users/api_profile
 aai-cli --profile jira-work jira request post /rest/api/3/issue --allow-write --json -
 ```
 
-Supported services are `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, `apollo`, and REST-backed `email` and `calendar` profiles. SMTP/IMAP and CalDAV profiles are intentionally excluded.
+Supported services are `jira`, `confluence`, `bitbucket`, `github`, `hubspot`, `pipedrive`, `apollo`, and REST-backed `email` and `calendar` profiles. SMTP/IMAP and CalDAV profiles are intentionally excluded.
 
 ## Development
 

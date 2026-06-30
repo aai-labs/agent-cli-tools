@@ -50,6 +50,7 @@ Live tests MUST be marked ignored so `cargo test` remains safe. They MUST:
 - Avoid modifying pre-existing customer data.
 - Never print or commit credentials.
 - Assert only stable provider behavior, not account-specific incidental data.
+- For HubSpot live checks, missing scopes, unsupported auth models, or account-tier limits should assert structured `auth_error` or `unsupported_auth` JSON with remediation details, not panics or unstructured provider dumps.
 
 Keep live tests narrow. Use them to verify authentication and representative CRUD or read flows that cannot be proven locally.
 

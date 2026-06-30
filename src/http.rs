@@ -373,6 +373,17 @@ fn apply_auth(
                 })?;
             Ok(request.header("x-api-key", token))
         }
+        "hubspot_service_key"
+        | "hubspot-service-key"
+        | "hubspot_legacy_private_app"
+        | "hubspot-legacy-private-app" => {
+            let token = profile
+                .token
+                .as_deref()
+                .or(profile.api_token.as_deref())
+                .ok_or_else(|| AppError::auth(service, operation, "profile is missing token"))?;
+            Ok(request.bearer_auth(token))
+        }
         _ => {
             let token = profile
                 .token
