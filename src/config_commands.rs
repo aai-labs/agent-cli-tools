@@ -316,6 +316,13 @@ fn validate_profile_table(
             "bearer_token",
             "token_secret",
         ),
+        "hubspot" => require_one_of_auth(
+            profile,
+            operation,
+            auth_type,
+            &["hubspot_service_key", "hubspot_legacy_private_app"],
+            "token_secret",
+        ),
         "jira" | "confluence" | "bitbucket" => require_auth(
             profile,
             operation,
@@ -339,6 +346,27 @@ fn require_auth(
             "config",
             operation,
             format!("auth_type must be {expected_auth} for this provider"),
+        ));
+    }
+    required_string(profile, secret_field, operation)?;
+    Ok(())
+}
+
+fn require_one_of_auth(
+    profile: &TomlMap<String, TomlValue>,
+    operation: &'static str,
+    actual_auth: &str,
+    expected_auth: &[&str],
+    secret_field: &str,
+) -> Result<(), AppError> {
+    if !expected_auth.contains(&actual_auth) {
+        return Err(AppError::invalid_input(
+            "config",
+            operation,
+            format!(
+                "auth_type must be one of {} for this provider",
+                expected_auth.join(", ")
+            ),
         ));
     }
     required_string(profile, secret_field, operation)?;
@@ -649,6 +677,8 @@ token_secret = "github.token"
             ("pipedrive", "pipedrive_personal_token", "api_token_secret"),
             ("apollo", "apollo_api_key", "api_token_secret"),
             ("github", "bearer_token", "token_secret"),
+            ("hubspot", "hubspot_service_key", "token_secret"),
+            ("hubspot", "hubspot_legacy_private_app", "token_secret"),
             ("jira", "basic_api_token", "api_token_secret"),
             ("confluence", "basic_api_token", "api_token_secret"),
             ("bitbucket", "basic_api_token", "api_token_secret"),

@@ -33,6 +33,8 @@ pub enum Command {
     Pipedrive(PipedriveCommand),
     /// Manage Apollo CRM, search, outreach, workflow, and analytics APIs.
     Apollo(ApolloCommand),
+    /// Manage HubSpot CRM, files, events, and conversations APIs.
+    Hubspot(HubspotCommand),
     /// Read and write Google Sheets spreadsheets and cell data.
     Sheets(SheetsCommand),
     /// Inspect and edit persistent profiles without exposing credentials.
@@ -1915,6 +1917,251 @@ pub enum ApolloResource {
     Conversations(ApolloConversationsCommand),
     /// Call an Apollo REST endpoint with profile authentication.
     Request(GenericRequest),
+}
+
+#[derive(Debug, Args)]
+#[command(
+    about = "Manage HubSpot CRM, files, events, and conversations APIs",
+    long_about = "Manage common HubSpot CRM objects, files, event occurrence reads, behavioral event sends, conversations inboxes, visitor identification, and custom channels.\n\nHubSpot auth failures are returned as structured JSON with endpoint, auth model, likely scopes, provider response, and remediation hints.",
+    after_help = "Examples:\n  aai-cli hubspot crm contacts list --limit 25\n  aai-cli hubspot files get 12345\n  aai-cli hubspot conversations inboxes list\n  aai-cli hubspot request get /crm/v3/objects/contacts"
+)]
+pub struct HubspotCommand {
+    #[command(subcommand)]
+    pub resource: HubspotResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotResource {
+    /// Test HubSpot token authentication.
+    Health,
+    /// Read and search HubSpot CRM objects.
+    Crm(HubspotCrmCommand),
+    /// Read HubSpot files.
+    Files(HubspotFilesCommand),
+    /// Read event occurrences or send custom behavioral events.
+    Events(HubspotEventsCommand),
+    /// Read HubSpot conversations APIs and visitor identification tokens.
+    Conversations(HubspotConversationsCommand),
+    /// Call an uncommon HubSpot REST endpoint with profile authentication.
+    Request(GenericRequest),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotCrmCommand {
+    #[command(subcommand)]
+    pub object: HubspotCrmObjectCommand,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotCrmObjectCommand {
+    Contacts(HubspotCrmObjectActions),
+    Companies(HubspotCrmObjectActions),
+    Deals(HubspotCrmObjectActions),
+    Tickets(HubspotCrmObjectActions),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotCrmObjectActions {
+    #[command(subcommand)]
+    pub action: HubspotCrmObjectAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotCrmObjectAction {
+    List(HubspotListArgs),
+    Get(HubspotObjectGet),
+    Search(HubspotSearchArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotListArgs {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub after: Option<String>,
+    /// Comma-separated provider property names.
+    #[arg(long)]
+    pub properties: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotObjectGet {
+    pub id: String,
+    /// Comma-separated provider property names.
+    #[arg(long)]
+    pub properties: Option<String>,
+    /// Request archived records where supported by HubSpot.
+    #[arg(long)]
+    pub archived: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotSearchArgs {
+    /// JSON search body, inline or from a path; use - to read stdin.
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotFilesCommand {
+    #[command(subcommand)]
+    pub action: HubspotFilesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotFilesAction {
+    List(HubspotFilesList),
+    Get(HubspotFileGet),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotFilesList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub after: Option<String>,
+    #[arg(long)]
+    pub folder_id: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotFileGet {
+    pub id: String,
+    /// Hint that this read may need `files.ui_hidden.read`.
+    #[arg(long)]
+    pub hidden_or_deleted: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotEventsCommand {
+    #[command(subcommand)]
+    pub resource: HubspotEventsResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotEventsResource {
+    Occurrences(HubspotEventOccurrencesCommand),
+    Custom(HubspotCustomEventsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotEventOccurrencesCommand {
+    #[command(subcommand)]
+    pub action: HubspotEventOccurrencesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotEventOccurrencesAction {
+    List(HubspotEventOccurrencesList),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotEventOccurrencesList {
+    pub event_type: String,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub after: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotCustomEventsCommand {
+    #[command(subcommand)]
+    pub action: HubspotCustomEventsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotCustomEventsAction {
+    Send(HubspotJsonBody),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotConversationsCommand {
+    #[command(subcommand)]
+    pub resource: HubspotConversationsResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotConversationsResource {
+    Inboxes(HubspotConversationsInboxesCommand),
+    Threads(HubspotConversationsThreadsCommand),
+    VisitorIdentification(HubspotVisitorIdentificationCommand),
+    CustomChannels(HubspotCustomChannelsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotConversationsInboxesCommand {
+    #[command(subcommand)]
+    pub action: HubspotConversationsInboxesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotConversationsInboxesAction {
+    List(HubspotSimpleList),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotConversationsThreadsCommand {
+    #[command(subcommand)]
+    pub action: HubspotConversationsThreadsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotConversationsThreadsAction {
+    List(HubspotSimpleList),
+    Get(IdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotVisitorIdentificationCommand {
+    #[command(subcommand)]
+    pub action: HubspotVisitorIdentificationAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotVisitorIdentificationAction {
+    Tokens(HubspotVisitorTokensCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotVisitorTokensCommand {
+    #[command(subcommand)]
+    pub action: HubspotVisitorTokensAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotVisitorTokensAction {
+    Create(HubspotJsonBody),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotCustomChannelsCommand {
+    #[command(subcommand)]
+    pub action: HubspotCustomChannelsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum HubspotCustomChannelsAction {
+    List(HubspotSimpleList),
+    Get(IdArg),
+    Create(HubspotJsonBody),
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotSimpleList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long)]
+    pub after: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct HubspotJsonBody {
+    /// JSON body, inline or from a path; use - to read stdin.
+    #[arg(long)]
+    pub json: String,
 }
 
 #[derive(Debug, Args)]
