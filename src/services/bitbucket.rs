@@ -73,12 +73,12 @@ pub(crate) async fn dispatch(
             BitbucketPullRequestAction::List(args) => {
                 let (workspace, repo) =
                     bitbucket_repo(ctx.profile(), args.repo.as_deref(), "prs.list")?;
-                let url = format!(
-                    "{}/repositories/{}/{}/pullrequests?pagelen={}",
-                    bitbucket_base(ctx.profile()),
-                    enc(workspace),
-                    enc(repo),
-                    args.limit
+                let url = pr_list_url(
+                    &bitbucket_base(ctx.profile()),
+                    workspace,
+                    repo,
+                    args.limit,
+                    args.state.as_deref(),
                 );
                 client
                     .request(
@@ -404,6 +404,18 @@ fn append_query(url: &mut String, key: &str, value: Option<&str>) {
         url.push('=');
         url.push_str(&enc(value));
     }
+}
+
+fn pr_list_url(base: &str, workspace: &str, repo: &str, limit: u32, state: Option<&str>) -> String {
+    let mut url = format!(
+        "{}/repositories/{}/{}/pullrequests?pagelen={}",
+        base,
+        enc(workspace),
+        enc(repo),
+        limit
+    );
+    append_query(&mut url, "state", state);
+    url
 }
 
 fn enc_path(path: &str) -> String {
@@ -1029,6 +1041,30 @@ fn pr_comment_body(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pr_list_url_appends_state_when_present() {
+        let url = pr_list_url(
+            "https://api.bitbucket.org/2.0",
+            "acme",
+            "widgets",
+            50,
+            Some("MERGED"),
+        );
+        assert_eq!(
+            url,
+            "https://api.bitbucket.org/2.0/repositories/acme/widgets/pullrequests?pagelen=50&state=MERGED"
+        );
+    }
+
+    #[test]
+    fn pr_list_url_omits_state_when_absent() {
+        let url = pr_list_url("https://api.bitbucket.org/2.0", "acme", "widgets", 10, None);
+        assert_eq!(
+            url,
+            "https://api.bitbucket.org/2.0/repositories/acme/widgets/pullrequests?pagelen=10"
+        );
+    }
 
     fn write_args(
         body: Option<&str>,
