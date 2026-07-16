@@ -686,7 +686,7 @@ pub struct BitbucketPrsCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum BitbucketPullRequestAction {
-    List(RepoLimitArg),
+    List(PrListArg),
     Get(NumberArg),
     Create(PullRequestCreate),
     Delete(NumberArg),
@@ -2763,10 +2763,70 @@ pub struct RepoLimitArg {
     pub limit: u32,
 }
 
+#[derive(Debug, Args)]
+pub struct PrListArg {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Filter by pull request state. GitHub: `open`, `closed`, or `all`.
+    /// Bitbucket: `OPEN`, `MERGED`, `DECLINED`, or `SUPERSEDED`. Omitted =
+    /// provider default (open). For merged PRs on GitHub use `closed` and keep
+    /// those with a non-null `merged_at`.
+    #[arg(long)]
+    pub state: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use clap::CommandFactory;
+    use clap::Parser;
+
+    #[test]
+    fn github_prs_list_parses_state_flag() {
+        let cli = Cli::try_parse_from([
+            "aai-cli", "github", "prs", "list", "--owner", "o", "--repo", "r", "--state", "closed",
+        ])
+        .expect("parse github prs list --state");
+        let Command::Github(gh) = cli.command else {
+            panic!("expected github command");
+        };
+        let GithubResource::Prs(prs) = gh.resource else {
+            panic!("expected prs resource");
+        };
+        let GithubPullRequestAction::List(args) = prs.action else {
+            panic!("expected list action");
+        };
+        assert_eq!(args.state.as_deref(), Some("closed"));
+    }
+
+    #[test]
+    fn bitbucket_prs_list_parses_state_flag() {
+        let cli = Cli::try_parse_from([
+            "aai-cli",
+            "bitbucket",
+            "prs",
+            "list",
+            "--repo",
+            "acme/widgets",
+            "--state",
+            "MERGED",
+        ])
+        .expect("parse bitbucket prs list --state");
+        let Command::Bitbucket(bb) = cli.command else {
+            panic!("expected bitbucket command");
+        };
+        let BitbucketResource::Prs(prs) = bb.resource else {
+            panic!("expected prs resource");
+        };
+        let BitbucketPullRequestAction::List(args) = prs.action else {
+            panic!("expected list action");
+        };
+        assert_eq!(args.state.as_deref(), Some("MERGED"));
+    }
 
     #[test]
     fn pipedrive_history_commands_are_discoverable_in_help() {
@@ -2842,7 +2902,7 @@ pub enum PullRequestAction {
 
 #[derive(Debug, Subcommand)]
 pub enum GithubPullRequestAction {
-    List(RepoLimitArg),
+    List(PrListArg),
     Get(NumberArg),
     Create(PullRequestCreate),
     Delete(NumberArg),
