@@ -2777,6 +2777,11 @@ pub struct PrListArg {
     /// those with a non-null `merged_at`.
     #[arg(long)]
     pub state: Option<String>,
+    /// Order results. `updated` = most-recently-updated first, so a PR that
+    /// merged long after it was opened floats to the top instead of staying
+    /// buried in creation order. Omitted = provider default (creation order).
+    #[arg(long)]
+    pub sort: Option<String>,
 }
 
 #[cfg(test)]

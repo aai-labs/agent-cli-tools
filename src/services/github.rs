@@ -218,6 +218,7 @@ pub(crate) async fn dispatch(
                     repo,
                     args.limit,
                     args.state.as_deref(),
+                    args.sort.as_deref(),
                 );
                 client
                     .request("github", "prs.list", ctx.profile(), Method::GET, url, None)
@@ -490,7 +491,14 @@ fn append_query(url: &mut String, key: &str, value: Option<&str>) {
     }
 }
 
-fn pr_list_url(base: &str, owner: &str, repo: &str, limit: u32, state: Option<&str>) -> String {
+fn pr_list_url(
+    base: &str,
+    owner: &str,
+    repo: &str,
+    limit: u32,
+    state: Option<&str>,
+    sort: Option<&str>,
+) -> String {
     let mut url = format!(
         "{}/repos/{}/{}/pulls?per_page={}",
         base,
@@ -499,6 +507,13 @@ fn pr_list_url(base: &str, owner: &str, repo: &str, limit: u32, state: Option<&s
         limit
     );
     append_query(&mut url, "state", state);
+    if let Some(sort) = sort {
+        append_query(&mut url, "sort", Some(sort));
+        // GitHub defaults `direction` to asc for any sort other than `created`,
+        // which would surface the least-recently-updated PRs first. Force desc so
+        // a PR that merged long after it opened lands at the top of the page.
+        append_query(&mut url, "direction", Some("desc"));
+    }
     url
 }
 
@@ -1396,6 +1411,7 @@ mod tests {
             "hello-world",
             50,
             Some("closed"),
+            None,
         );
         assert_eq!(
             url,
@@ -1405,7 +1421,46 @@ mod tests {
 
     #[test]
     fn pr_list_url_omits_state_when_absent() {
-        let url = pr_list_url("https://api.github.com", "octo", "hello-world", 25, None);
+        let url = pr_list_url(
+            "https://api.github.com",
+            "octo",
+            "hello-world",
+            25,
+            None,
+            None,
+        );
+        assert_eq!(
+            url,
+            "https://api.github.com/repos/octo/hello-world/pulls?per_page=25"
+        );
+    }
+
+    #[test]
+    fn pr_list_url_appends_sort_with_desc_direction() {
+        let url = pr_list_url(
+            "https://api.github.com",
+            "octo",
+            "hello-world",
+            50,
+            Some("closed"),
+            Some("updated"),
+        );
+        assert_eq!(
+            url,
+            "https://api.github.com/repos/octo/hello-world/pulls?per_page=50&state=closed&sort=updated&direction=desc"
+        );
+    }
+
+    #[test]
+    fn pr_list_url_omits_sort_when_absent() {
+        let url = pr_list_url(
+            "https://api.github.com",
+            "octo",
+            "hello-world",
+            25,
+            None,
+            None,
+        );
         assert_eq!(
             url,
             "https://api.github.com/repos/octo/hello-world/pulls?per_page=25"
