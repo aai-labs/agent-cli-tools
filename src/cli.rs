@@ -1687,6 +1687,8 @@ pub enum PipedriveDealsAction {
     Notes(PipedriveAssociatedList),
     /// List synced email messages associated with a deal.
     MailMessages(PipedriveAssociatedList),
+    /// List updates (including stage transitions) about a deal.
+    Flow(PipedriveAssociatedList),
     /// Create a deal from flags and/or JSON.
     Create(PipedriveDealWrite),
     /// Update a deal from flags and/or JSON.
