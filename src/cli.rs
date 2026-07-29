@@ -209,6 +209,8 @@ pub struct JiraCommand {
 #[derive(Debug, Subcommand)]
 pub enum JiraResource {
     Issues(JiraIssuesCommand),
+    /// Manage Jira Product Discovery ideas and discover project-specific idea fields.
+    Ideas(JiraIdeasCommand),
     Projects(JiraProjectsCommand),
     Sprints(JiraSprintsCommand),
     Boards(JiraBoardsCommand),
@@ -349,9 +351,96 @@ pub struct JiraIssueUpdate {
 }
 
 #[derive(Debug, Args)]
+pub struct JiraIdeasCommand {
+    #[command(subcommand)]
+    pub action: JiraIdeasAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraIdeasAction {
+    /// Search ideas across Jira Product Discovery projects.
+    List(JiraIdeasList),
+    Get(IdArg),
+    Create(JiraIdeasCreate),
+    Update(JiraIdeasUpdate),
+    /// Discover the fields available on a Product Discovery project's idea type.
+    Fields(JiraIdeasFields),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasList {
+    #[arg(long)]
+    pub project: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub assignee: Option<String>,
+    #[arg(long)]
+    pub text: Option<String>,
+    #[arg(long = "updated-since")]
+    pub updated_since: Option<String>,
+    #[arg(long)]
+    pub fields: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasCreate {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub project: Option<String>,
+    /// Issue type name for the idea. Defaults to Idea.
+    #[arg(long = "type")]
+    pub issue_type: Option<String>,
+    #[arg(long)]
+    pub summary: Option<String>,
+    #[arg(long)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasUpdate {
+    pub id: String,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub summary: Option<String>,
+    #[arg(long)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasFields {
+    /// Product Discovery project key or id.
+    pub project: String,
+    /// Issue type name to inspect when the project has more than one.
+    #[arg(long = "type")]
+    pub issue_type: Option<String>,
+    #[arg(long, default_value_t = 200)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
 pub struct JiraProjectsCommand {
     #[command(subcommand)]
-    pub action: ListGetAction,
+    pub action: JiraProjectsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraProjectsAction {
+    List(JiraProjectsList),
+    Get(IdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraProjectsList {
+    /// Filter by project type key: product_discovery, software, business, or service_desk.
+    #[arg(long = "type")]
+    pub project_type: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
@@ -2850,6 +2939,18 @@ mod tests {
         assert!(help.contains("mailbox messages get"));
         assert!(help.contains("activities"));
         assert!(help.contains("notes"));
+    }
+
+    #[test]
+    fn jira_ideas_commands_are_discoverable_in_help() {
+        let mut command = Cli::command();
+        let jira = command.find_subcommand_mut("jira").expect("jira command");
+        let mut help = Vec::new();
+        jira.write_long_help(&mut help).unwrap();
+        let help = String::from_utf8(help).unwrap();
+
+        assert!(help.contains("ideas"));
+        assert!(help.contains("Product Discovery"));
     }
 
     #[test]

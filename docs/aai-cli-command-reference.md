@@ -83,12 +83,36 @@ key,summary,status,issuetype,assignee,created,updated,description,project
 
 Use `--fields` to reduce payload size or request additional fields. Jira `--description` flags are converted to minimal Atlassian Document Format. JSON input can provide raw ADF.
 
+### Ideas (Jira Product Discovery)
+
+```bash
+aai-cli jira ideas list [--project KEY] [--status NAMES] [--assignee me|ACCOUNT_ID] [--text TEXT] [--updated-since 7d|DATE] [--fields FIELD_LIST] [--limit N]
+aai-cli jira ideas get <idea-key-or-id>
+aai-cli jira ideas create [--json <path|->] [--project KEY] [--type NAME] [--summary TEXT] [--description TEXT]
+aai-cli jira ideas update <idea-key-or-id> [--json <path|->] [--summary TEXT] [--description TEXT]
+aai-cli jira ideas fields <project-key-or-id> [--type NAME] [--limit N]
+```
+
+Ideas are Jira issues in Product Discovery projects; `ideas list` always scopes its JQL to `projectType = product_discovery` and accepts the same filter flags as `issues list` (except `--type` and `--sprint`). `ideas create` defaults the issue type name to `Idea`; override with `--type` when the project renames it.
+
+Project-specific idea fields (Impact, Effort, ratings, and other Product Discovery custom fields) are custom fields. Discover them with `ideas fields`, which resolves the project's idea issue type (pass `--type` when the project exposes several) and returns each field's `fieldId`, `schema`, `operations`, and trimmed `allowedValues`, plus the resolved `issueType`. Set those fields through `--json`:
+
+```bash
+aai-cli --profile jira-work jira ideas fields BAW
+aai-cli --profile jira-work jira ideas create --project BAW --summary "Faster onboarding" \
+  --json '{"fields":{"customfield_10011":{"id":"3"}}}'
+```
+
+Votes, reactions, insights, and formula field values are not exposed by Atlassian's public APIs.
+
 ### Projects
 
 ```bash
-aai-cli jira projects list [--limit N]
+aai-cli jira projects list [--type product_discovery|software|business|service_desk] [--limit N]
 aai-cli jira projects get <project-key-or-id>
 ```
+
+Use `--type product_discovery` to find Jira Product Discovery projects.
 
 ## Confluence
 
