@@ -1476,6 +1476,10 @@ fn pipedrive_crm_crud_and_labels() {
     );
     let _ = cli_required(
         "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "deals", "flow", &deal_id, "--limit", "1"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
         &["pipedrive", "activities", "list", "--deal-id", &deal_id],
     );
     let _ = cli_required(

@@ -189,6 +189,7 @@ aai-cli pipedrive deals view <deal-id> [--limit N] [--include-labels] [--include
 aai-cli pipedrive deals activities <deal-id> [--limit N]
 aai-cli pipedrive deals notes <deal-id> [--limit N]
 aai-cli pipedrive deals mail-messages <deal-id> [--limit N]
+aai-cli pipedrive deals flow <deal-id> [--limit N]
 aai-cli pipedrive deals create [--json <path|->] --title TEXT [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
 aai-cli pipedrive deals update <deal-id> [--json <path|->] [--title TEXT] [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
 aai-cli pipedrive deals delete <deal-id>
