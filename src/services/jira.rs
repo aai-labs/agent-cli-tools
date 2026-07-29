@@ -153,6 +153,67 @@ pub(crate) async fn dispatch(
                 }
             },
         },
+        JiraResource::Ideas(command) => match command.action {
+            JiraIdeasAction::List(args) => {
+                let jql = build_ideas_jql(&args);
+                search_issues(
+                    client,
+                    ctx,
+                    "ideas.list",
+                    Some(&jql),
+                    args.fields.as_deref(),
+                    args.limit,
+                )
+                .await
+            }
+            JiraIdeasAction::Get(args) => {
+                let url = format!(
+                    "{}/rest/api/3/issue/{}",
+                    site_url(ctx.profile(), "jira", "ideas.get")?,
+                    enc(&args.id)
+                );
+                client
+                    .request("jira", "ideas.get", ctx.profile(), Method::GET, url, None)
+                    .await
+            }
+            JiraIdeasAction::Create(args) => {
+                let body = idea_create_body(args)?;
+                let url = format!(
+                    "{}/rest/api/3/issue",
+                    site_url(ctx.profile(), "jira", "ideas.create")?
+                );
+                client
+                    .request(
+                        "jira",
+                        "ideas.create",
+                        ctx.profile(),
+                        Method::POST,
+                        url,
+                        Some(body),
+                    )
+                    .await
+            }
+            JiraIdeasAction::Update(args) => {
+                let id = args.id.clone();
+                let body = idea_update_body(args)?;
+                let url = format!(
+                    "{}/rest/api/3/issue/{}",
+                    site_url(ctx.profile(), "jira", "ideas.update")?,
+                    enc(&id)
+                );
+                client
+                    .request(
+                        "jira",
+                        "ideas.update",
+                        ctx.profile(),
+                        Method::PUT,
+                        url,
+                        Some(body),
+                    )
+                    .await
+            }
+            JiraIdeasAction::Fields(args) => list_idea_fields(client, ctx, args).await,
+        },
         JiraResource::Sprints(command) => match command.action {
             JiraSprintsAction::List(args) => {
                 list_sprints(client, ctx, args.board, args.state.as_deref(), args.limit).await
@@ -242,8 +303,10 @@ pub(crate) async fn dispatch(
             }
         },
         JiraResource::Projects(command) => match command.action {
-            ListGetAction::List(args) => list_projects(client, ctx, args.limit).await,
-            ListGetAction::Get(args) => {
+            JiraProjectsAction::List(args) => {
+                list_projects(client, ctx, args.project_type.as_deref(), args.limit).await
+            }
+            JiraProjectsAction::Get(args) => {
                 let url = format!(
                     "{}/rest/api/3/project/{}",
                     site_url(ctx.profile(), "jira", "projects.get")?,
@@ -569,7 +632,12 @@ async fn list_boards(
     Ok(response)
 }
 
-async fn list_projects(client: &ApiClient, ctx: &Context, limit: u32) -> Result<Value, AppError> {
+async fn list_projects(
+    client: &ApiClient,
+    ctx: &Context,
+    project_type: Option<&str>,
+    limit: u32,
+) -> Result<Value, AppError> {
     if limit == 0 {
         return Ok(json!({ "values": [], "maxResults": 0, "total": 0, "isLast": true }));
     }
@@ -581,8 +649,12 @@ async fn list_projects(client: &ApiClient, ctx: &Context, limit: u32) -> Result<
     let mut values = Vec::new();
 
     loop {
-        let url =
+        let mut url =
             format!("{base}/rest/api/3/project/search?maxResults={page_size}&startAt={start_at}");
+        if let Some(type_key) = project_type {
+            url.push_str("&typeKey=");
+            url.push_str(&urlencoding::encode(type_key));
+        }
         let page = client
             .request(
                 "jira",
@@ -633,6 +705,175 @@ async fn list_projects(client: &ApiClient, ctx: &Context, limit: u32) -> Result<
     Ok(response)
 }
 
+async fn list_idea_fields(
+    client: &ApiClient,
+    ctx: &Context,
+    args: JiraIdeasFields,
+) -> Result<Value, AppError> {
+    let base = site_url(ctx.profile(), "jira", "ideas.fields")?;
+    let project = enc(&args.project);
+    let url = format!("{base}/rest/api/3/issue/createmeta/{project}/issuetypes?maxResults=200");
+    let issue_types_page = client
+        .request(
+            "jira",
+            "ideas.fields",
+            ctx.profile(),
+            Method::GET,
+            url,
+            None,
+        )
+        .await?;
+    let issue_types = issue_types_page
+        .get("issueTypes")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let issue_type = select_issue_type(&issue_types, args.issue_type.as_deref())?;
+    let issue_type_id = issue_type
+        .get("id")
+        .and_then(issue_type_id_string)
+        .ok_or_else(|| {
+            AppError::internal(
+                "jira",
+                "ideas.fields",
+                "issue type id missing from createmeta response",
+            )
+        })?;
+    let trimmed_type = pick(&issue_type, &["id", "name", "subtask"]);
+
+    if args.limit == 0 {
+        return Ok(json!({
+            "fields": [],
+            "maxResults": 0,
+            "startAt": 0,
+            "total": 0,
+            "issueType": trimmed_type,
+        }));
+    }
+
+    let page_size = args.limit.clamp(1, 200);
+    let mut start_at = 0usize;
+    let mut first_page = None;
+    let mut fields = Vec::new();
+
+    loop {
+        let url = format!(
+            "{base}/rest/api/3/issue/createmeta/{project}/issuetypes/{issue_type_id}?maxResults={page_size}&startAt={start_at}"
+        );
+        let page = client
+            .request(
+                "jira",
+                "ideas.fields",
+                ctx.profile(),
+                Method::GET,
+                url,
+                None,
+            )
+            .await?;
+        if first_page.is_none() {
+            first_page = Some(page.clone());
+        }
+
+        let page_fields = page
+            .get("fields")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        if page_fields.is_empty() {
+            break;
+        }
+        let page_len = page_fields.len();
+        for field in page_fields {
+            if fields.len() >= args.limit as usize {
+                break;
+            }
+            fields.push(field);
+        }
+
+        if fields.len() >= args.limit as usize {
+            break;
+        }
+        let total = page.get("total").and_then(Value::as_u64);
+        start_at += page
+            .get("maxResults")
+            .and_then(Value::as_u64)
+            .unwrap_or(page_len as u64) as usize;
+        if let Some(total) = total {
+            if start_at as u64 >= total {
+                break;
+            }
+        }
+    }
+
+    let mut response = first_page.unwrap_or_else(|| json!({}));
+    let object = input::ensure_object(&mut response);
+    object.insert("fields".to_string(), Value::Array(fields));
+    object.insert("maxResults".to_string(), json!(args.limit));
+    object.insert("startAt".to_string(), json!(0));
+    object.insert("issueType".to_string(), trimmed_type);
+    object.remove("self");
+    trim_array(object, "fields", trim_createmeta_field);
+    Ok(response)
+}
+
+fn issue_type_id_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(id) => Some(id.clone()),
+        Value::Number(id) => Some(id.to_string()),
+        _ => None,
+    }
+}
+
+fn select_issue_type(issue_types: &[Value], requested: Option<&str>) -> Result<Value, AppError> {
+    let type_names = || {
+        issue_types
+            .iter()
+            .filter_map(|t| t.get("name").and_then(Value::as_str))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let find_by_name = |name: &str| {
+        issue_types
+            .iter()
+            .find(|t| {
+                t.get("name")
+                    .and_then(Value::as_str)
+                    .is_some_and(|candidate| candidate.eq_ignore_ascii_case(name))
+            })
+            .cloned()
+    };
+    if let Some(requested) = requested {
+        return find_by_name(requested).ok_or_else(|| {
+            AppError::invalid_input(
+                "jira",
+                "ideas.fields",
+                format!(
+                    "issue type {requested:?} not found in project; available: {}",
+                    type_names()
+                ),
+            )
+        });
+    }
+    match issue_types.len() {
+        0 => Err(AppError::invalid_input(
+            "jira",
+            "ideas.fields",
+            "project has no issue types visible to this profile; check the project key and permissions",
+        )),
+        1 => Ok(issue_types[0].clone()),
+        _ => find_by_name("Idea").ok_or_else(|| {
+            AppError::invalid_input(
+                "jira",
+                "ideas.fields",
+                format!(
+                    "project has multiple issue types; pass --type NAME (available: {})",
+                    type_names()
+                ),
+            )
+        }),
+    }
+}
+
 fn issue_create_body(args: JiraIssueCreate) -> Result<Value, AppError> {
     let mut body = input::read_json_arg("jira", "issues.create", args.json.as_deref())?;
     let fields = fields_object(&mut body);
@@ -653,6 +894,35 @@ fn issue_create_body(args: JiraIssueCreate) -> Result<Value, AppError> {
 
 fn issue_update_body(args: JiraIssueUpdate) -> Result<Value, AppError> {
     let mut body = input::read_json_arg("jira", "issues.update", args.json.as_deref())?;
+    let fields = fields_object(&mut body);
+    if let Some(summary) = args.summary {
+        fields.insert("summary".to_string(), Value::String(summary));
+    }
+    if let Some(description) = args.description {
+        fields.insert("description".to_string(), input::minimal_adf(&description));
+    }
+    Ok(body)
+}
+
+fn idea_create_body(args: JiraIdeasCreate) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("jira", "ideas.create", args.json.as_deref())?;
+    let fields = fields_object(&mut body);
+    if let Some(project) = args.project {
+        fields.insert("project".to_string(), json!({ "key": project }));
+    }
+    let issue_type = args.issue_type.unwrap_or_else(|| "Idea".to_string());
+    fields.insert("issuetype".to_string(), json!({ "name": issue_type }));
+    if let Some(summary) = args.summary {
+        fields.insert("summary".to_string(), Value::String(summary));
+    }
+    if let Some(description) = args.description {
+        fields.insert("description".to_string(), input::minimal_adf(&description));
+    }
+    Ok(body)
+}
+
+fn idea_update_body(args: JiraIdeasUpdate) -> Result<Value, AppError> {
+    let mut body = input::read_json_arg("jira", "ideas.update", args.json.as_deref())?;
     let fields = fields_object(&mut body);
     if let Some(summary) = args.summary {
         fields.insert("summary".to_string(), Value::String(summary));
@@ -760,6 +1030,26 @@ fn build_jql(args: &JiraIssueList) -> Option<String> {
     } else {
         Some(clauses.join(" AND "))
     }
+}
+
+fn build_ideas_jql(args: &JiraIdeasList) -> String {
+    let mut clauses = vec!["projectType = product_discovery".to_string()];
+    if let Some(v) = args.project.as_deref() {
+        clauses.push(jql_eq("project", v));
+    }
+    if let Some(v) = args.status.as_deref() {
+        clauses.push(jql_in_or_eq("status", v));
+    }
+    if let Some(v) = args.assignee.as_deref() {
+        clauses.push(jql_user_clause("assignee", v));
+    }
+    if let Some(v) = args.text.as_deref() {
+        clauses.push(format!("text ~ {}", jql_quote(v)));
+    }
+    if let Some(v) = args.updated_since.as_deref() {
+        clauses.push(jql_updated_since_clause(v));
+    }
+    clauses.join(" AND ")
 }
 
 fn jql_quote(s: &str) -> String {
@@ -931,6 +1221,44 @@ fn trim_comment(src: &Value) -> Value {
     Value::Object(out)
 }
 
+fn trim_createmeta_field(src: &Value) -> Value {
+    let mut out = serde_json::Map::new();
+    let Some(obj) = src.as_object() else {
+        return src.clone();
+    };
+    for k in ["fieldId", "key", "name", "required", "hasDefaultValue"] {
+        if let Some(v) = obj.get(k) {
+            out.insert(k.to_string(), v.clone());
+        }
+    }
+    if let Some(schema) = obj.get("schema") {
+        out.insert(
+            "schema".to_string(),
+            pick(schema, &["type", "items", "system", "custom", "customId"]),
+        );
+    }
+    if let Some(operations) = obj.get("operations") {
+        out.insert("operations".to_string(), operations.clone());
+    }
+    if let Some(allowed) = obj.get("allowedValues").and_then(Value::as_array) {
+        let trimmed: Vec<Value> = allowed.iter().map(trim_allowed_value).collect();
+        out.insert("allowedValues".to_string(), Value::Array(trimmed));
+    }
+    Value::Object(out)
+}
+
+fn trim_allowed_value(src: &Value) -> Value {
+    if !src.is_object() {
+        return src.clone();
+    }
+    let picked = pick(src, &["id", "value", "name", "key"]);
+    if picked.as_object().is_some_and(|obj| obj.is_empty()) {
+        src.clone()
+    } else {
+        picked
+    }
+}
+
 fn trim_array(object: &mut serde_json::Map<String, Value>, key: &str, trim: fn(&Value) -> Value) {
     if let Some(arr) = object.get_mut(key).and_then(Value::as_array_mut) {
         for item in arr.iter_mut() {
@@ -1059,6 +1387,194 @@ mod tests {
         assert_eq!(body["fields"]["project"]["key"], "ENG");
         assert_eq!(body["fields"]["issuetype"]["name"], "Task");
         assert_eq!(body["fields"]["description"]["type"], "doc");
+    }
+
+    #[test]
+    fn idea_create_body_defaults_issue_type_to_idea() {
+        let body = idea_create_body(JiraIdeasCreate {
+            json: None,
+            project: Some("BAW".to_string()),
+            issue_type: None,
+            summary: Some("Faster onboarding".to_string()),
+            description: Some("Details".to_string()),
+        })
+        .unwrap();
+        assert_eq!(body["fields"]["project"]["key"], "BAW");
+        assert_eq!(body["fields"]["issuetype"]["name"], "Idea");
+        assert_eq!(body["fields"]["summary"], "Faster onboarding");
+        assert_eq!(body["fields"]["description"]["type"], "doc");
+    }
+
+    #[test]
+    fn idea_create_body_type_flag_overrides_default() {
+        let body = idea_create_body(JiraIdeasCreate {
+            json: None,
+            project: Some("BAW".to_string()),
+            issue_type: Some("Opportunity".to_string()),
+            summary: None,
+            description: None,
+        })
+        .unwrap();
+        assert_eq!(body["fields"]["issuetype"]["name"], "Opportunity");
+    }
+
+    #[test]
+    fn idea_create_body_merges_custom_fields_from_json() {
+        let body = idea_create_body(JiraIdeasCreate {
+            json: Some(
+                r#"{"fields":{"customfield_10011":{"id":"3"},"summary":"old"}}"#.to_string(),
+            ),
+            project: Some("BAW".to_string()),
+            issue_type: None,
+            summary: Some("flag wins".to_string()),
+            description: None,
+        })
+        .unwrap();
+        assert_eq!(body["fields"]["customfield_10011"]["id"], "3");
+        assert_eq!(body["fields"]["summary"], "flag wins");
+        assert_eq!(body["fields"]["issuetype"]["name"], "Idea");
+    }
+
+    #[test]
+    fn idea_update_body_sets_summary_and_adf_description() {
+        let body = idea_update_body(JiraIdeasUpdate {
+            id: "BAW-1".to_string(),
+            json: Some(r#"{"fields":{"customfield_10012":7}}"#.to_string()),
+            summary: Some("New summary".to_string()),
+            description: Some("New description".to_string()),
+        })
+        .unwrap();
+        assert_eq!(body["fields"]["customfield_10012"], 7);
+        assert_eq!(body["fields"]["summary"], "New summary");
+        assert_eq!(body["fields"]["description"]["type"], "doc");
+    }
+
+    fn ideas_list(
+        project: Option<&str>,
+        status: Option<&str>,
+        assignee: Option<&str>,
+        text: Option<&str>,
+        updated_since: Option<&str>,
+    ) -> JiraIdeasList {
+        JiraIdeasList {
+            project: project.map(str::to_string),
+            status: status.map(str::to_string),
+            assignee: assignee.map(str::to_string),
+            text: text.map(str::to_string),
+            updated_since: updated_since.map(str::to_string),
+            fields: None,
+            limit: 50,
+        }
+    }
+
+    #[test]
+    fn build_ideas_jql_always_scopes_to_product_discovery() {
+        let args = ideas_list(None, None, None, None, None);
+        assert_eq!(build_ideas_jql(&args), "projectType = product_discovery");
+    }
+
+    #[test]
+    fn build_ideas_jql_combines_filters() {
+        let args = ideas_list(Some("BAW"), Some("Discovery"), Some("me"), None, Some("7d"));
+        assert_eq!(
+            build_ideas_jql(&args),
+            r#"projectType = product_discovery AND project = "BAW" AND status = "Discovery" AND assignee = currentUser() AND updated >= -7d"#
+        );
+    }
+
+    #[test]
+    fn select_issue_type_uses_single_type_without_flag() {
+        let types = vec![json!({"id": "11444", "name": "Idea"})];
+        let selected = select_issue_type(&types, None).unwrap();
+        assert_eq!(selected["id"], "11444");
+    }
+
+    #[test]
+    fn select_issue_type_matches_requested_name_case_insensitively() {
+        let types = vec![
+            json!({"id": "1", "name": "Idea"}),
+            json!({"id": "2", "name": "Opportunity"}),
+        ];
+        let selected = select_issue_type(&types, Some("opportunity")).unwrap();
+        assert_eq!(selected["id"], "2");
+    }
+
+    #[test]
+    fn select_issue_type_rejects_unknown_requested_name() {
+        let types = vec![json!({"id": "1", "name": "Idea"})];
+        let err = select_issue_type(&types, Some("Epic")).unwrap_err();
+        assert_eq!(err.code, "invalid_input");
+        assert!(err.message.contains("Idea"), "error lists available types");
+    }
+
+    #[test]
+    fn select_issue_type_prefers_idea_when_multiple_types() {
+        let types = vec![
+            json!({"id": "1", "name": "Epic"}),
+            json!({"id": "2", "name": "Idea"}),
+        ];
+        let selected = select_issue_type(&types, None).unwrap();
+        assert_eq!(selected["id"], "2");
+    }
+
+    #[test]
+    fn select_issue_type_requires_flag_for_ambiguous_types() {
+        let types = vec![
+            json!({"id": "1", "name": "Epic"}),
+            json!({"id": "2", "name": "Story"}),
+        ];
+        let err = select_issue_type(&types, None).unwrap_err();
+        assert_eq!(err.code, "invalid_input");
+        assert!(err.message.contains("--type"));
+    }
+
+    #[test]
+    fn select_issue_type_rejects_empty_project() {
+        let err = select_issue_type(&[], None).unwrap_err();
+        assert_eq!(err.code, "invalid_input");
+    }
+
+    #[test]
+    fn trim_createmeta_field_keeps_schema_and_allowed_values() {
+        let src = json!({
+            "allowedValues": [
+                {
+                    "id": "10",
+                    "self": "https://example.atlassian.net/rest/api/3/customFieldOption/10",
+                    "value": "High"
+                },
+                {
+                    "id": "11",
+                    "self": "https://example.atlassian.net/rest/api/3/customFieldOption/11",
+                    "value": "Low"
+                }
+            ],
+            "autoCompleteUrl": "",
+            "fieldId": "customfield_10011",
+            "hasDefaultValue": false,
+            "key": "customfield_10011",
+            "name": "Impact",
+            "operations": ["set"],
+            "required": false,
+            "schema": {
+                "custom": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+                "customId": 10011,
+                "type": "option"
+            }
+        });
+        let trimmed = trim_createmeta_field(&src);
+        let obj = trimmed.as_object().unwrap();
+        assert_eq!(obj.get("fieldId").unwrap(), "customfield_10011");
+        assert_eq!(obj.get("name").unwrap(), "Impact");
+        assert_eq!(obj.get("required").unwrap(), &Value::Bool(false));
+        assert_eq!(obj.get("operations").unwrap(), &json!(["set"]));
+        assert!(!obj.contains_key("autoCompleteUrl"));
+        let schema = obj.get("schema").unwrap().as_object().unwrap();
+        assert_eq!(schema.get("type").unwrap(), "option");
+        assert_eq!(schema.get("customId").unwrap(), 10011);
+        let allowed = obj.get("allowedValues").unwrap().as_array().unwrap();
+        assert_eq!(allowed[0], json!({"id": "10", "value": "High"}));
+        assert_eq!(allowed[1], json!({"id": "11", "value": "Low"}));
     }
 
     #[test]

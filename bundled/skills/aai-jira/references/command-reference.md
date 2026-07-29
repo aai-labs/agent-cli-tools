@@ -47,6 +47,7 @@ Exit code is non-zero on any error.
 ## Resources
 
 - [Issues](#issues) — `issues list`, `get`, `create`, `update`, `comments` list/get/create, `attachments` list/download/upload
+- [Ideas](#ideas-jira-product-discovery) — `ideas list`, `get`, `create`, `update`, `fields` (Jira Product Discovery)
 - [Projects](#projects) — `projects list`, `get`
 - [Sprints](#sprints) — `sprints list`, `get`, `create`, `issues add`
 - [Boards](#boards) — `boards list`, `get`
@@ -503,6 +504,199 @@ aai-cli jira issues attachments upload SCRUM-1 --file /tmp/report.pdf
   }
 ]
 ```
+
+## Ideas (Jira Product Discovery)
+
+Commands under `aai-cli jira ideas`. Product Discovery ideas are Jira issues in `product_discovery`-type projects on the same site with the same credentials. Project-specific idea fields (Impact, Effort, ratings, and other Product Discovery fields) are custom fields — discover their ids with `ideas fields`, then set them via `--json`. Votes, reactions, insights, and formula values are not exposed by Atlassian's public APIs.
+
+Find Product Discovery projects with `aai-cli jira projects list --type product_discovery`.
+
+### ideas list
+
+Search ideas across Product Discovery projects. The query is always scoped to `projectType = product_discovery`, so it is valid with no filter flags; add flags to narrow it. Filters are AND-joined.
+
+```
+aai-cli jira ideas list [--project KEY] [--status NAMES] [--assignee me|ACCOUNT_ID]
+                        [--text TEXT] [--updated-since DATE_OR_RELATIVE]
+                        [--fields FIELD_LIST] [--limit N]
+```
+
+| Flag | Required | Type | Description |
+|---|---|---|---|
+| `--project` | no | string | Product Discovery project key, e.g. `BAW` |
+| `--status` | no | string (csv) | Status name(s). Single: `"Discovery"`. Multi: `"Discovery,Delivery"` |
+| `--assignee` | no | string | `me` expands to `currentUser()`. Otherwise an account ID |
+| `--text` | no | string | Full-text search across summary, description, and comments |
+| `--updated-since` | no | string | Relative: `7d`, `30d`, `1y`. Absolute ISO date: `2026-05-01` |
+| `--fields` | no | string (csv) | Jira field names to include, including `customfield_*` ids from `ideas fields`. Default: `key,summary,status,issuetype,assignee,created,updated,description,project` |
+| `--limit` | no | integer | Max ideas to return. Default: `50` |
+
+**Example — ideas in one project, including a custom field**
+
+```
+aai-cli jira ideas list --project BAW --fields key,summary,status,customfield_10011 --limit 1
+```
+
+```json
+{
+  "isLast": true,
+  "issues": [
+    {
+      "fields": {
+        "summary": "Faster onboarding",
+        "status": { "name": "Discovery", "statusCategory": { "name": "In Progress" } }
+      },
+      "id": "10101",
+      "key": "BAW-12"
+    }
+  ],
+  "maxResults": 1
+}
+```
+
+Fields requested via `--fields` outside the default trim allowlist (such as `customfield_*`) are returned by the API but stripped from the trimmed list output; use `ideas get` to read custom field values.
+
+### ideas get
+
+Fetch a single idea by key or numeric ID. Returns the full raw API response including every custom field, so this is the way to read Product Discovery field values.
+
+```
+aai-cli jira ideas get <IDEA_KEY_OR_ID>
+```
+
+| Argument | Required | Description |
+|---|---|---|
+| `IDEA_KEY_OR_ID` | **yes** | Idea key (`BAW-12`) or numeric ID (`10101`) |
+
+**Example**
+
+```
+aai-cli jira ideas get BAW-12
+```
+
+```json
+{
+  "fields": {
+    "customfield_10011": { "id": "10", "value": "High" },
+    "issuetype": { "name": "Idea", "subtask": false },
+    "project": { "key": "BAW", "name": "Business Automation Workflows" },
+    "status": { "name": "Discovery", "statusCategory": { "name": "In Progress" } },
+    "summary": "Faster onboarding"
+  },
+  "id": "10101",
+  "key": "BAW-12"
+}
+```
+
+### ideas create
+
+Create an idea. `--project` and `--summary` are the minimal required flags. The issue type defaults to `Idea`; pass `--type` when the project uses a different idea type name. Set Product Discovery custom fields through `--json`; individual flags override matching JSON fields.
+
+```
+aai-cli jira ideas create [--json JSON_OR_PATH] [--project KEY] [--type NAME]
+                          [--summary TEXT] [--description TEXT]
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--project` | **yes** (unless `--json` covers it) | Product Discovery project key |
+| `--summary` | **yes** (unless `--json` covers it) | Idea summary line |
+| `--type` | no | Issue type name. Defaults to `Idea` |
+| `--description` | no | Description text. Auto-converted to Atlassian Document Format (ADF) |
+| `--json` | no | Inline JSON string or path to a JSON file (`-` for stdin). Flags override matching fields |
+
+**Example — create with a custom field**
+
+```
+aai-cli jira ideas create --project BAW --summary "Faster onboarding" \
+  --json '{"fields":{"customfield_10011":{"id":"10"}}}'
+```
+
+```json
+{
+  "id": "10101",
+  "key": "BAW-12",
+  "self": "https://example.atlassian.net/rest/api/3/issue/10101"
+}
+```
+
+### ideas update
+
+Update an existing idea. Only the flags you pass are changed; omitted flags leave the field untouched. Use `--json` to set Product Discovery custom fields.
+
+```
+aai-cli jira ideas update <IDEA_KEY_OR_ID> [--json JSON_OR_PATH]
+                          [--summary TEXT] [--description TEXT]
+```
+
+| Argument / Flag | Required | Description |
+|---|---|---|
+| `IDEA_KEY_OR_ID` | **yes** | Idea key or numeric ID |
+| `--summary` | no | New summary text |
+| `--description` | no | New description (auto-converted to ADF) |
+| `--json` | no | Raw Jira issue-update body, e.g. `{"fields":{"customfield_10011":{"id":"11"}}}`. Flags override matching fields |
+
+**Example**
+
+```
+aai-cli jira ideas update BAW-12 --json '{"fields":{"customfield_10011":{"id":"11"}}}'
+```
+
+```json
+{}
+```
+
+An empty `{}` response means success.
+
+### ideas fields
+
+Discover the fields available on a project's idea type, including required flags, schemas, allowed values, and permitted operations. The command resolves the project's idea issue type automatically: a single type is used as-is, `Idea` is preferred when several exist, and any other ambiguity asks for `--type`.
+
+```
+aai-cli jira ideas fields <PROJECT_KEY_OR_ID> [--type NAME] [--limit N]
+```
+
+| Argument / Flag | Required | Description |
+|---|---|---|
+| `PROJECT_KEY_OR_ID` | **yes** | Product Discovery project key or numeric ID |
+| `--type` | no | Issue type name to inspect when the project has more than one |
+| `--limit` | no | Max fields to return. Default: `200` |
+
+**Example**
+
+```
+aai-cli jira ideas fields BAW
+```
+
+```json
+{
+  "fields": [
+    {
+      "allowedValues": [
+        { "id": "10", "value": "High" },
+        { "id": "11", "value": "Low" }
+      ],
+      "fieldId": "customfield_10011",
+      "hasDefaultValue": false,
+      "key": "customfield_10011",
+      "name": "Impact",
+      "operations": ["set"],
+      "required": false,
+      "schema": {
+        "custom": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+        "customId": 10011,
+        "type": "option"
+      }
+    }
+  ],
+  "issueType": { "id": "11444", "name": "Idea", "subtask": false },
+  "maxResults": 200,
+  "startAt": 0,
+  "total": 1
+}
+```
+
+`issueType` reports which issue type the fields belong to. Use each field's `fieldId` as the key in `--json` bodies for `ideas create` and `ideas update`, and match option-typed fields by their allowed value `id`.
 
 ## Projects
 
