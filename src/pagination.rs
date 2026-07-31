@@ -11,6 +11,9 @@ const COLLECTION_KEYS: &[&str] = &[
     "files",
     "jobs",
     "workflow_runs",
+    "channels",
+    "links",
+    "bookmarks",
 ];
 
 pub(crate) fn annotate(value: Value, command_args: &[String]) -> Value {
@@ -123,6 +126,11 @@ fn continuation(value: &Value) -> Option<Continuation> {
             "/additional_data/next_cursor",
             "cursor",
             "additional_data.next_cursor",
+        ),
+        (
+            "/response_metadata/next_cursor",
+            "cursor",
+            "response_metadata.next_cursor",
         ),
         (
             "/additional_data/pagination/next_start",
