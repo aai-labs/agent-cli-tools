@@ -1008,7 +1008,10 @@ fn set_cell(sheet: &mut umya_spreadsheet::Worksheet, col: u32, row: u32, value: 
             cell.set_value_bool(*b);
         }
         Value::String(s) => {
-            cell.set_value(s.clone());
+            // set_value re-guesses the type from the text, which would turn the string
+            // "007" into the number 7 and drop a SKU's leading zeros. The caller already
+            // said this is a string by sending a JSON string, so store it as one.
+            cell.set_value_string(s.clone());
         }
         // Arrays/objects have no cell representation; store their JSON text rather than
         // silently dropping the caller's data.
@@ -1495,6 +1498,33 @@ mod tests {
         assert_eq!(rows[1], json!(["Wheel", 20.5, true]));
         assert_eq!(rows[2], json!(["Door", 15, false]));
         assert_eq!(out["range"], json!("'read'!A1:C3"));
+    }
+
+    #[test]
+    fn xlsx_write_preserves_strings_that_look_numeric() {
+        // Regression: umya's set_value re-guesses the type from the text, so writing the
+        // JSON string "007" stored the number 7 and lost the leading zeros. A JSON string
+        // is the caller stating the type; honour it.
+        let path = temp_dir().join("typed.xlsx");
+        let _ = std::fs::remove_file(&path);
+        workbook_create(&path, Some("Data"), false).expect("create");
+        values_update(
+            &path,
+            "Data!A1",
+            r#"[["007","1.50","0x10",42,20.5,true]]"#,
+            false,
+        )
+        .expect("write");
+
+        let read = values_get(&path, "Data!A1:F1").expect("read");
+        let row = &values_of(&read)[0];
+        assert_eq!(row[0], json!("007"), "leading zeros must survive");
+        assert_eq!(row[1], json!("1.50"), "trailing zero must survive");
+        assert_eq!(row[2], json!("0x10"));
+        // Genuine JSON numbers and bools still round-trip as numbers and bools.
+        assert_eq!(row[3], json!(42.0));
+        assert_eq!(row[4], json!(20.5));
+        assert_eq!(row[5], json!(true));
     }
 
     #[test]
