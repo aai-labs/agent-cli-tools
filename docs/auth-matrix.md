@@ -33,6 +33,13 @@ This project should support credentials supplied by users or agents rather than 
 - Key scope and plan access: Apollo API keys can be limited by endpoint access and account plan. Treat `403` as insufficient key scope, missing plan access, or a master-key-only endpoint.
 - Partner OAuth: Apollo documents OAuth bearer tokens for partner integrations, but this CLI does not implement Apollo OAuth acquisition or refresh in this pass.
 
+## Slack
+
+- Bot token (`xoxb-`): Primary and only implemented model. Profiles use `auth_type = "bearer_token"` with `token_secret`, sent as a standard `Authorization: Bearer` header — no Slack-specific auth code was needed since `bearer_token` is already this CLI's default auth branch.
+- Required scopes: `channels:read`, `groups:read` (channel metadata/listing, including private channels), `channels:history`, `groups:history` (message history, used internally by `links list`), `files:read`, `bookmarks:read`. `canvases:read` is not required by this CLI's canvas download, which uses `files.info`/`url_private_download` rather than the canvas-specific API (which has no content-read method — see [docs/services/slack.md](services/slack.md)).
+- Internal apps only: this CLI assumes the Slack app/bot is installed only in its own workspace and never has public distribution enabled. Slack throttles `conversations.history`/`conversations.replies` to 1 request/minute for apps commercially distributed outside the Marketplace; internal apps keep normal Tier 2/3 limits ([details](https://docs.slack.dev/changelog/2025/06/03/rate-limits-clarity/)).
+- OAuth install flow: not implemented. This CLI does not acquire or refresh Slack OAuth tokens — a bot token must be created and supplied by the user, same as every other provider in this matrix.
+
 ## CLI Implications
 
 - Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `github_app`, `oauth_user`, or `service_account`.

@@ -32,6 +32,7 @@ Validation enforces these provider/auth/reference combinations:
 - Pipedrive: `pipedrive_personal_token` with `api_token_secret`
 - Apollo: `apollo_api_key` with `api_token_secret`
 - GitHub: `bearer_token` with `token_secret`
+- Slack: `bearer_token` with `token_secret`
 - Jira, Confluence, and Bitbucket: `basic_api_token` with `api_token_secret`
 
 ## Generic Authenticated Requests
@@ -47,7 +48,7 @@ aai-cli <service> request patch <relative-path> --allow-write [--json <path|->] 
 aai-cli <service> request delete <relative-path> --allow-write [--json <path|->] [--query key=value ...]
 ```
 
-Supported services: `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, `apollo`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
+Supported services: `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, `apollo`, `slack`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
 
 The endpoint path must be relative to the configured provider base. Absolute URLs, redirects, embedded queries/fragments, and backslashes are rejected to prevent sending profile authentication to another origin. GET and HEAD reject `--json`; writes require `--allow-write`. Query arguments are repeatable and must use `key=value`.
 
@@ -244,6 +245,29 @@ aai-cli pipedrive mailbox threads get <thread-id>
 aai-cli pipedrive mailbox threads messages <thread-id>
 ```
 
+## Slack
+
+Slack is a read-only, bot-token integration: channel metadata, files, bookmarks, links, and channel canvas download. There is no message-sending, no OAuth install flow, and no write endpoints.
+
+Configure `profile.base_url` to override the default `https://slack.com/api`; almost never needed.
+
+```bash
+aai-cli slack channels list [--limit N] [--types public_channel,private_channel]
+aai-cli slack channels get <channel-id>
+aai-cli slack files list <channel-id> [--limit N]
+aai-cli slack bookmarks list <channel-id>
+aai-cli slack links list <channel-id> [--limit N]
+aai-cli slack canvas download <channel-id> --output PATH
+```
+
+`channels get` surfaces a convenience `canvas_id` field (extracted from `channel.properties.tabs[]`) alongside the full provider response, or `null` if the channel has no canvas.
+
+`bookmarks list` has no `--limit` — Slack returns all (at most 100) bookmarks for a channel in one unpaginated call.
+
+`links list` extracts links from `conversations.history` by walking each message's `blocks[].elements[].elements[]` for `type == "link"`. It intentionally does not scan message text, which Slack truncates and HTML-escapes. Each result is `{url, text, message_ts}` — no `message_permalink`; building one correctly requires either an extra `chat.getPermalink` call per link or reconstructing a URL that's wrong in thread/Enterprise-Grid edge cases, so it's omitted. Use `message_ts` with the `request` escape hatch (`chat.getPermalink`) if a permalink is needed for a specific message.
+
+`canvas download` resolves the channel's canvas, downloads it via `url_private_download`, and writes it to `--output`. Like the GitHub Actions and Bitbucket Pipelines download commands, it returns JSON metadata (`output`, `bytes`, `canvas_id`, `title`) and never prints content to stdout. Canvas content is written as an HTML fragment (Slack's internal Quip-document format), not markdown. A channel with no canvas returns `not_found`.
+
 ## Apollo
 
 Apollo profiles use API-key auth only:
@@ -389,7 +413,7 @@ Provider response fields remain at their original locations, except bare provide
 
 When `next_command` is present, run it to retrieve more results. Generic requests preserve existing query filters while replacing or adding continuation parameters. Typed commands that aggregate to `--limit` may suggest rerunning with a larger limit; this retrieves the previous results plus additional results rather than only the next page. If `status` is `unknown`, increase `--limit` or use a generic authenticated request with the provider's documented pagination parameters.
 
-For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, and Apollo list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
+For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, Apollo, and Slack list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
 
 Covered operations:
 
@@ -425,6 +449,8 @@ Covered operations:
 - `apollo emails search`
 - `apollo news search`
 - `apollo conversations search`
+- `slack channels list`
+- `slack links list`
 
 Agents should set the smallest useful `--limit`. Large limits can increase latency and provider rate-limit pressure.
 

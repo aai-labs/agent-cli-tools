@@ -40,6 +40,8 @@ pub enum Command {
     /// Discover, validate, and install bundled Agent Skills.
     Skills(SkillsCommand),
     Secrets(SecretsCommand),
+    /// Read Slack channels, files, bookmarks, links, and channel canvases.
+    Slack(SlackCommand),
 }
 
 #[derive(Debug, Args)]
@@ -2978,6 +2980,7 @@ mod tests {
             "email",
             "calendar",
             "pipedrive",
+            "slack",
         ] {
             let mut command = Cli::command();
             let service_command = command
@@ -3427,4 +3430,116 @@ pub struct PullRequestCreate {
     pub head: Option<String>,
     #[arg(long)]
     pub base: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackCommand {
+    #[command(subcommand)]
+    pub resource: SlackResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackResource {
+    /// List and inspect Slack channels.
+    Channels(SlackChannelsCommand),
+    /// List files shared in a Slack channel.
+    Files(SlackFilesCommand),
+    /// List bookmarks on a Slack channel.
+    Bookmarks(SlackBookmarksCommand),
+    /// Extract links shared in a Slack channel's message history.
+    Links(SlackLinksCommand),
+    /// Work with a Slack channel's canvas.
+    Canvas(SlackCanvasCommand),
+    /// Call an uncommon Slack Web API method with profile authentication.
+    Request(GenericRequest),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelsCommand {
+    #[command(subcommand)]
+    pub action: SlackChannelsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackChannelsAction {
+    /// List channels visible to the bot token.
+    List(SlackChannelList),
+    /// Get one channel's metadata, including a convenience canvas_id if present.
+    Get(SlackChannelIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Comma-separated conversation types passed to conversations.list.
+    #[arg(long, default_value = "public_channel,private_channel")]
+    pub types: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelIdArg {
+    pub channel_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelAssociatedList {
+    pub channel_id: String,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackFilesCommand {
+    #[command(subcommand)]
+    pub action: SlackFilesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackFilesAction {
+    /// List files shared in a channel.
+    List(SlackChannelAssociatedList),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackBookmarksCommand {
+    #[command(subcommand)]
+    pub action: SlackBookmarksAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackBookmarksAction {
+    /// List a channel's bookmarks (Slack caps these at 100 per channel; unpaginated).
+    List(SlackChannelIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackLinksCommand {
+    #[command(subcommand)]
+    pub action: SlackLinksAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackLinksAction {
+    /// Extract links from a channel's message history.
+    List(SlackChannelAssociatedList),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackCanvasCommand {
+    #[command(subcommand)]
+    pub action: SlackCanvasAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackCanvasAction {
+    /// Download a channel's canvas content to a local file.
+    Download(SlackCanvasDownload),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackCanvasDownload {
+    pub channel_id: String,
+    #[arg(long)]
+    pub output: String,
 }

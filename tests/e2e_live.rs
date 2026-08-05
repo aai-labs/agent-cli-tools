@@ -1665,3 +1665,63 @@ fn pipedrive_crm_crud_and_labels() {
         &["pipedrive", "labels", "leads", "delete", &lead_label_id],
     );
 }
+
+#[test]
+#[ignore = "requires live Slack credentials and a seeded test channel"]
+fn slack_channel_read_and_canvas_download() {
+    let Some(channel_id) = env_or_skip("AAI_E2E_SLACK_CHANNEL") else {
+        return;
+    };
+
+    let channels = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "channels", "list", "--limit", "5"],
+    );
+    assert!(channels["channels"].as_array().is_some());
+
+    let channel = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "channels", "get", &channel_id],
+    );
+    assert_eq!(str_at(&channel, &["channel", "id"]), channel_id);
+
+    let files = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "files", "list", &channel_id],
+    );
+    assert!(files["files"].as_array().is_some());
+
+    let bookmarks = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "bookmarks", "list", &channel_id],
+    );
+    assert!(bookmarks["bookmarks"].as_array().is_some());
+    assert_eq!(bookmarks["has_more"], false);
+
+    let links = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "links", "list", &channel_id],
+    );
+    assert!(links["links"].as_array().is_some());
+
+    let canvas_id = channel["channel"]["canvas_id"].as_str().map(str::to_string);
+    if let Some(canvas_id) = canvas_id {
+        let dl_path = std::env::temp_dir().join(unique("aai_e2e_slack_canvas"));
+        let dl_path_str = dl_path.to_str().unwrap();
+        let downloaded = cli_required(
+            "AAI_E2E_SLACK_PROFILE",
+            &[
+                "slack",
+                "canvas",
+                "download",
+                &channel_id,
+                "--output",
+                dl_path_str,
+            ],
+        );
+        assert_eq!(str_at(&downloaded, &["canvas_id"]), canvas_id);
+        let content = std::fs::read(&dl_path).unwrap();
+        assert!(!content.is_empty());
+        let _ = std::fs::remove_file(&dl_path);
+    }
+}
