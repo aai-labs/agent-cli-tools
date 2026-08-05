@@ -48,6 +48,7 @@ async fn files(
 ) -> Result<Value, AppError> {
     match command.action {
         SlackFilesAction::List(args) => files_list(client, ctx, args).await,
+        SlackFilesAction::Download(args) => files_download(client, ctx, args).await,
     }
 }
 
@@ -371,9 +372,38 @@ async fn canvas_download(
         )
     })?;
 
+    let mut result =
+        resolve_and_download_file(client, ctx, operation, &file_id, &args.output).await?;
+    input::ensure_object(&mut result).insert("canvas_id".to_string(), json!(file_id));
+    Ok(result)
+}
+
+async fn files_download(
+    client: &ApiClient,
+    ctx: &Context,
+    args: SlackFileDownload,
+) -> Result<Value, AppError> {
+    let operation = "files.download";
+    let mut result =
+        resolve_and_download_file(client, ctx, operation, &args.file_id, &args.output).await?;
+    input::ensure_object(&mut result).insert("file_id".to_string(), json!(args.file_id));
+    Ok(result)
+}
+
+/// Shared by `canvas download` and `files download`: resolve a file's
+/// `url_private_download` via `files.info`, download it, and write it to `output`.
+/// Same mechanism for both — canvases just come back as an HTML fragment instead of
+/// their "native" bytes (confirmed live).
+async fn resolve_and_download_file(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    file_id: &str,
+    output: &str,
+) -> Result<Value, AppError> {
     let mut file_url = format!("{}/files.info", slack_base(ctx.profile()));
     let mut file_query = Query::new();
-    file_query.push_value("file", &file_id);
+    file_query.push_value("file", file_id);
     file_query.append_to(&mut file_url);
     let file_info = call(client, ctx, operation, Method::GET, file_url).await?;
     let download_url = file_info
@@ -391,11 +421,9 @@ async fn canvas_download(
     let bytes = client
         .download("slack", operation, ctx.profile(), download_url)
         .await?;
-    let mut result = write_download("slack", operation, &args.output, &bytes)?;
-    let object = input::ensure_object(&mut result);
-    object.insert("canvas_id".to_string(), json!(file_id));
+    let mut result = write_download("slack", operation, output, &bytes)?;
     if let Some(title) = title {
-        object.insert("title".to_string(), json!(title));
+        input::ensure_object(&mut result).insert("title".to_string(), json!(title));
     }
     Ok(result)
 }

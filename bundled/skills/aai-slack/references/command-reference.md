@@ -56,7 +56,7 @@ Successful command output is JSON on stdout, always wrapped with an `_aai` pagin
 
 **`links list`** does not return a raw Slack shape at all — it's a derived view built by extracting links from `conversations.history` message blocks. Response is `{ "links": [{url, text, message_ts}, ...], "has_more": bool }`.
 
-**`canvas download`** returns JSON metadata only, never file content to stdout: `{ "output": "<path>", "bytes": N, "canvas_id": "<file-id>", "title": "<canvas title>" }`. The downloaded file itself is written to `--output` as an HTML fragment (Slack's internal canvas format), not markdown.
+**`files download`** and **`canvas download`** return JSON metadata only, never file content to stdout: `{ "output": "<path>", "bytes": N, "file_id"|"canvas_id": "<id>", "title": "<title>" }`. The downloaded file itself is written to `--output` — an HTML fragment for canvases (Slack's internal canvas format, not markdown), native bytes for everything else.
 
 ## Error response shape
 
@@ -81,7 +81,7 @@ Exit code is non-zero on any error.
 ## Resources
 
 - [Channels](#channels) — `channels list`, `channels get`
-- [Files](#files) — `files list`
+- [Files](#files) — `files list`, `files download`
 - [Bookmarks](#bookmarks) — `bookmarks list`
 - [Links](#links) — `links list`
 - [Canvas](#canvas) — `canvas download`
@@ -228,6 +228,16 @@ aai-cli --profile slack-work slack files list C0BLNH0K26B
   "paging": { "count": 50, "page": 1, "pages": 1, "total": 2 }
 }
 ```
+
+### files download
+
+```
+aai-cli slack files download <file-id> --output PATH
+```
+
+Takes a file `id` from `files list`, resolves its `url_private_download` via `files.info`, and writes the raw bytes to `--output`. Returns JSON metadata only, never file content to stdout: `{ "output": "<path>", "bytes": N, "file_id": "<id>", "title": "<file title>" }`. Shares the exact same download mechanism as [`canvas download`](#canvas) — the only difference between the two commands is how each resolves which file ID to download.
+
+> Pending a live-captured example (bot token was rotated after the last verification pass) — response shape confirmed by code review against the identical, already-live-verified `canvas download` path.
 
 ## Bookmarks
 

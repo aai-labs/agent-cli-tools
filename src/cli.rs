@@ -3499,6 +3499,15 @@ pub struct SlackFilesCommand {
 pub enum SlackFilesAction {
     /// List files shared in a channel.
     List(SlackChannelAssociatedList),
+    /// Download a file's content to a local file.
+    Download(SlackFileDownload),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackFileDownload {
+    pub file_id: String,
+    #[arg(long)]
+    pub output: String,
 }
 
 #[derive(Debug, Args)]
