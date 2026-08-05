@@ -35,7 +35,8 @@ pub enum Command {
     Apollo(ApolloCommand),
     /// Read and write Google Sheets spreadsheets and cell data.
     Sheets(SheetsCommand),
-    /// Read and write local Excel (.xlsx) workbooks. Needs no profile or credentials.
+    /// Read and write local spreadsheets: .xlsx/.xlsm and .csv/.tsv, plus read-only
+    /// .xls/.xlsb/.ods. Needs no profile or credentials.
     Excel(ExcelCommand),
     /// Inspect and edit persistent profiles without exposing credentials.
     Config(ConfigCommand),
@@ -3420,7 +3421,7 @@ pub struct ExcelCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum ExcelResource {
-    /// Create a new .xlsx workbook.
+    /// Create a new spreadsheet file (.xlsx or .csv/.tsv).
     Workbook(ExcelWorkbookCommand),
     /// Inspect the sheet tabs in a workbook.
     Sheets(ExcelSheetsCommand),
@@ -3436,15 +3437,15 @@ pub struct ExcelWorkbookCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum ExcelWorkbookAction {
-    /// Create a new empty .xlsx workbook.
+    /// Create a new empty spreadsheet file.
     Create(ExcelWorkbookCreateArgs),
 }
 
 #[derive(Debug, Args)]
 pub struct ExcelWorkbookCreateArgs {
-    /// Path to write the new .xlsx workbook to.
+    /// Path to write the new file to (.xlsx, or .csv/.tsv for a delimited file).
     pub file: PathBuf,
-    /// Comma-separated sheet tab names. Defaults to a single "Sheet1".
+    /// Comma-separated sheet tab names (.xlsx only). Defaults to a single "Sheet1".
     #[arg(long)]
     pub sheets: Option<String>,
     /// Overwrite the file if it already exists.
@@ -3466,7 +3467,7 @@ pub enum ExcelSheetsAction {
 
 #[derive(Debug, Args)]
 pub struct ExcelSheetsListArgs {
-    /// Path to the .xlsx workbook.
+    /// Path to the spreadsheet file.
     pub file: PathBuf,
 }
 
@@ -3488,7 +3489,7 @@ pub enum ExcelValuesAction {
 
 #[derive(Debug, Args)]
 pub struct ExcelValuesGetArgs {
-    /// Path to the .xlsx workbook.
+    /// Path to the spreadsheet file.
     pub file: PathBuf,
     /// A1 notation range, e.g. 'Sheet1'!A1:D5. A bare sheet name reads its used range.
     pub range: String,
