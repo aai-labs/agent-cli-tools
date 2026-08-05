@@ -20,6 +20,7 @@ const SERVICE: &str = "skills";
 const SKILL_COMMANDS: &[(&str, &[&str])] = &[
     ("aai-bitbucket", &["bitbucket"]),
     ("aai-confluence", &["confluence"]),
+    ("aai-excel", &["excel"]),
     ("aai-github", &["github"]),
     ("aai-gmail", &["email"]),
     ("aai-google-sheets", &["sheets"]),
@@ -39,6 +40,7 @@ const TOP_LEVEL_COMMANDS: &[&str] = &[
     "pipedrive",
     "apollo",
     "sheets",
+    "excel",
     "slack",
     "config",
     "secrets",
