@@ -1691,6 +1691,27 @@ fn slack_channel_read_and_canvas_download() {
     );
     assert!(files["files"].as_array().is_some());
 
+    let first_file_id = files["files"][0]["id"].as_str().map(str::to_string);
+    if let Some(file_id) = first_file_id {
+        let dl_path = std::env::temp_dir().join(unique("aai_e2e_slack_file"));
+        let dl_path_str = dl_path.to_str().unwrap();
+        let downloaded = cli_required(
+            "AAI_E2E_SLACK_PROFILE",
+            &[
+                "slack",
+                "files",
+                "download",
+                &file_id,
+                "--output",
+                dl_path_str,
+            ],
+        );
+        assert_eq!(str_at(&downloaded, &["file_id"]), file_id);
+        let content = std::fs::read(&dl_path).unwrap();
+        assert!(!content.is_empty());
+        let _ = std::fs::remove_file(&dl_path);
+    }
+
     let bookmarks = cli_required(
         "AAI_E2E_SLACK_PROFILE",
         &["slack", "bookmarks", "list", &channel_id],

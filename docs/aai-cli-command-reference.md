@@ -255,6 +255,7 @@ Configure `profile.base_url` to override the default `https://slack.com/api`; al
 aai-cli slack channels list [--limit N] [--types public_channel,private_channel]
 aai-cli slack channels get <channel-id>
 aai-cli slack files list <channel-id> [--limit N]
+aai-cli slack files download <file-id> --output PATH
 aai-cli slack bookmarks list <channel-id>
 aai-cli slack links list <channel-id> [--limit N]
 aai-cli slack canvas download <channel-id> --output PATH
@@ -266,7 +267,9 @@ aai-cli slack canvas download <channel-id> --output PATH
 
 `links list` extracts links from `conversations.history` by walking each message's `blocks[].elements[].elements[]` for `type == "link"`. It intentionally does not scan message text, which Slack truncates and HTML-escapes. Each result is `{url, text, message_ts}` — no `message_permalink`; building one correctly requires either an extra `chat.getPermalink` call per link or reconstructing a URL that's wrong in thread/Enterprise-Grid edge cases, so it's omitted. Use `message_ts` with the `request` escape hatch (`chat.getPermalink`) if a permalink is needed for a specific message.
 
-`canvas download` resolves the channel's canvas, downloads it via `url_private_download`, and writes it to `--output`. Like the GitHub Actions and Bitbucket Pipelines download commands, it returns JSON metadata (`output`, `bytes`, `canvas_id`, `title`) and never prints content to stdout. Canvas content is written as an HTML fragment (Slack's internal Quip-document format), not markdown. A channel with no canvas returns `not_found`.
+`files download` takes a file ID from `files list`'s `id` field, resolves its `url_private_download` via `files.info`, and writes the raw bytes to `--output` — returns JSON metadata (`output`, `bytes`, `file_id`, `title`) and never prints content to stdout.
+
+`canvas download` resolves the channel's canvas, downloads it via `url_private_download`, and writes it to `--output`. Like the GitHub Actions and Bitbucket Pipelines download commands, it returns JSON metadata (`output`, `bytes`, `canvas_id`, `title`) and never prints content to stdout. Canvas content is written as an HTML fragment (Slack's internal Quip-document format), not markdown. A channel with no canvas returns `not_found`. `files download` and `canvas download` share the same download mechanism internally — the only difference is how each resolves the file ID to download.
 
 ## Apollo
 
