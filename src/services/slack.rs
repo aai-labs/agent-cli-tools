@@ -321,7 +321,10 @@ fn extract_links(message: &Value) -> Vec<Value> {
                 if element.get("type").and_then(Value::as_str) != Some("link") {
                     continue;
                 }
-                let url = element.get("url").and_then(Value::as_str).unwrap_or_default();
+                let url = element
+                    .get("url")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
                 if url.is_empty() {
                     continue;
                 }
@@ -377,11 +380,7 @@ async fn canvas_download(
         .pointer("/file/url_private_download")
         .and_then(Value::as_str)
         .ok_or_else(|| {
-            AppError::internal(
-                "slack",
-                operation,
-                "file info missing url_private_download",
-            )
+            AppError::internal("slack", operation, "file info missing url_private_download")
         })?
         .to_string();
     let title = file_info
@@ -629,8 +628,14 @@ mod tests {
             StatusCode::NOT_FOUND
         );
         assert_eq!(slack_error_status("not_visible"), StatusCode::NOT_FOUND);
-        assert_eq!(slack_error_status("ratelimited"), StatusCode::TOO_MANY_REQUESTS);
-        assert_eq!(slack_error_status("some_new_error"), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            slack_error_status("ratelimited"),
+            StatusCode::TOO_MANY_REQUESTS
+        );
+        assert_eq!(
+            slack_error_status("some_new_error"),
+            StatusCode::BAD_REQUEST
+        );
     }
 
     #[test]
