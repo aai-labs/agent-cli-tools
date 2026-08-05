@@ -24,6 +24,7 @@ const SKILL_COMMANDS: &[(&str, &[&str])] = &[
     ("aai-gmail", &["email"]),
     ("aai-google-sheets", &["sheets"]),
     ("aai-jira", &["jira"]),
+    ("aai-pipedrive", &["pipedrive"]),
     ("aai-slack", &["slack"]),
     ("aai-zoho-mail", &["email"]),
 ];
@@ -514,7 +515,7 @@ mod tests {
         let packages = load_packages().expect("load bundled skills");
         let reports = validate_packages(&packages);
 
-        assert_eq!(reports.len(), 8);
+        assert_eq!(reports.len(), 9);
         assert!(
             reports.iter().all(|report| report.valid),
             "invalid reports: {reports:#?}"

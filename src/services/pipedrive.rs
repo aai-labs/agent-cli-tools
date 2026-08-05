@@ -411,6 +411,17 @@ async fn deals(
         PipedriveDealsAction::MailMessages(args) => {
             associated_mail(client, ctx, "deals.mail_messages", "deals", args).await
         }
+        PipedriveDealsAction::Flow(args) => {
+            list_v1(
+                client,
+                ctx,
+                "deals.flow",
+                &format!("/v1/deals/{}/flow", enc(&args.id)),
+                Query::new(),
+                args.limit,
+            )
+            .await
+        }
         PipedriveDealsAction::Create(args) => {
             let body = deal_create_body(args)?;
             request_json(

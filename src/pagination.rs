@@ -14,6 +14,7 @@ const COLLECTION_KEYS: &[&str] = &[
     "channels",
     "links",
     "bookmarks",
+    "fields",
 ];
 
 pub(crate) fn annotate(value: Value, command_args: &[String]) -> Value {
@@ -256,7 +257,14 @@ fn looks_like_collection_command(args: &[String]) -> bool {
     args.iter().any(|arg| {
         matches!(
             arg.as_str(),
-            "list" | "search" | "history" | "timeline" | "files" | "commits" | "activity"
+            "list"
+                | "search"
+                | "history"
+                | "timeline"
+                | "files"
+                | "commits"
+                | "activity"
+                | "fields"
         )
     })
 }
