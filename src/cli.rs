@@ -35,6 +35,9 @@ pub enum Command {
     Apollo(ApolloCommand),
     /// Read and write Google Sheets spreadsheets and cell data.
     Sheets(SheetsCommand),
+    /// Read and write local spreadsheets: .xlsx/.xlsm and .csv/.tsv, plus read-only
+    /// .xls/.xlsb/.ods. Needs no profile or credentials.
+    Excel(ExcelCommand),
     /// Inspect and edit persistent profiles without exposing credentials.
     Config(ConfigCommand),
     /// Discover, validate, and install bundled Agent Skills.
@@ -3410,6 +3413,115 @@ pub struct ValuesClearArgs {
     pub spreadsheet_id: String,
     /// A1 notation range, e.g. 'Sheet1'!A1:D5
     pub range: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelCommand {
+    #[command(subcommand)]
+    pub resource: ExcelResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelResource {
+    /// Create a new spreadsheet file (.xlsx or .csv/.tsv).
+    Workbook(ExcelWorkbookCommand),
+    /// Inspect the sheet tabs in a workbook.
+    Sheets(ExcelSheetsCommand),
+    /// Read, write, or clear cell values in a workbook range.
+    Values(ExcelValuesCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelWorkbookCommand {
+    #[command(subcommand)]
+    pub action: ExcelWorkbookAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelWorkbookAction {
+    /// Create a new empty spreadsheet file.
+    Create(ExcelWorkbookCreateArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelWorkbookCreateArgs {
+    /// Path to write the new file to (.xlsx, or .csv/.tsv for a delimited file).
+    pub file: PathBuf,
+    /// Comma-separated sheet tab names (.xlsx only). Defaults to a single "Sheet1".
+    #[arg(long)]
+    pub sheets: Option<String>,
+    /// Overwrite the file if it already exists.
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelSheetsCommand {
+    #[command(subcommand)]
+    pub action: ExcelSheetsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelSheetsAction {
+    /// List every sheet tab in the workbook, with its used range.
+    List(ExcelSheetsListArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelSheetsListArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesCommand {
+    #[command(subcommand)]
+    pub action: ExcelValuesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelValuesAction {
+    /// Read cell values from a range (e.g. 'Sheet1'!A1:D5).
+    Get(ExcelValuesGetArgs),
+    /// Write cell values to a range.
+    Update(ExcelValuesUpdateArgs),
+    /// Clear cell values from a range (formatting is preserved).
+    Clear(ExcelValuesClearArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesGetArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+    /// A1 notation range, e.g. 'Sheet1'!A1:D5. A bare sheet name reads its used range.
+    pub range: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesUpdateArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+    /// A1 notation top-left anchor or full range, e.g. 'Sheet1'!A1
+    pub range: String,
+    /// JSON array of arrays: [["A1","B1"],["A2","B2"]]. null leaves a cell empty.
+    #[arg(long)]
+    pub values: String,
+    /// Write even when the workbook holds features a rewrite cannot preserve
+    /// (charts, pivot tables, form controls, drawings, external links).
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesClearArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+    /// A1 notation range, e.g. 'Sheet1'!A1:D5
+    pub range: String,
+    /// Write even when the workbook holds features a rewrite cannot preserve
+    /// (charts, pivot tables, form controls, drawings, external links).
+    #[arg(long)]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]
