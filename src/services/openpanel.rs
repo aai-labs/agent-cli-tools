@@ -39,7 +39,14 @@ async fn projects(
 ) -> Result<Value, AppError> {
     match command.action {
         OpenpanelProjectsAction::List => {
-            get(client, ctx, "projects.list", "/manage/projects", Query::new()).await
+            get(
+                client,
+                ctx,
+                "projects.list",
+                "/manage/projects",
+                Query::new(),
+            )
+            .await
         }
         OpenpanelProjectsAction::Get(args) => {
             get(
@@ -122,7 +129,9 @@ async fn events_export(
         page_num += 1;
     }
 
-    let total_count = last_page.pointer("/meta/totalCount").and_then(Value::as_u64);
+    let total_count = last_page
+        .pointer("/meta/totalCount")
+        .and_then(Value::as_u64);
     let has_more = total_count
         .map(|total| (values.len() as u64) < total)
         .unwrap_or(false);
@@ -199,7 +208,10 @@ async fn insights_pages(
 
 fn breakdown_query(args: &OpenpanelBreakdownListArgs) -> Query {
     let mut query = date_range_query(&args.date_range);
-    query.push("cursor", args.cursor.map(|value| value.to_string()).as_deref());
+    query.push(
+        "cursor",
+        args.cursor.map(|value| value.to_string()).as_deref(),
+    );
     query.set("limit", args.limit.to_string());
     query
 }

@@ -1754,7 +1754,10 @@ fn openpanel_projects_insights_and_profiles_read() {
         return;
     };
 
-    let projects = cli_required("AAI_E2E_OPENPANEL_ROOT_PROFILE", &["openpanel", "projects", "list"]);
+    let projects = cli_required(
+        "AAI_E2E_OPENPANEL_ROOT_PROFILE",
+        &["openpanel", "projects", "list"],
+    );
     assert!(projects["data"].as_array().is_some());
 
     let project = cli_required(

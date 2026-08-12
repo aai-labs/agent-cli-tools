@@ -483,7 +483,10 @@ mod tests {
             request.headers()["openpanel-client-id"],
             "018f0000-0000-0000-0000-000000000000"
         );
-        assert_eq!(request.headers()["openpanel-client-secret"], "openpanel-secret");
+        assert_eq!(
+            request.headers()["openpanel-client-secret"],
+            "openpanel-secret"
+        );
         assert!(!request.headers().contains_key("authorization"));
     }
 
