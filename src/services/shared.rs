@@ -193,6 +193,14 @@ pub(crate) fn hubspot_base(profile: &Profile) -> String {
         .unwrap_or_else(|| "https://api.hubapi.com".to_string())
 }
 
+pub(crate) fn slack_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://slack.com/api".to_string())
+}
+
 pub(crate) fn trim_url(value: &str) -> String {
     value.trim_end_matches('/').to_string()
 }

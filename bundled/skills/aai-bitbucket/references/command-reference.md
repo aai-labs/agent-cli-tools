@@ -172,9 +172,10 @@ Commands under `aai-cli bitbucket prs`. Most commands accept `--repo REPO_OR_WOR
 ### prs list
 
 List pull requests for a repository. Returns the raw Bitbucket provider page.
+Defaults to **OPEN** PRs; pass `--state` to change that.
 
 ```
-aai-cli bitbucket prs list [--repo REPO_OR_WORKSPACE_REPO] [--owner WORKSPACE] [--limit N]
+aai-cli bitbucket prs list [--repo REPO_OR_WORKSPACE_REPO] [--owner WORKSPACE] [--limit N] [--state STATE] [--sort updated]
 ```
 
 | Flag | Required | Description |
@@ -182,11 +183,17 @@ aai-cli bitbucket prs list [--repo REPO_OR_WORKSPACE_REPO] [--owner WORKSPACE] [
 | `--repo` | no | Repo slug, or `workspace/repo`. Defaults to profile repo |
 | `--owner` | no | Workspace. Use with `--repo` as a plain slug |
 | `--limit` | no | Provider page length. Default: `50` |
+| `--state` | no | PR state: `OPEN` (default), `MERGED`, `DECLINED`, or `SUPERSEDED` |
+| `--sort` | no | Order results. `updated` = most-recently-updated first (maps to Bitbucket's `-updated_on`). Omitted = creation order |
 
-**Example**
+`--sort updated` surfaces recently-merged PRs even if they were opened long ago —
+without it the page is in creation order and an old-but-recently-merged PR can
+fall past `--limit`.
+
+**Example — merged PRs**
 
 ```
-aai-cli bitbucket prs list --repo my-workspace/my-repo --limit 5
+aai-cli bitbucket prs list --repo my-workspace/my-repo --state MERGED --limit 5
 ```
 
 ### prs get

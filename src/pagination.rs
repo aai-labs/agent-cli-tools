@@ -11,6 +11,10 @@ const COLLECTION_KEYS: &[&str] = &[
     "files",
     "jobs",
     "workflow_runs",
+    "channels",
+    "links",
+    "bookmarks",
+    "fields",
 ];
 
 pub(crate) fn annotate(value: Value, command_args: &[String]) -> Value {
@@ -123,6 +127,11 @@ fn continuation(value: &Value) -> Option<Continuation> {
             "/additional_data/next_cursor",
             "cursor",
             "additional_data.next_cursor",
+        ),
+        (
+            "/response_metadata/next_cursor",
+            "cursor",
+            "response_metadata.next_cursor",
         ),
         (
             "/additional_data/pagination/next_start",
@@ -248,7 +257,14 @@ fn looks_like_collection_command(args: &[String]) -> bool {
     args.iter().any(|arg| {
         matches!(
             arg.as_str(),
-            "list" | "search" | "history" | "timeline" | "files" | "commits" | "activity"
+            "list"
+                | "search"
+                | "history"
+                | "timeline"
+                | "files"
+                | "commits"
+                | "activity"
+                | "fields"
         )
     })
 }

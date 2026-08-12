@@ -41,6 +41,13 @@ This project should support credentials supplied by users or agents rather than 
 - Custom channels: HubSpot documents conversations custom channel endpoints as unsupported for legacy private apps. The CLI should return `unsupported_auth` before the request when `hubspot_legacy_private_app` is used for `conversations custom-channels`.
 - Common non-CRM scopes: files need `files`; hidden/deleted file reads may need `files.ui_hidden.read`; event occurrence reads need `business-intelligence`; custom behavioral event sends need `analytics.behavioral_events.send`; conversations reads need `conversations.read`; conversations writes usually need `conversations.write`; visitor identification token creation needs `conversations.visitor_identification.tokens.create`.
 
+## Slack
+
+- Bot token (`xoxb-`): Primary and only implemented model. Profiles use `auth_type = "bearer_token"` with `token_secret`, sent as a standard `Authorization: Bearer` header — no Slack-specific auth code was needed since `bearer_token` is already this CLI's default auth branch.
+- Required scopes: `channels:read`, `groups:read` (channel metadata/listing, including private channels), `channels:history`, `groups:history` (message history, used internally by `links list`), `files:read`, `bookmarks:read`. `canvases:read` is not required by this CLI's canvas download, which uses `files.info`/`url_private_download` rather than the canvas-specific API (which has no content-read method — see [docs/services/slack.md](services/slack.md)).
+- Internal apps only: this CLI assumes the Slack app/bot is installed only in its own workspace and never has public distribution enabled. Slack throttles `conversations.history`/`conversations.replies` to 1 request/minute for apps commercially distributed outside the Marketplace; internal apps keep normal Tier 2/3 limits ([details](https://docs.slack.dev/changelog/2025/06/03/rate-limits-clarity/)).
+- OAuth install flow: not implemented. This CLI does not acquire or refresh Slack OAuth tokens — a bot token must be created and supplied by the user, same as every other provider in this matrix.
+
 ## CLI Implications
 
 - Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `hubspot_service_key`, `hubspot_legacy_private_app`, `github_app`, `oauth_user`, or `service_account`.

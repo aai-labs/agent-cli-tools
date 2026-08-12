@@ -8,7 +8,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks saf
 
 | Service | CLI coverage | Local docs | Original API docs |
 | --- | --- | --- | --- |
-| Jira Cloud | Issues, projects, Agile boards, sprints, comments, attachments | [docs/services/jira.md](docs/services/jira.md) | [Jira REST API v3](https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/), [Jira Software REST API](https://developer.atlassian.com/cloud/jira/software/rest/intro/) |
+| Jira Cloud | Issues, Product Discovery ideas and idea field discovery, projects, Agile boards, sprints, comments, attachments | [docs/services/jira.md](docs/services/jira.md) | [Jira REST API v3](https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/), [Jira Software REST API](https://developer.atlassian.com/cloud/jira/software/rest/intro/) |
 | Confluence Cloud | Spaces, pages, comments, attachments, search, page moves | [docs/services/confluence.md](docs/services/confluence.md) | [Confluence REST API v2](https://developer.atlassian.com/cloud/confluence/rest/v2/intro/) |
 | Bitbucket Cloud | Repositories, branches, commits, source files, pull requests, comments, pipelines | [docs/services/bitbucket.md](docs/services/bitbucket.md) | [Bitbucket REST API](https://developer.atlassian.com/cloud/bitbucket/rest/intro/) |
 | GitHub | Repositories, branches, files, issues, pull requests, reviews, Actions runs/jobs/logs | [docs/services/github.md](docs/services/github.md) | [GitHub REST API](https://docs.github.com/en/rest) |
@@ -18,6 +18,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks saf
 | Apollo | People and organization search/enrichment, contacts, accounts, deals, tasks, calls, outreach, conversations, analytics | [docs/services/apollo.md](docs/services/apollo.md) | [Apollo API docs](https://docs.apollo.io/docs/apollo-api-overview), [Apollo OpenAPI](https://docs.apollo.io/openapi/apollo-rest-api.json) |
 | HubSpot | CRM object reads/search, files, events, conversations, visitor identification, custom channels | [docs/services/hubspot.md](docs/services/hubspot.md) | [HubSpot API docs](https://developers.hubspot.com/docs/api/overview) |
 | Google Sheets | Spreadsheet listing plus sheet value reads/writes | [docs/services/sheets.md](docs/services/sheets.md) | [Google Sheets API](https://developers.google.com/sheets/api/reference/rest) |
+| Slack | Channel metadata, files, bookmarks, links, channel canvas download (read-only, bot token) | [docs/services/slack.md](docs/services/slack.md) | [Slack Web API](https://docs.slack.dev/reference/methods) |
 
 Project features that are not provider services:
 

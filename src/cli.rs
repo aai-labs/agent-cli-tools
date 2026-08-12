@@ -37,11 +37,16 @@ pub enum Command {
     Hubspot(HubspotCommand),
     /// Read and write Google Sheets spreadsheets and cell data.
     Sheets(SheetsCommand),
+    /// Read and write local spreadsheets: .xlsx/.xlsm and .csv/.tsv, plus read-only
+    /// .xls/.xlsb/.ods. Needs no profile or credentials.
+    Excel(ExcelCommand),
     /// Inspect and edit persistent profiles without exposing credentials.
     Config(ConfigCommand),
     /// Discover, validate, and install bundled Agent Skills.
     Skills(SkillsCommand),
     Secrets(SecretsCommand),
+    /// Read Slack channels, files, bookmarks, links, and channel canvases.
+    Slack(SlackCommand),
 }
 
 #[derive(Debug, Args)]
@@ -211,6 +216,8 @@ pub struct JiraCommand {
 #[derive(Debug, Subcommand)]
 pub enum JiraResource {
     Issues(JiraIssuesCommand),
+    /// Manage Jira Product Discovery ideas and discover project-specific idea fields.
+    Ideas(JiraIdeasCommand),
     Projects(JiraProjectsCommand),
     Sprints(JiraSprintsCommand),
     Boards(JiraBoardsCommand),
@@ -351,9 +358,96 @@ pub struct JiraIssueUpdate {
 }
 
 #[derive(Debug, Args)]
+pub struct JiraIdeasCommand {
+    #[command(subcommand)]
+    pub action: JiraIdeasAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraIdeasAction {
+    /// Search ideas across Jira Product Discovery projects.
+    List(JiraIdeasList),
+    Get(IdArg),
+    Create(JiraIdeasCreate),
+    Update(JiraIdeasUpdate),
+    /// Discover the fields available on a Product Discovery project's idea type.
+    Fields(JiraIdeasFields),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasList {
+    #[arg(long)]
+    pub project: Option<String>,
+    #[arg(long)]
+    pub status: Option<String>,
+    #[arg(long)]
+    pub assignee: Option<String>,
+    #[arg(long)]
+    pub text: Option<String>,
+    #[arg(long = "updated-since")]
+    pub updated_since: Option<String>,
+    #[arg(long)]
+    pub fields: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasCreate {
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub project: Option<String>,
+    /// Issue type name for the idea. Defaults to Idea.
+    #[arg(long = "type")]
+    pub issue_type: Option<String>,
+    #[arg(long)]
+    pub summary: Option<String>,
+    #[arg(long)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasUpdate {
+    pub id: String,
+    #[arg(long)]
+    pub json: Option<String>,
+    #[arg(long)]
+    pub summary: Option<String>,
+    #[arg(long)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasFields {
+    /// Product Discovery project key or id.
+    pub project: String,
+    /// Issue type name to inspect when the project has more than one.
+    #[arg(long = "type")]
+    pub issue_type: Option<String>,
+    #[arg(long, default_value_t = 200)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
 pub struct JiraProjectsCommand {
     #[command(subcommand)]
-    pub action: ListGetAction,
+    pub action: JiraProjectsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraProjectsAction {
+    List(JiraProjectsList),
+    Get(IdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraProjectsList {
+    /// Filter by project type key: product_discovery, software, business, or service_desk.
+    #[arg(long = "type")]
+    pub project_type: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
 }
 
 #[derive(Debug, Args)]
@@ -688,7 +782,7 @@ pub struct BitbucketPrsCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum BitbucketPullRequestAction {
-    List(RepoLimitArg),
+    List(PrListArg),
     Get(NumberArg),
     Create(PullRequestCreate),
     Delete(NumberArg),
@@ -1689,6 +1783,8 @@ pub enum PipedriveDealsAction {
     Notes(PipedriveAssociatedList),
     /// List synced email messages associated with a deal.
     MailMessages(PipedriveAssociatedList),
+    /// List updates (including stage transitions) about a deal.
+    Flow(PipedriveAssociatedList),
     /// Create a deal from flags and/or JSON.
     Create(PipedriveDealWrite),
     /// Update a deal from flags and/or JSON.
@@ -3010,10 +3106,75 @@ pub struct RepoLimitArg {
     pub limit: u32,
 }
 
+#[derive(Debug, Args)]
+pub struct PrListArg {
+    #[arg(long)]
+    pub owner: Option<String>,
+    #[arg(long)]
+    pub repo: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Filter by pull request state. GitHub: `open`, `closed`, or `all`.
+    /// Bitbucket: `OPEN`, `MERGED`, `DECLINED`, or `SUPERSEDED`. Omitted =
+    /// provider default (open). For merged PRs on GitHub use `closed` and keep
+    /// those with a non-null `merged_at`.
+    #[arg(long)]
+    pub state: Option<String>,
+    /// Order results. `updated` = most-recently-updated first, so a PR that
+    /// merged long after it was opened floats to the top instead of staying
+    /// buried in creation order. Omitted = provider default (creation order).
+    #[arg(long)]
+    pub sort: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use clap::CommandFactory;
+    use clap::Parser;
+
+    #[test]
+    fn github_prs_list_parses_state_flag() {
+        let cli = Cli::try_parse_from([
+            "aai-cli", "github", "prs", "list", "--owner", "o", "--repo", "r", "--state", "closed",
+        ])
+        .expect("parse github prs list --state");
+        let Command::Github(gh) = cli.command else {
+            panic!("expected github command");
+        };
+        let GithubResource::Prs(prs) = gh.resource else {
+            panic!("expected prs resource");
+        };
+        let GithubPullRequestAction::List(args) = prs.action else {
+            panic!("expected list action");
+        };
+        assert_eq!(args.state.as_deref(), Some("closed"));
+    }
+
+    #[test]
+    fn bitbucket_prs_list_parses_state_flag() {
+        let cli = Cli::try_parse_from([
+            "aai-cli",
+            "bitbucket",
+            "prs",
+            "list",
+            "--repo",
+            "acme/widgets",
+            "--state",
+            "MERGED",
+        ])
+        .expect("parse bitbucket prs list --state");
+        let Command::Bitbucket(bb) = cli.command else {
+            panic!("expected bitbucket command");
+        };
+        let BitbucketResource::Prs(prs) = bb.resource else {
+            panic!("expected prs resource");
+        };
+        let BitbucketPullRequestAction::List(args) = prs.action else {
+            panic!("expected list action");
+        };
+        assert_eq!(args.state.as_deref(), Some("MERGED"));
+    }
 
     #[test]
     fn pipedrive_history_commands_are_discoverable_in_help() {
@@ -3030,6 +3191,18 @@ mod tests {
         assert!(help.contains("mailbox messages get"));
         assert!(help.contains("activities"));
         assert!(help.contains("notes"));
+    }
+
+    #[test]
+    fn jira_ideas_commands_are_discoverable_in_help() {
+        let mut command = Cli::command();
+        let jira = command.find_subcommand_mut("jira").expect("jira command");
+        let mut help = Vec::new();
+        jira.write_long_help(&mut help).unwrap();
+        let help = String::from_utf8(help).unwrap();
+
+        assert!(help.contains("ideas"));
+        assert!(help.contains("Product Discovery"));
     }
 
     #[test]
@@ -3057,6 +3230,7 @@ mod tests {
             "email",
             "calendar",
             "pipedrive",
+            "slack",
         ] {
             let mut command = Cli::command();
             let service_command = command
@@ -3089,7 +3263,7 @@ pub enum PullRequestAction {
 
 #[derive(Debug, Subcommand)]
 pub enum GithubPullRequestAction {
-    List(RepoLimitArg),
+    List(PrListArg),
     Get(NumberArg),
     Create(PullRequestCreate),
     Delete(NumberArg),
@@ -3487,6 +3661,115 @@ pub struct ValuesClearArgs {
 }
 
 #[derive(Debug, Args)]
+pub struct ExcelCommand {
+    #[command(subcommand)]
+    pub resource: ExcelResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelResource {
+    /// Create a new spreadsheet file (.xlsx or .csv/.tsv).
+    Workbook(ExcelWorkbookCommand),
+    /// Inspect the sheet tabs in a workbook.
+    Sheets(ExcelSheetsCommand),
+    /// Read, write, or clear cell values in a workbook range.
+    Values(ExcelValuesCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelWorkbookCommand {
+    #[command(subcommand)]
+    pub action: ExcelWorkbookAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelWorkbookAction {
+    /// Create a new empty spreadsheet file.
+    Create(ExcelWorkbookCreateArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelWorkbookCreateArgs {
+    /// Path to write the new file to (.xlsx, or .csv/.tsv for a delimited file).
+    pub file: PathBuf,
+    /// Comma-separated sheet tab names (.xlsx only). Defaults to a single "Sheet1".
+    #[arg(long)]
+    pub sheets: Option<String>,
+    /// Overwrite the file if it already exists.
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelSheetsCommand {
+    #[command(subcommand)]
+    pub action: ExcelSheetsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelSheetsAction {
+    /// List every sheet tab in the workbook, with its used range.
+    List(ExcelSheetsListArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelSheetsListArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesCommand {
+    #[command(subcommand)]
+    pub action: ExcelValuesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ExcelValuesAction {
+    /// Read cell values from a range (e.g. 'Sheet1'!A1:D5).
+    Get(ExcelValuesGetArgs),
+    /// Write cell values to a range.
+    Update(ExcelValuesUpdateArgs),
+    /// Clear cell values from a range (formatting is preserved).
+    Clear(ExcelValuesClearArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesGetArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+    /// A1 notation range, e.g. 'Sheet1'!A1:D5. A bare sheet name reads its used range.
+    pub range: String,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesUpdateArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+    /// A1 notation top-left anchor or full range, e.g. 'Sheet1'!A1
+    pub range: String,
+    /// JSON array of arrays: [["A1","B1"],["A2","B2"]]. null leaves a cell empty.
+    #[arg(long)]
+    pub values: String,
+    /// Write even when the workbook holds features a rewrite cannot preserve
+    /// (charts, pivot tables, form controls, drawings, external links).
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelValuesClearArgs {
+    /// Path to the spreadsheet file.
+    pub file: PathBuf,
+    /// A1 notation range, e.g. 'Sheet1'!A1:D5
+    pub range: String,
+    /// Write even when the workbook holds features a rewrite cannot preserve
+    /// (charts, pivot tables, form controls, drawings, external links).
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
 pub struct PullRequestCreate {
     #[arg(long)]
     pub json: Option<String>,
@@ -3506,4 +3789,125 @@ pub struct PullRequestCreate {
     pub head: Option<String>,
     #[arg(long)]
     pub base: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackCommand {
+    #[command(subcommand)]
+    pub resource: SlackResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackResource {
+    /// List and inspect Slack channels.
+    Channels(SlackChannelsCommand),
+    /// List files shared in a Slack channel.
+    Files(SlackFilesCommand),
+    /// List bookmarks on a Slack channel.
+    Bookmarks(SlackBookmarksCommand),
+    /// Extract links shared in a Slack channel's message history.
+    Links(SlackLinksCommand),
+    /// Work with a Slack channel's canvas.
+    Canvas(SlackCanvasCommand),
+    /// Call an uncommon Slack Web API method with profile authentication.
+    Request(GenericRequest),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelsCommand {
+    #[command(subcommand)]
+    pub action: SlackChannelsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackChannelsAction {
+    /// List channels visible to the bot token.
+    List(SlackChannelList),
+    /// Get one channel's metadata, including a convenience canvas_id if present.
+    Get(SlackChannelIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelList {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Comma-separated conversation types passed to conversations.list.
+    #[arg(long, default_value = "public_channel,private_channel")]
+    pub types: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelIdArg {
+    pub channel_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackChannelAssociatedList {
+    pub channel_id: String,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackFilesCommand {
+    #[command(subcommand)]
+    pub action: SlackFilesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackFilesAction {
+    /// List files shared in a channel.
+    List(SlackChannelAssociatedList),
+    /// Download a file's content to a local file.
+    Download(SlackFileDownload),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackFileDownload {
+    pub file_id: String,
+    #[arg(long)]
+    pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SlackBookmarksCommand {
+    #[command(subcommand)]
+    pub action: SlackBookmarksAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackBookmarksAction {
+    /// List a channel's bookmarks (Slack caps these at 100 per channel; unpaginated).
+    List(SlackChannelIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackLinksCommand {
+    #[command(subcommand)]
+    pub action: SlackLinksAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackLinksAction {
+    /// Extract links from a channel's message history.
+    List(SlackChannelAssociatedList),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackCanvasCommand {
+    #[command(subcommand)]
+    pub action: SlackCanvasAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SlackCanvasAction {
+    /// Download a channel's canvas content to a local file.
+    Download(SlackCanvasDownload),
+}
+
+#[derive(Debug, Args)]
+pub struct SlackCanvasDownload {
+    pub channel_id: String,
+    #[arg(long)]
+    pub output: String,
 }

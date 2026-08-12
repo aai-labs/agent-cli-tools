@@ -233,6 +233,159 @@ fn jira_issue_crud_and_projects() {
 }
 
 #[test]
+#[ignore = "requires live Jira credentials and a Product Discovery project"]
+fn jira_idea_crud_and_field_discovery() {
+    let Some(project) = env_or_skip("AAI_E2E_JIRA_JPD_PROJECT") else {
+        return;
+    };
+    let summary = unique("aai-e2e-jira-idea");
+
+    let projects = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "projects",
+            "list",
+            "--type",
+            "product_discovery",
+            "--limit",
+            "100",
+        ],
+    );
+    let discovery_keys: Vec<String> = projects
+        .get("values")
+        .and_then(Value::as_array)
+        .expect("projects list returns values")
+        .iter()
+        .filter_map(|value| value.get("key").and_then(Value::as_str))
+        .map(str::to_string)
+        .collect();
+    assert!(
+        discovery_keys.contains(&project),
+        "expected {project} in product_discovery projects: {discovery_keys:?}"
+    );
+
+    let fields = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "ideas", "fields", &project],
+    );
+    let idea_type = str_at(&fields, &["issueType", "name"]).to_string();
+    let field_list = fields
+        .get("fields")
+        .and_then(Value::as_array)
+        .expect("ideas fields returns a fields array");
+    assert!(
+        !field_list.is_empty(),
+        "expected at least one idea field: {fields:#}"
+    );
+    assert!(
+        field_list
+            .iter()
+            .any(|field| field.get("fieldId").and_then(Value::as_str) == Some("summary")),
+        "expected summary in idea fields: {fields:#}"
+    );
+    assert!(
+        field_list.iter().any(|field| {
+            field
+                .get("fieldId")
+                .and_then(Value::as_str)
+                .is_some_and(|id| id.starts_with("customfield_"))
+        }),
+        "expected at least one Product Discovery custom field: {fields:#}"
+    );
+
+    let listed = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "ideas", "list", "--project", &project],
+    );
+    assert!(
+        listed.get("issues").and_then(Value::as_array).is_some(),
+        "expected issues array from ideas list: {listed:#}"
+    );
+
+    // The mutating stage creates a disposable idea and must be able to clean it
+    // up, so it requires create, edit, and delete permission on the project.
+    // Product Discovery contributor seats typically only have create.
+    let permissions = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "request",
+            "get",
+            "/rest/api/3/mypermissions",
+            "--query",
+            &format!("projectKey={project}"),
+            "--query",
+            "permissions=CREATE_ISSUES,EDIT_ISSUES,DELETE_ISSUES",
+        ],
+    );
+    let has_permission = |name: &str| {
+        permissions
+            .pointer(&format!("/permissions/{name}/havePermission"))
+            .and_then(Value::as_bool)
+            == Some(true)
+    };
+    if !(has_permission("CREATE_ISSUES")
+        && has_permission("EDIT_ISSUES")
+        && has_permission("DELETE_ISSUES"))
+    {
+        eprintln!(
+            "skipping idea CRUD stage: account lacks create/edit/delete on {project} \
+             (needs a Product Discovery creator seat)"
+        );
+        return;
+    }
+
+    let created = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "ideas",
+            "create",
+            "--project",
+            &project,
+            "--summary",
+            &summary,
+            "--description",
+            "created by aai-cli live e2e",
+        ],
+    );
+    let idea_key = str_at(&created, &["key"]).to_string();
+
+    let fetched = cli_required("AAI_E2E_JIRA_PROFILE", &["jira", "ideas", "get", &idea_key]);
+    assert_eq!(str_at(&fetched, &["key"]), idea_key);
+    assert_eq!(str_at(&fetched, &["fields", "summary"]), summary);
+    assert_eq!(
+        str_at(&fetched, &["fields", "issuetype", "name"]),
+        idea_type
+    );
+    assert_eq!(
+        str_at(&fetched, &["fields", "project", "projectTypeKey"]),
+        "product_discovery"
+    );
+
+    let updated_summary = format!("{summary}-updated");
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &[
+            "jira",
+            "ideas",
+            "update",
+            &idea_key,
+            "--summary",
+            &updated_summary,
+        ],
+    );
+    let refetched = cli_required("AAI_E2E_JIRA_PROFILE", &["jira", "ideas", "get", &idea_key]);
+    assert_eq!(str_at(&refetched, &["fields", "summary"]), updated_summary);
+
+    let _ = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "issues", "delete", &idea_key],
+    );
+}
+
+#[test]
 #[ignore = "requires live Jira credentials and a disposable project"]
 fn jira_issue_comments_crud() {
     let Some(project) = env_or_skip("AAI_E2E_JIRA_PROJECT") else {
@@ -1476,6 +1629,10 @@ fn pipedrive_crm_crud_and_labels() {
     );
     let _ = cli_required(
         "AAI_E2E_PIPEDRIVE_PROFILE",
+        &["pipedrive", "deals", "flow", &deal_id, "--limit", "1"],
+    );
+    let _ = cli_required(
+        "AAI_E2E_PIPEDRIVE_PROFILE",
         &["pipedrive", "activities", "list", "--deal-id", &deal_id],
     );
     let _ = cli_required(
@@ -1507,4 +1664,85 @@ fn pipedrive_crm_crud_and_labels() {
         "AAI_E2E_PIPEDRIVE_PROFILE",
         &["pipedrive", "labels", "leads", "delete", &lead_label_id],
     );
+}
+
+#[test]
+#[ignore = "requires live Slack credentials and a seeded test channel"]
+fn slack_channel_read_and_canvas_download() {
+    let Some(channel_id) = env_or_skip("AAI_E2E_SLACK_CHANNEL") else {
+        return;
+    };
+
+    let channels = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "channels", "list", "--limit", "5"],
+    );
+    assert!(channels["channels"].as_array().is_some());
+
+    let channel = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "channels", "get", &channel_id],
+    );
+    assert_eq!(str_at(&channel, &["channel", "id"]), channel_id);
+
+    let files = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "files", "list", &channel_id],
+    );
+    assert!(files["files"].as_array().is_some());
+
+    let first_file_id = files["files"][0]["id"].as_str().map(str::to_string);
+    if let Some(file_id) = first_file_id {
+        let dl_path = std::env::temp_dir().join(unique("aai_e2e_slack_file"));
+        let dl_path_str = dl_path.to_str().unwrap();
+        let downloaded = cli_required(
+            "AAI_E2E_SLACK_PROFILE",
+            &[
+                "slack",
+                "files",
+                "download",
+                &file_id,
+                "--output",
+                dl_path_str,
+            ],
+        );
+        assert_eq!(str_at(&downloaded, &["file_id"]), file_id);
+        let content = std::fs::read(&dl_path).unwrap();
+        assert!(!content.is_empty());
+        let _ = std::fs::remove_file(&dl_path);
+    }
+
+    let bookmarks = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "bookmarks", "list", &channel_id],
+    );
+    assert!(bookmarks["bookmarks"].as_array().is_some());
+    assert_eq!(bookmarks["has_more"], false);
+
+    let links = cli_required(
+        "AAI_E2E_SLACK_PROFILE",
+        &["slack", "links", "list", &channel_id],
+    );
+    assert!(links["links"].as_array().is_some());
+
+    let canvas_id = channel["channel"]["canvas_id"].as_str().map(str::to_string);
+    if let Some(canvas_id) = canvas_id {
+        let dl_path = std::env::temp_dir().join(unique("aai_e2e_slack_canvas"));
+        let dl_path_str = dl_path.to_str().unwrap();
+        let downloaded = cli_required(
+            "AAI_E2E_SLACK_PROFILE",
+            &[
+                "slack",
+                "canvas",
+                "download",
+                &channel_id,
+                "--output",
+                dl_path_str,
+            ],
+        );
+        assert_eq!(str_at(&downloaded, &["canvas_id"]), canvas_id);
+        let content = std::fs::read(&dl_path).unwrap();
+        assert!(!content.is_empty());
+        let _ = std::fs::remove_file(&dl_path);
+    }
 }

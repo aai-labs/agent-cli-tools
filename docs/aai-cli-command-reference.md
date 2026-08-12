@@ -33,6 +33,7 @@ Validation enforces these provider/auth/reference combinations:
 - Apollo: `apollo_api_key` with `api_token_secret`
 - GitHub: `bearer_token` with `token_secret`
 - HubSpot: `hubspot_service_key` or `hubspot_legacy_private_app` with `token_secret`
+- Slack: `bearer_token` with `token_secret`
 - Jira, Confluence, and Bitbucket: `basic_api_token` with `api_token_secret`
 
 ## Generic Authenticated Requests
@@ -48,7 +49,7 @@ aai-cli <service> request patch <relative-path> --allow-write [--json <path|->] 
 aai-cli <service> request delete <relative-path> --allow-write [--json <path|->] [--query key=value ...]
 ```
 
-Supported services: `jira`, `confluence`, `bitbucket`, `github`, `hubspot`, `pipedrive`, `apollo`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
+Supported services: `jira`, `confluence`, `bitbucket`, `github`, `hubspot`, `pipedrive`, `apollo`, `slack`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
 
 The endpoint path must be relative to the configured provider base. Absolute URLs, redirects, embedded queries/fragments, and backslashes are rejected to prevent sending profile authentication to another origin. GET and HEAD reject `--json`; writes require `--allow-write`. Query arguments are repeatable and must use `key=value`.
 
@@ -125,12 +126,36 @@ key,summary,status,issuetype,assignee,created,updated,description,project
 
 Use `--fields` to reduce payload size or request additional fields. Jira `--description` flags are converted to minimal Atlassian Document Format. JSON input can provide raw ADF.
 
+### Ideas (Jira Product Discovery)
+
+```bash
+aai-cli jira ideas list [--project KEY] [--status NAMES] [--assignee me|ACCOUNT_ID] [--text TEXT] [--updated-since 7d|DATE] [--fields FIELD_LIST] [--limit N]
+aai-cli jira ideas get <idea-key-or-id>
+aai-cli jira ideas create [--json <path|->] [--project KEY] [--type NAME] [--summary TEXT] [--description TEXT]
+aai-cli jira ideas update <idea-key-or-id> [--json <path|->] [--summary TEXT] [--description TEXT]
+aai-cli jira ideas fields <project-key-or-id> [--type NAME] [--limit N]
+```
+
+Ideas are Jira issues in Product Discovery projects; `ideas list` always scopes its JQL to `projectType = product_discovery` and accepts the same filter flags as `issues list` (except `--type` and `--sprint`). `ideas create` defaults the issue type name to `Idea`; override with `--type` when the project renames it.
+
+Project-specific idea fields (Impact, Effort, ratings, and other Product Discovery custom fields) are custom fields. Discover them with `ideas fields`, which resolves the project's idea issue type (pass `--type` when the project exposes several) and returns each field's `fieldId`, `schema`, `operations`, and trimmed `allowedValues`, plus the resolved `issueType`. Set those fields through `--json`:
+
+```bash
+aai-cli --profile jira-work jira ideas fields BAW
+aai-cli --profile jira-work jira ideas create --project BAW --summary "Faster onboarding" \
+  --json '{"fields":{"customfield_10011":{"id":"3"}}}'
+```
+
+Votes, reactions, insights, and formula field values are not exposed by Atlassian's public APIs.
+
 ### Projects
 
 ```bash
-aai-cli jira projects list [--limit N]
+aai-cli jira projects list [--type product_discovery|software|business|service_desk] [--limit N]
 aai-cli jira projects get <project-key-or-id>
 ```
+
+Use `--type product_discovery` to find Jira Product Discovery projects.
 
 ## Confluence
 
@@ -231,6 +256,7 @@ aai-cli pipedrive deals view <deal-id> [--limit N] [--include-labels] [--include
 aai-cli pipedrive deals activities <deal-id> [--limit N]
 aai-cli pipedrive deals notes <deal-id> [--limit N]
 aai-cli pipedrive deals mail-messages <deal-id> [--limit N]
+aai-cli pipedrive deals flow <deal-id> [--limit N]
 aai-cli pipedrive deals create [--json <path|->] --title TEXT [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
 aai-cli pipedrive deals update <deal-id> [--json <path|->] [--title TEXT] [--person-id ID] [--org-id ID] [--value NUM] [--currency CODE] [--pipeline-id ID] [--stage-id ID] [--label-ids CSV]
 aai-cli pipedrive deals delete <deal-id>
@@ -260,6 +286,32 @@ aai-cli pipedrive mailbox threads list [--folder inbox|drafts|sent|archive] [--l
 aai-cli pipedrive mailbox threads get <thread-id>
 aai-cli pipedrive mailbox threads messages <thread-id>
 ```
+
+## Slack
+
+Slack is a read-only, bot-token integration: channel metadata, files, bookmarks, links, and channel canvas download. There is no message-sending, no OAuth install flow, and no write endpoints.
+
+Configure `profile.base_url` to override the default `https://slack.com/api`; almost never needed.
+
+```bash
+aai-cli slack channels list [--limit N] [--types public_channel,private_channel]
+aai-cli slack channels get <channel-id>
+aai-cli slack files list <channel-id> [--limit N]
+aai-cli slack files download <file-id> --output PATH
+aai-cli slack bookmarks list <channel-id>
+aai-cli slack links list <channel-id> [--limit N]
+aai-cli slack canvas download <channel-id> --output PATH
+```
+
+`channels get` surfaces a convenience `canvas_id` field (extracted from `channel.properties.tabs[]`) alongside the full provider response, or `null` if the channel has no canvas.
+
+`bookmarks list` has no `--limit` — Slack returns all (at most 100) bookmarks for a channel in one unpaginated call.
+
+`links list` extracts links from `conversations.history` by walking each message's `blocks[].elements[].elements[]` for `type == "link"`. It intentionally does not scan message text, which Slack truncates and HTML-escapes. Each result is `{url, text, message_ts}` — no `message_permalink`; building one correctly requires either an extra `chat.getPermalink` call per link or reconstructing a URL that's wrong in thread/Enterprise-Grid edge cases, so it's omitted. Use `message_ts` with the `request` escape hatch (`chat.getPermalink`) if a permalink is needed for a specific message.
+
+`files download` takes a file ID from `files list`'s `id` field, resolves its `url_private_download` via `files.info`, and writes the raw bytes to `--output` — returns JSON metadata (`output`, `bytes`, `file_id`, `title`) and never prints content to stdout.
+
+`canvas download` resolves the channel's canvas, downloads it via `url_private_download`, and writes it to `--output`. Like the GitHub Actions and Bitbucket Pipelines download commands, it returns JSON metadata (`output`, `bytes`, `canvas_id`, `title`) and never prints content to stdout. Canvas content is written as an HTML fragment (Slack's internal Quip-document format), not markdown. A channel with no canvas returns `not_found`. `files download` and `canvas download` share the same download mechanism internally — the only difference is how each resolves the file ID to download.
 
 ## Apollo
 
@@ -406,7 +458,7 @@ Provider response fields remain at their original locations, except bare provide
 
 When `next_command` is present, run it to retrieve more results. Generic requests preserve existing query filters while replacing or adding continuation parameters. Typed commands that aggregate to `--limit` may suggest rerunning with a larger limit; this retrieves the previous results plus additional results rather than only the next page. If `status` is `unknown`, increase `--limit` or use a generic authenticated request with the provider's documented pagination parameters.
 
-For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, Apollo, and HubSpot list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
+For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, Apollo, HubSpot, and Slack list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
 
 Covered operations:
 
@@ -447,6 +499,8 @@ Covered operations:
 - `hubspot files list`
 - `hubspot events occurrences list`
 - `hubspot conversations inboxes|threads|custom-channels list`
+- `slack channels list`
+- `slack links list`
 
 Agents should set the smallest useful `--limit`. Large limits can increase latency and provider rate-limit pressure.
 

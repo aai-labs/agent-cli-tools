@@ -323,6 +323,13 @@ fn validate_profile_table(
             &["hubspot_service_key", "hubspot_legacy_private_app"],
             "token_secret",
         ),
+        "slack" => require_auth(
+            profile,
+            operation,
+            auth_type,
+            "bearer_token",
+            "token_secret",
+        ),
         "jira" | "confluence" | "bitbucket" => require_auth(
             profile,
             operation,
@@ -679,6 +686,7 @@ token_secret = "github.token"
             ("github", "bearer_token", "token_secret"),
             ("hubspot", "hubspot_service_key", "token_secret"),
             ("hubspot", "hubspot_legacy_private_app", "token_secret"),
+            ("slack", "bearer_token", "token_secret"),
             ("jira", "basic_api_token", "api_token_secret"),
             ("confluence", "basic_api_token", "api_token_secret"),
             ("bitbucket", "basic_api_token", "api_token_secret"),
