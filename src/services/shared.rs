@@ -193,6 +193,28 @@ pub(crate) fn slack_base(profile: &Profile) -> String {
         .unwrap_or_else(|| "https://slack.com/api".to_string())
 }
 
+pub(crate) fn posthog_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
+        .unwrap_or_else(|| "https://us.i.posthog.com".to_string())
+}
+
+pub(crate) fn posthog_project_id<'a>(
+    profile: &'a Profile,
+    arg: Option<&'a str>,
+    operation: &'static str,
+) -> Result<&'a str, AppError> {
+    arg.or(profile.project_id.as_deref()).ok_or_else(|| {
+        AppError::service_config(
+            "posthog",
+            operation,
+            format!("posthog.{operation} requires --project-id or profile.project_id (or POSTHOG_PROJECT_ID)"),
+        )
+    })
+}
+
 pub(crate) fn trim_url(value: &str) -> String {
     value.trim_end_matches('/').to_string()
 }

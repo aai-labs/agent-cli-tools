@@ -26,6 +26,7 @@ const SKILL_COMMANDS: &[(&str, &[&str])] = &[
     ("aai-google-sheets", &["sheets"]),
     ("aai-jira", &["jira"]),
     ("aai-pipedrive", &["pipedrive"]),
+    ("aai-posthog", &["posthog"]),
     ("aai-slack", &["slack"]),
     ("aai-zoho-mail", &["email"]),
 ];
@@ -42,6 +43,7 @@ const TOP_LEVEL_COMMANDS: &[&str] = &[
     "sheets",
     "excel",
     "slack",
+    "posthog",
     "config",
     "secrets",
     "skills",
