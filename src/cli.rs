@@ -42,6 +42,8 @@ pub enum Command {
     Secrets(SecretsCommand),
     /// Read Slack channels, files, bookmarks, links, and channel canvases.
     Slack(SlackCommand),
+    /// Read OpenPanel projects, insights, profiles, and raw event exports.
+    Openpanel(OpenpanelCommand),
 }
 
 #[derive(Debug, Args)]
@@ -3551,4 +3553,245 @@ pub struct SlackCanvasDownload {
     pub channel_id: String,
     #[arg(long)]
     pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelCommand {
+    #[command(subcommand)]
+    pub resource: OpenpanelResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum OpenpanelResource {
+    /// List and inspect OpenPanel projects (requires a root client).
+    Projects(OpenpanelProjectsCommand),
+    /// Export raw tracked events (requires a read or root client).
+    Events(OpenpanelEventsCommand),
+    /// Query aggregated analytics: metrics, top pages, referrers, devices, geo.
+    Insights(OpenpanelInsightsCommand),
+    /// Search user profiles and inspect a single profile's recent events.
+    Profiles(OpenpanelProfilesCommand),
+    /// Call an uncommon OpenPanel endpoint with profile authentication.
+    Request(GenericRequest),
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelProjectsCommand {
+    #[command(subcommand)]
+    pub action: OpenpanelProjectsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum OpenpanelProjectsAction {
+    /// List every project in the client's organization.
+    List,
+    /// Get a single project by ID.
+    Get(OpenpanelProjectId),
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelProjectId {
+    pub project_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelEventsCommand {
+    #[command(subcommand)]
+    pub action: OpenpanelEventsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum OpenpanelEventsAction {
+    /// Export a paginated list of raw tracked events.
+    Export(OpenpanelEventsExport),
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelEventsExport {
+    /// Project to export from. Required unless the client is scoped to a single project.
+    #[arg(long)]
+    pub project_id: Option<String>,
+    /// Event name to filter by. Repeat for multiple names.
+    #[arg(long = "event")]
+    pub event: Vec<String>,
+    #[arg(long)]
+    pub profile_id: Option<String>,
+    /// Inclusive range start, any format accepted by the JS Date constructor (e.g. 2024-01-01).
+    #[arg(long)]
+    pub start: Option<String>,
+    /// Inclusive range end, same format as --start.
+    #[arg(long)]
+    pub end: Option<String>,
+    /// Total events to return across pages.
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Comma-separated extra data to attach: profile, meta.
+    #[arg(long)]
+    pub includes: Option<String>,
+    /// JSON array of chart event filters, passed through to the provider as-is.
+    #[arg(long)]
+    pub filters: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelInsightsCommand {
+    #[command(subcommand)]
+    pub action: OpenpanelInsightsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum OpenpanelInsightsAction {
+    /// Aggregated visitors, sessions, and bounce rate for a date range.
+    Metrics(OpenpanelDateRangeArgs),
+    /// Top pages by pageviews for a date range.
+    Pages(OpenpanelBreakdownListArgs),
+    /// Top referrer/UTM breakdown for a date range.
+    Referrers(OpenpanelReferrersArgs),
+    /// Top device/browser/OS breakdown for a date range.
+    Devices(OpenpanelDevicesArgs),
+    /// Top country/region/city breakdown for a date range.
+    Geo(OpenpanelGeoArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelDateRangeArgs {
+    /// Project to query. Falls back to profile.project_id.
+    #[arg(long)]
+    pub project_id: Option<String>,
+    #[arg(long)]
+    pub start_date: Option<String>,
+    #[arg(long)]
+    pub end_date: Option<String>,
+    /// Relative range preset (e.g. 7d, 30d, 3m), used when --start-date is omitted.
+    #[arg(long)]
+    pub range: Option<String>,
+    /// JSON array of chart event filters, passed through to the provider as-is.
+    #[arg(long)]
+    pub filters: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelBreakdownListArgs {
+    #[command(flatten)]
+    pub date_range: OpenpanelDateRangeArgs,
+    #[arg(long)]
+    pub cursor: Option<u64>,
+    #[arg(long, default_value_t = 10)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelReferrersArgs {
+    #[command(flatten)]
+    pub list: OpenpanelBreakdownListArgs,
+    #[arg(long, value_enum, default_value_t = OpenpanelReferrerBreakdown::ReferrerName)]
+    pub breakdown: OpenpanelReferrerBreakdown,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum OpenpanelReferrerBreakdown {
+    Referrer,
+    ReferrerName,
+    ReferrerType,
+    UtmSource,
+    UtmMedium,
+    UtmCampaign,
+    UtmTerm,
+    UtmContent,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelDevicesArgs {
+    #[command(flatten)]
+    pub list: OpenpanelBreakdownListArgs,
+    #[arg(long, value_enum, default_value_t = OpenpanelDeviceBreakdown::Device)]
+    pub breakdown: OpenpanelDeviceBreakdown,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum OpenpanelDeviceBreakdown {
+    Device,
+    Brand,
+    Model,
+    Browser,
+    BrowserVersion,
+    Os,
+    OsVersion,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelGeoArgs {
+    #[command(flatten)]
+    pub list: OpenpanelBreakdownListArgs,
+    #[arg(long, value_enum, default_value_t = OpenpanelGeoBreakdown::Country)]
+    pub breakdown: OpenpanelGeoBreakdown,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum OpenpanelGeoBreakdown {
+    Country,
+    Region,
+    City,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelProfilesCommand {
+    #[command(subcommand)]
+    pub action: OpenpanelProfilesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum OpenpanelProfilesAction {
+    /// Search and filter user profiles.
+    List(OpenpanelProfilesList),
+    /// Get a single profile with its most recent events.
+    Get(OpenpanelProfileGet),
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelProfilesList {
+    /// Project to query. Falls back to profile.project_id.
+    #[arg(long)]
+    pub project_id: Option<String>,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long)]
+    pub email: Option<String>,
+    #[arg(long)]
+    pub country: Option<String>,
+    #[arg(long)]
+    pub city: Option<String>,
+    #[arg(long)]
+    pub device: Option<String>,
+    #[arg(long)]
+    pub browser: Option<String>,
+    #[arg(long)]
+    pub inactive_days: Option<u32>,
+    #[arg(long)]
+    pub min_sessions: Option<u32>,
+    #[arg(long)]
+    pub performed_event: Option<String>,
+    /// JSON array of chart event filters, passed through to the provider as-is.
+    #[arg(long)]
+    pub filters: Option<String>,
+    #[arg(long, value_enum, default_value_t = OpenpanelSortOrder::Desc)]
+    pub sort_order: OpenpanelSortOrder,
+    #[arg(long, default_value_t = 20)]
+    pub limit: u32,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum OpenpanelSortOrder {
+    Asc,
+    Desc,
+}
+
+#[derive(Debug, Args)]
+pub struct OpenpanelProfileGet {
+    pub profile_id: String,
+    /// Project to query. Falls back to profile.project_id.
+    #[arg(long)]
+    pub project_id: Option<String>,
+    #[arg(long, default_value_t = 20)]
+    pub event_limit: u32,
 }
