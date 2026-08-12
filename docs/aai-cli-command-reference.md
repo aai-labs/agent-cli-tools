@@ -85,7 +85,7 @@ aai-cli hubspot conversations custom-channels list|get|create ...
 
 Recommended scopes depend on the command:
 
-- CRM objects: the matching object scopes, such as `crm.objects.contacts.read`, `crm.objects.companies.read`, and `crm.objects.deals.read`; tickets use HubSpot ticket scopes and account permissions.
+- CRM objects: the matching object scopes, such as `crm.objects.contacts.read`, `crm.objects.companies.read`, `crm.objects.deals.read`, and `crm.objects.tickets.read`; account tier and object permissions also apply.
 - Files: `files`; hidden or deleted file reads may also need `files.ui_hidden.read`.
 - Event occurrence reads: `business-intelligence`; account tier can still limit access.
 - Custom behavioral event sends: `analytics.behavioral_events.send`.
@@ -406,7 +406,7 @@ Provider response fields remain at their original locations, except bare provide
 
 When `next_command` is present, run it to retrieve more results. Generic requests preserve existing query filters while replacing or adding continuation parameters. Typed commands that aggregate to `--limit` may suggest rerunning with a larger limit; this retrieves the previous results plus additional results rather than only the next page. If `status` is `unknown`, increase `--limit` or use a generic authenticated request with the provider's documented pagination parameters.
 
-For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, and Apollo list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
+For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, Apollo, and HubSpot list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
 
 Covered operations:
 
@@ -442,6 +442,11 @@ Covered operations:
 - `apollo emails search`
 - `apollo news search`
 - `apollo conversations search`
+- `hubspot crm contacts|companies|deals|tickets list`
+- `hubspot crm contacts|companies|deals|tickets search`
+- `hubspot files list`
+- `hubspot events occurrences list`
+- `hubspot conversations inboxes|threads|custom-channels list`
 
 Agents should set the smallest useful `--limit`. Large limits can increase latency and provider rate-limit pressure.
 

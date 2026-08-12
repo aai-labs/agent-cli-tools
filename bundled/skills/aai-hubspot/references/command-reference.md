@@ -30,7 +30,7 @@ aai-cli hubspot request get /crm/v3/objects/contacts
 
 ## Scope Hints
 
-- CRM objects: matching object scopes such as `crm.objects.contacts.read`, `crm.objects.companies.read`, and `crm.objects.deals.read`.
+- CRM objects: matching object scopes such as `crm.objects.contacts.read`, `crm.objects.companies.read`, `crm.objects.deals.read`, and `crm.objects.tickets.read`.
 - Files: `files`; hidden/deleted reads may also need `files.ui_hidden.read`.
 - Event occurrence reads: `business-intelligence`.
 - Custom behavioral event sends: `analytics.behavioral_events.send`.
@@ -43,3 +43,7 @@ aai-cli hubspot request get /crm/v3/objects/contacts
 HubSpot auth failures preserve the provider response under `details.provider` and add `details.auth_type`, `details.endpoint`, `details.required_scopes`, and `details.remediation`.
 
 Custom channel endpoints are not supported for legacy private app tokens. Use a supported HubSpot auth model for those commands.
+
+## Pagination
+
+List and search commands follow HubSpot's `paging.next.after` cursor and aggregate pages up to `--limit`, preserving the provider `results`/`paging` response shape. Use `--after` (or `after` in a search JSON body) to resume from a cursor. The `_aai.pagination` metadata reports remaining continuation and a suggested `next_command`.

@@ -33,7 +33,7 @@ aai-cli hubspot request get /crm/v3/objects/contacts
 
 ## Scope Hints
 
-- CRM objects need the matching HubSpot CRM object scopes and account permissions, for example `crm.objects.contacts.read`, `crm.objects.companies.read`, and `crm.objects.deals.read`.
+- CRM objects need the matching HubSpot CRM object scopes and account permissions, for example `crm.objects.contacts.read`, `crm.objects.companies.read`, `crm.objects.deals.read`, and `crm.objects.tickets.read`.
 - Files need `files`; hidden or deleted file reads may also need `files.ui_hidden.read`.
 - Event occurrence reads need `business-intelligence`.
 - Custom behavioral event sends need `analytics.behavioral_events.send`.

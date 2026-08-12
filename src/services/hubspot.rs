@@ -42,7 +42,7 @@ pub(crate) async fn dispatch(
     match command.resource {
         HubspotResource::Health => {
             let cap = Capability {
-                endpoint: "/oauth/v1/access-tokens/{token}",
+                endpoint: "/account-info/v3/details",
                 required_scopes: &[],
                 caveat: None,
             };
@@ -100,18 +100,30 @@ async fn crm_object(
 ) -> Result<Value, AppError> {
     match actions.action {
         HubspotCrmObjectAction::List(args) => {
-            let mut path = format!("/crm/v3/objects/{object}?limit={}", args.limit);
-            push_query(&mut path, "after", args.after.as_deref());
-            push_query(&mut path, "properties", args.properties.as_deref());
             let operation = crm_operation(operation_prefix, "list");
-            request(
+            let capability = crm_capability(object);
+            let HubspotListArgs {
+                limit,
+                after,
+                properties,
+            } = args;
+            paginate(
                 client,
                 ctx,
                 operation,
-                Method::GET,
-                &path,
-                None,
-                crm_capability(object),
+                limit,
+                capability,
+                after,
+                |per_page, cursor| {
+                    let mut path = format!("/crm/v3/objects/{object}?limit={}", per_page);
+                    push_query(&mut path, "after", cursor.as_deref());
+                    push_query(&mut path, "properties", properties.as_deref());
+                    (
+                        Method::GET,
+                        format!("{}{}", hubspot_base(ctx.profile()), path),
+                        None,
+                    )
+                },
             )
             .await
         }
@@ -141,19 +153,37 @@ async fn crm_object(
             .await
         }
         HubspotCrmObjectAction::Search(args) => {
-            let mut body = input::read_json_arg("hubspot", "crm.search", args.json.as_deref())?;
-            if let Value::Object(ref mut object) = body {
-                object.entry("limit").or_insert(json!(args.limit));
-            }
             let operation = crm_operation(operation_prefix, "search");
-            request(
+            let capability = crm_capability(object);
+            let HubspotSearchArgs { json, limit } = args;
+            let base_body = input::read_json_arg("hubspot", "crm.search", json.as_deref())?;
+            let initial_after = base_body
+                .get("after")
+                .and_then(Value::as_str)
+                .filter(|value| !value.is_empty())
+                .map(ToString::to_string);
+            let search_path = format!("/crm/v3/objects/{object}/search");
+            paginate(
                 client,
                 ctx,
                 operation,
-                Method::POST,
-                &format!("/crm/v3/objects/{object}/search"),
-                Some(body),
-                crm_capability(object),
+                limit,
+                capability,
+                initial_after,
+                |per_page, cursor| {
+                    let mut body = base_body.clone();
+                    input::set_u64(&mut body, "limit", Some(per_page as u64));
+                    match cursor {
+                        Some(cursor) => input::ensure_object(&mut body)
+                            .insert("after".to_string(), json!(cursor)),
+                        None => input::ensure_object(&mut body).remove("after"),
+                    };
+                    (
+                        Method::POST,
+                        format!("{}{search_path}", hubspot_base(ctx.profile())),
+                        Some(body),
+                    )
+                },
             )
             .await
         }
@@ -167,20 +197,32 @@ async fn files(
 ) -> Result<Value, AppError> {
     match command.action {
         HubspotFilesAction::List(args) => {
-            let mut path = format!("/files/v3/files/search?limit={}", args.limit);
-            push_query(&mut path, "after", args.after.as_deref());
-            push_query(&mut path, "parentFolderId", args.folder_id.as_deref());
-            request(
+            let capability = Capability {
+                endpoint: "/files/v3/files",
+                required_scopes: FILES_SCOPES,
+                caveat: None,
+            };
+            let HubspotFilesList {
+                limit,
+                after,
+                folder_id,
+            } = args;
+            paginate(
                 client,
                 ctx,
                 "files.list",
-                Method::GET,
-                &path,
-                None,
-                Capability {
-                    endpoint: "/files/v3/files/search",
-                    required_scopes: FILES_SCOPES,
-                    caveat: None,
+                limit,
+                capability,
+                after,
+                |per_page, cursor| {
+                    let mut path = format!("/files/v3/files?limit={}", per_page);
+                    push_query(&mut path, "after", cursor.as_deref());
+                    push_query(&mut path, "parentFolderId", folder_id.as_deref());
+                    (
+                        Method::GET,
+                        format!("{}{}", hubspot_base(ctx.profile()), path),
+                        None,
+                    )
                 },
             )
             .await
@@ -217,23 +259,32 @@ async fn events(
     match command.resource {
         HubspotEventsResource::Occurrences(command) => match command.action {
             HubspotEventOccurrencesAction::List(args) => {
-                let mut path = format!(
-                    "/events/v3/events/{}?limit={}",
-                    enc(&args.event_type),
-                    args.limit
-                );
-                push_query(&mut path, "after", args.after.as_deref());
-                request(
+                let capability = Capability {
+                    endpoint: "/events/v3/events/{eventType}",
+                    required_scopes: EVENT_OCCURRENCE_SCOPES,
+                    caveat: Some("Event occurrence reads can also be limited by account tier."),
+                };
+                let HubspotEventOccurrencesList {
+                    event_type,
+                    limit,
+                    after,
+                } = args;
+                paginate(
                     client,
                     ctx,
                     "events.occurrences.list",
-                    Method::GET,
-                    &path,
-                    None,
-                    Capability {
-                        endpoint: "/events/v3/events/{eventType}",
-                        required_scopes: EVENT_OCCURRENCE_SCOPES,
-                        caveat: Some("Event occurrence reads can also be limited by account tier."),
+                    limit,
+                    capability,
+                    after,
+                    |per_page, cursor| {
+                        let mut path =
+                            format!("/events/v3/events/{}?limit={}", enc(&event_type), per_page);
+                        push_query(&mut path, "after", cursor.as_deref());
+                        (
+                            Method::GET,
+                            format!("{}{}", hubspot_base(ctx.profile()), path),
+                            None,
+                        )
                     },
                 )
                 .await
@@ -416,19 +467,27 @@ async fn simple_list(
     args: HubspotSimpleList,
     required_scopes: &'static [&'static str],
 ) -> Result<Value, AppError> {
-    let mut path = format!("{endpoint}?limit={}", args.limit);
-    push_query(&mut path, "after", args.after.as_deref());
-    request(
+    let capability = Capability {
+        endpoint,
+        required_scopes,
+        caveat: None,
+    };
+    let HubspotSimpleList { limit, after } = args;
+    paginate(
         client,
         ctx,
         operation,
-        Method::GET,
-        &path,
-        None,
-        Capability {
-            endpoint,
-            required_scopes,
-            caveat: None,
+        limit,
+        capability,
+        after,
+        |per_page, cursor| {
+            let mut path = format!("{endpoint}?limit={}", per_page);
+            push_query(&mut path, "after", cursor.as_deref());
+            (
+                Method::GET,
+                format!("{}{}", hubspot_base(ctx.profile()), path),
+                None,
+            )
         },
     )
     .await
@@ -448,6 +507,80 @@ async fn request(
         .request("hubspot", operation, ctx.profile(), method, url, body)
         .await
         .map_err(|err| enrich_auth_error(ctx.profile(), operation, capability, err))
+}
+
+const HUBSPOT_MAX_PER_PAGE: u32 = 100;
+
+async fn paginate<F>(
+    client: &ApiClient,
+    ctx: &Context,
+    operation: &'static str,
+    limit: u32,
+    capability: Capability,
+    initial_after: Option<String>,
+    mut build: F,
+) -> Result<Value, AppError>
+where
+    F: FnMut(u32, Option<String>) -> (Method, String, Option<Value>),
+{
+    if limit == 0 {
+        return Ok(empty_results());
+    }
+    let mut after = initial_after;
+    let mut first: Option<Value> = None;
+    let mut values: Vec<Value> = Vec::new();
+    loop {
+        let per_page = (limit - values.len() as u32).clamp(1, HUBSPOT_MAX_PER_PAGE);
+        let (method, url, body) = build(per_page, after.clone());
+        let page = client
+            .request("hubspot", operation, ctx.profile(), method, url, body)
+            .await
+            .map_err(|err| enrich_auth_error(ctx.profile(), operation, capability, err))?;
+        if first.is_none() {
+            first = Some(page.clone());
+        }
+        let next_after = page
+            .pointer("/paging/next/after")
+            .and_then(Value::as_str)
+            .filter(|value| !value.is_empty())
+            .map(ToString::to_string);
+        let page_values = page
+            .get("results")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let count = page_values.len();
+        values.extend(
+            page_values
+                .into_iter()
+                .take((limit as usize).saturating_sub(values.len())),
+        );
+        after = next_after;
+        if values.len() >= limit as usize || after.is_none() || count < per_page as usize {
+            break;
+        }
+    }
+    Ok(aggregate_results(first, values, after))
+}
+
+fn empty_results() -> Value {
+    json!({ "results": [] })
+}
+
+fn aggregate_results(first: Option<Value>, values: Vec<Value>, after: Option<String>) -> Value {
+    let mut response = first.unwrap_or_else(empty_results);
+    if let Some(object) = response.as_object_mut() {
+        object.insert("results".to_string(), Value::Array(values));
+        match after {
+            Some(after) => {
+                object.insert("paging".to_string(), json!({ "next": { "after": after } }));
+            }
+            None => {
+                object.remove("paging");
+            }
+        }
+    }
+    response
 }
 
 fn crm_operation(prefix: &'static str, action: &'static str) -> &'static str {
@@ -484,7 +617,7 @@ fn crm_capability(object: &str) -> Capability {
         required_scopes: match object {
             "companies" => &["crm.objects.companies.read"],
             "deals" => &["crm.objects.deals.read"],
-            "tickets" => &["tickets"],
+            "tickets" => &["crm.objects.tickets.read"],
             _ => CRM_READ_SCOPES,
         },
         caveat: Some("CRM endpoints can also be limited by account tier and object permissions."),
@@ -722,6 +855,54 @@ mod tests {
         assert_eq!(
             err.details.unwrap()["auth_type"],
             "hubspot_legacy_private_app"
+        );
+    }
+
+    #[test]
+    fn aggregate_results_advances_cursor_and_preserves_extra_fields() {
+        let first = json!({
+            "results": [{"id": 1}, {"id": 2}],
+            "paging": { "next": { "after": "page2" } },
+            "extra": "kept"
+        });
+        let aggregated = aggregate_results(
+            Some(first),
+            vec![json!({"id": 1}), json!({"id": 2}), json!({"id": 3})],
+            Some("page3".to_string()),
+        );
+        assert_eq!(aggregated["results"].as_array().unwrap().len(), 3);
+        assert_eq!(aggregated["paging"]["next"]["after"], "page3");
+        assert_eq!(aggregated["extra"], "kept");
+    }
+
+    #[test]
+    fn aggregate_results_drops_paging_when_exhausted() {
+        let first = json!({
+            "results": [{"id": 1}],
+            "paging": { "next": { "after": "page2" } }
+        });
+        let aggregated = aggregate_results(Some(first), vec![json!({"id": 1})], None);
+        assert!(aggregated.get("paging").is_none());
+        assert_eq!(aggregated["results"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn crm_capability_reports_dot_separated_tickets_scope() {
+        assert_eq!(
+            crm_capability("tickets").required_scopes,
+            &["crm.objects.tickets.read"]
+        );
+        assert_eq!(
+            crm_capability("contacts").required_scopes,
+            &["crm.objects.contacts.read"]
+        );
+        assert_eq!(
+            crm_capability("companies").required_scopes,
+            &["crm.objects.companies.read"]
+        );
+        assert_eq!(
+            crm_capability("deals").required_scopes,
+            &["crm.objects.deals.read"]
         );
     }
 }
