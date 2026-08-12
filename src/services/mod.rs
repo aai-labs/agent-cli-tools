@@ -3,6 +3,7 @@ pub(crate) mod bitbucket;
 pub(crate) mod calendar;
 pub(crate) mod confluence;
 pub(crate) mod email;
+pub(crate) mod excel;
 pub(crate) mod generic_request;
 pub(crate) mod github;
 pub(crate) mod jira;
@@ -32,6 +33,7 @@ pub async fn dispatch(ctx: &Context, command: Command) -> Result<Value, AppError
         Command::Openpanel(command) => openpanel::dispatch(&client, ctx, command).await,
         Command::Config(_) => unreachable!("config commands are dispatched before context loading"),
         Command::Skills(_) => unreachable!("skills commands are dispatched before context loading"),
+        Command::Excel(_) => unreachable!("excel commands are dispatched before context loading"),
         Command::Secrets(command) => crate::secrets::dispatch(ctx, command),
     }
 }
