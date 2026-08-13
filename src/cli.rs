@@ -45,6 +45,8 @@ pub enum Command {
     Secrets(SecretsCommand),
     /// Read Slack channels, files, bookmarks, links, and channel canvases.
     Slack(SlackCommand),
+    /// Read PostHog projects, queries, insights, persons, cohorts, dashboards, and annotations.
+    Posthog(PosthogCommand),
 }
 
 #[derive(Debug, Args)]
@@ -3663,4 +3665,187 @@ pub struct SlackCanvasDownload {
     pub channel_id: String,
     #[arg(long)]
     pub output: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogCommand {
+    #[command(subcommand)]
+    pub resource: PosthogResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogResource {
+    /// Read PostHog projects.
+    Projects(PosthogProjectsCommand),
+    /// Execute HogQL or JSON analytics queries against PostHog events.
+    Events(PosthogEventsCommand),
+    /// List and read saved insights (trends, funnels, retention, paths, lifecycle).
+    Insights(PosthogInsightsCommand),
+    /// List and inspect persons/users tracked in PostHog.
+    Persons(PosthogPersonsCommand),
+    /// List and inspect user cohorts.
+    Cohorts(PosthogCohortsCommand),
+    /// List and read team dashboards.
+    Dashboards(PosthogDashboardsCommand),
+    /// Read release and experiment annotations.
+    Annotations(PosthogAnnotationsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogProjectsCommand {
+    #[command(subcommand)]
+    pub action: PosthogProjectsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogProjectsAction {
+    /// List accessible PostHog projects.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific PostHog project.
+    Get(PosthogProjectIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogProjectIdArg {
+    #[arg(long)]
+    pub project_id: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogProjectListArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long, default_value_t = 0)]
+    pub offset: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogEventsCommand {
+    #[command(subcommand)]
+    pub action: PosthogEventsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogEventsAction {
+    /// Execute a query (HogQL query string or JSON payload) against PostHog events.
+    Query(PosthogEventsQueryArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogEventsQueryArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    /// HogQL query string (e.g. "SELECT event, count() FROM events GROUP BY event LIMIT 10") or JSON query object string.
+    #[arg(long)]
+    pub query: Option<String>,
+    /// Path to a JSON file containing the PostHog query payload object.
+    #[arg(long)]
+    pub query_file: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogInsightsCommand {
+    #[command(subcommand)]
+    pub action: PosthogInsightsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogInsightsAction {
+    /// List saved team insights.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific insight.
+    Get(PosthogInsightGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogInsightGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub insight_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogPersonsCommand {
+    #[command(subcommand)]
+    pub action: PosthogPersonsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogPersonsAction {
+    /// List persons/users tracked in PostHog.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific person profile.
+    Get(PosthogPersonGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogPersonGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub person_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogCohortsCommand {
+    #[command(subcommand)]
+    pub action: PosthogCohortsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogCohortsAction {
+    /// List user cohorts.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific cohort.
+    Get(PosthogCohortGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogCohortGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub cohort_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogDashboardsCommand {
+    #[command(subcommand)]
+    pub action: PosthogDashboardsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogDashboardsAction {
+    /// List team dashboards.
+    List(PosthogProjectListArgs),
+    /// Get details and insight tiles of a specific dashboard.
+    Get(PosthogDashboardGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogDashboardGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub dashboard_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogAnnotationsCommand {
+    #[command(subcommand)]
+    pub action: PosthogAnnotationsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogAnnotationsAction {
+    /// List release and experiment annotations.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific annotation.
+    Get(PosthogAnnotationGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogAnnotationGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub annotation_id: String,
 }
