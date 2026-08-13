@@ -304,15 +304,20 @@ aai-cli openpanel insights geo [--breakdown country|region|city] [date/cursor/li
 
 aai-cli openpanel profiles list [--project-id ID] [--name X] [--email X] [--country X] [--city X] [--device X] [--browser X] [--inactive-days N] [--min-sessions N] [--performed-event NAME] [--filters JSON] [--sort-order asc|desc] [--limit N]
 aai-cli openpanel profiles get <profile-id> [--project-id ID] [--event-limit N]
+
+aai-cli openpanel request get /manage/projects
+aai-cli openpanel request get /export/events --query projectId=proj_abc123 --query limit=1
 ```
 
 `events export`'s `--project-id` is optional — omit it when the profile's client is already scoped to a single project; it's otherwise required. `--event` may be repeated for multiple event names. `events export` paginates internally: `--limit` (default 50) is the total row count wanted, fetched across as many `page`s as needed (provider page size capped at 1000); the response carries the last page's `meta` plus an aggregated `data` array and a `has_more` flag.
 
 `insights`/`profiles` all require a project ID in the URL, so `--project-id` is effectively mandatory unless `profile.project_id` is set.
 
-`insights referrers`/`devices`/`geo` map their `--breakdown` value to the provider's snake_case dimension name (e.g. `--breakdown referrer-name` requests the `referrer_name` breakdown) and support `--cursor`/`--limit`/`--filters`, unlike the newer `/traffic/*` endpoints which return every row unpaginated — see [docs/services/openpanel.md](../services/openpanel.md) for why the older per-dimension routes were used.
+`insights referrers`/`devices`/`geo` map their `--breakdown` value to the provider's snake_case dimension name (e.g. `--breakdown referrer-name` requests the `referrer_name` breakdown) and accept `--cursor`/`--limit`/`--filters`, unlike the newer `/traffic/*` endpoints — see [docs/services/openpanel.md](../services/openpanel.md) for why the older per-dimension routes were used. In practice the provider ignores `--cursor`/`--limit` on these routes and on `insights pages`, returning every breakdown row for the range — in no dependable order — so "top N" means sorting and slicing client-side. Only `--filters` takes effect, and only `events export` truly paginates (and only above `--limit 1000`, since the page size is `min(--limit, 1000)`). A `{ "name": null, ... }` row in any breakdown is the bucket for traffic with no value for that dimension, not an empty result.
 
 `--filters` on any command is a raw JSON array of provider chart-event filters, passed through unvalidated beyond well-formed JSON.
+
+`request` calls an uncommon endpoint directly with profile auth applied; OpenPanel exposes no write endpoints in this integration's supported surface, so `--allow-write`/`post`/`put`/`patch`/`delete` have no practical use here.
 
 ```bash
 aai-cli apollo health

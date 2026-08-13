@@ -43,7 +43,7 @@ This project should support credentials supplied by users or agents rather than 
 ## Openpanel
 
 - Client ID/secret (`auth_type = "openpanel_client_credentials"`): the only implemented model, sent as `openpanel-client-id` and `openpanel-client-secret` headers. Set `client_id` (not a secret) and `api_token_secret` (the client secret) on the profile.
-- Client type matters: OpenPanel clients are typed `write`, `read`, or `root` server-side. `events export`, `insights *`, and `profiles *` all need a `read` or `root` client; `projects list`/`get` (the Manage API) needs a `root` client specifically. A `write` client (the default created with a new project) fails every command in this integration with `401`/`403`.
+- Client type matters: OpenPanel clients are typed `write`, `read`, or `root` server-side. `events export`, `insights *`, and `profiles *` all need a `read` or `root` client; `projects list`/`get` (the Manage API) needs a `root` client specifically. A `write` client (the default created with a new project) fails every command in this integration with `401` (verified live — the provider returns 401, not 403, for both the Export/Insights and Manage refusals).
 - Optional `project_id` profile field: `insights *` and `profiles *` require a project ID in the URL; set `profile.project_id` to avoid passing `--project-id` on every call.
 - OAuth install flow: not applicable — OpenPanel has no OAuth flow for the REST API, only static client credentials created in the dashboard under Settings → Clients.
 
