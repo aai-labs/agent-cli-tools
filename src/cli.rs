@@ -47,6 +47,8 @@ pub enum Command {
     Slack(SlackCommand),
     /// Read OpenPanel projects, insights, profiles, and raw event exports.
     Openpanel(OpenpanelCommand),
+    /// Read PostHog projects, queries, insights, persons, cohorts, dashboards, and annotations.
+    Posthog(PosthogCommand),
 }
 
 #[derive(Debug, Args)]
@@ -3343,8 +3345,10 @@ pub struct SheetsCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum SheetsResource {
-    /// Discover spreadsheets in Drive, or get metadata (sheet tabs) for a specific spreadsheet.
+    /// Create spreadsheets, discover them in Drive, or get metadata for a specific one.
     Spreadsheets(SpreadsheetsCommand),
+    /// Add, delete, or rename the sheet tabs inside a spreadsheet.
+    Sheets(SheetsTabCommand),
     /// Read, write, or clear cell values in a spreadsheet range.
     Values(ValuesCommand),
 }
@@ -3357,6 +3361,8 @@ pub struct SpreadsheetsCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum SpreadsheetsAction {
+    /// Create a new spreadsheet in Drive.
+    Create(SpreadsheetsCreateArgs),
     /// List all Google Sheets spreadsheets in Drive.
     List(SpreadsheetsListArgs),
     /// Get spreadsheet metadata including all sheet tab names and IDs.
@@ -3364,10 +3370,58 @@ pub enum SpreadsheetsAction {
 }
 
 #[derive(Debug, Args)]
+pub struct SpreadsheetsCreateArgs {
+    /// Title for the new spreadsheet.
+    pub title: String,
+    /// Comma-separated tab names to create, e.g. 'Q1,Q2,Q3'. Defaults to a single 'Sheet1'.
+    #[arg(long)]
+    pub sheets: Option<String>,
+}
+
+#[derive(Debug, Args)]
 pub struct SpreadsheetsListArgs {
     /// Pagination token from a previous response to fetch the next page.
     #[arg(long)]
     pub page_token: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct SheetsTabCommand {
+    #[command(subcommand)]
+    pub action: SheetsTabAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SheetsTabAction {
+    /// Add a new tab to an existing spreadsheet.
+    Add(SheetsTabAddArgs),
+    /// Delete a tab. The spreadsheet's last remaining tab cannot be deleted.
+    Delete(SheetsTabDeleteArgs),
+    /// Rename a tab. Formulas referencing the old name are updated by Google.
+    Rename(SheetsTabRenameArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct SheetsTabAddArgs {
+    pub spreadsheet_id: String,
+    /// Title for the new tab.
+    pub title: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SheetsTabDeleteArgs {
+    pub spreadsheet_id: String,
+    /// Title of the tab to delete.
+    pub title: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SheetsTabRenameArgs {
+    pub spreadsheet_id: String,
+    /// Current title of the tab.
+    pub title: String,
+    /// New title for the tab.
+    pub new_title: String,
 }
 
 #[derive(Debug, Args)]
@@ -3425,7 +3479,7 @@ pub struct ExcelCommand {
 pub enum ExcelResource {
     /// Create a new spreadsheet file (.xlsx or .csv/.tsv).
     Workbook(ExcelWorkbookCommand),
-    /// Inspect the sheet tabs in a workbook.
+    /// Inspect, add, delete, or rename the sheet tabs in a workbook.
     Sheets(ExcelSheetsCommand),
     /// Read, write, or clear cell values in a workbook range.
     Values(ExcelValuesCommand),
@@ -3465,12 +3519,53 @@ pub struct ExcelSheetsCommand {
 pub enum ExcelSheetsAction {
     /// List every sheet tab in the workbook, with its used range.
     List(ExcelSheetsListArgs),
+    /// Add a new empty sheet tab to the end of the workbook (.xlsx only).
+    Add(ExcelSheetsAddArgs),
+    /// Delete a sheet tab (.xlsx only). Refused for the last tab, or if formulas reference it.
+    Delete(ExcelSheetsDeleteArgs),
+    /// Rename a sheet tab (.xlsx only). Refused if formulas reference the old name.
+    Rename(ExcelSheetsRenameArgs),
 }
 
 #[derive(Debug, Args)]
 pub struct ExcelSheetsListArgs {
     /// Path to the spreadsheet file.
     pub file: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelSheetsAddArgs {
+    /// Path to the .xlsx workbook.
+    pub file: PathBuf,
+    /// Title for the new sheet tab.
+    pub title: String,
+    /// Write even if the workbook has features a rewrite would drop.
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelSheetsDeleteArgs {
+    /// Path to the .xlsx workbook.
+    pub file: PathBuf,
+    /// Title of the sheet tab to delete.
+    pub title: String,
+    /// Delete even if formulas reference the tab, or the workbook has features a rewrite would drop.
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ExcelSheetsRenameArgs {
+    /// Path to the .xlsx workbook.
+    pub file: PathBuf,
+    /// Current title of the sheet tab.
+    pub title: String,
+    /// New title for the sheet tab.
+    pub new_title: String,
+    /// Rename even if formulas reference the old name, or the workbook has features a rewrite would drop.
+    #[arg(long)]
+    pub force: bool,
 }
 
 #[derive(Debug, Args)]
@@ -3906,4 +4001,184 @@ pub struct OpenpanelProfileGet {
     pub project_id: Option<String>,
     #[arg(long, default_value_t = 20)]
     pub event_limit: u32,
+pub struct PosthogCommand {
+    #[command(subcommand)]
+    pub resource: PosthogResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogResource {
+    /// Read PostHog projects.
+    Projects(PosthogProjectsCommand),
+    /// Execute HogQL or JSON analytics queries against PostHog events.
+    Events(PosthogEventsCommand),
+    /// List and read saved insights (trends, funnels, retention, paths, lifecycle).
+    Insights(PosthogInsightsCommand),
+    /// List and inspect persons/users tracked in PostHog.
+    Persons(PosthogPersonsCommand),
+    /// List and inspect user cohorts.
+    Cohorts(PosthogCohortsCommand),
+    /// List and read team dashboards.
+    Dashboards(PosthogDashboardsCommand),
+    /// Read release and experiment annotations.
+    Annotations(PosthogAnnotationsCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogProjectsCommand {
+    #[command(subcommand)]
+    pub action: PosthogProjectsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogProjectsAction {
+    /// List accessible PostHog projects.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific PostHog project.
+    Get(PosthogProjectIdArg),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogProjectIdArg {
+    #[arg(long)]
+    pub project_id: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogProjectListArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    #[arg(long, default_value_t = 0)]
+    pub offset: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogEventsCommand {
+    #[command(subcommand)]
+    pub action: PosthogEventsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogEventsAction {
+    /// Execute a query (HogQL query string or JSON payload) against PostHog events.
+    Query(PosthogEventsQueryArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogEventsQueryArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    /// HogQL query string (e.g. "SELECT event, count() FROM events GROUP BY event LIMIT 10") or JSON query object string.
+    #[arg(long)]
+    pub query: Option<String>,
+    /// Path to a JSON file containing the PostHog query payload object.
+    #[arg(long)]
+    pub query_file: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogInsightsCommand {
+    #[command(subcommand)]
+    pub action: PosthogInsightsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogInsightsAction {
+    /// List saved team insights.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific insight.
+    Get(PosthogInsightGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogInsightGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub insight_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogPersonsCommand {
+    #[command(subcommand)]
+    pub action: PosthogPersonsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogPersonsAction {
+    /// List persons/users tracked in PostHog.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific person profile.
+    Get(PosthogPersonGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogPersonGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub person_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogCohortsCommand {
+    #[command(subcommand)]
+    pub action: PosthogCohortsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogCohortsAction {
+    /// List user cohorts.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific cohort.
+    Get(PosthogCohortGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogCohortGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub cohort_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogDashboardsCommand {
+    #[command(subcommand)]
+    pub action: PosthogDashboardsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogDashboardsAction {
+    /// List team dashboards.
+    List(PosthogProjectListArgs),
+    /// Get details and insight tiles of a specific dashboard.
+    Get(PosthogDashboardGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogDashboardGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub dashboard_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogAnnotationsCommand {
+    #[command(subcommand)]
+    pub action: PosthogAnnotationsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PosthogAnnotationsAction {
+    /// List release and experiment annotations.
+    List(PosthogProjectListArgs),
+    /// Get details of a specific annotation.
+    Get(PosthogAnnotationGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PosthogAnnotationGetArgs {
+    #[arg(long)]
+    pub project_id: Option<String>,
+    pub annotation_id: String,
 }

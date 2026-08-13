@@ -64,6 +64,8 @@ Quote a tab name if it contains spaces or punctuation, and double any apostrophe
 
 **`values clear`** returns `clearedRange` and `clearedCells`.
 
+**`sheets add` / `sheets delete` / `sheets rename`** return the affected title (`added`, `deleted`, or `renamed` plus `to`) and the workbook's full `sheets` title list afterwards.
+
 Every response also echoes the `file` it acted on, plus `truncated: false` — these commands always return the whole answer, so there is never a further page to fetch. The `range`/`updatedRange`/`clearedRange` strings are valid input for a follow-up command.
 
 ## Error response shape
@@ -159,6 +161,94 @@ aai-cli excel sheets list ./inventory.xlsx
 ```
 
 Use `title` to build range strings, and `usedRange` to see how much data a tab actually holds before reading it.
+
+---
+
+## sheets add
+
+Add a new empty tab to the end of an `.xlsx` workbook.
+
+```
+aai-cli excel sheets add <FILE> <TITLE> [--force]
+```
+
+| Argument / Flag | Required | Description |
+|---|---|---|
+| `FILE` | **yes** | Path to the `.xlsx` workbook |
+| `TITLE` | **yes** | Title for the new tab. Must not already exist |
+| `--force` | no | Write even if the workbook has features a rewrite would drop |
+
+**Example**
+
+```
+aai-cli excel sheets add ./inventory.xlsx "Q4"
+```
+
+```json
+{
+  "file": "./inventory.xlsx",
+  "added": "Q4",
+  "sheets": ["Sheet1", "Q4"],
+  "truncated": false
+}
+```
+
+---
+
+## sheets delete
+
+Delete a tab from an `.xlsx` workbook.
+
+```
+aai-cli excel sheets delete <FILE> <TITLE> [--force]
+```
+
+Refused when the tab is the workbook's last one, or when a formula still references it. `--force` overrides the reference check (the rewrite guard too) but leaves those formulas broken.
+
+**Example**
+
+```
+aai-cli excel sheets delete ./inventory.xlsx "Q4"
+```
+
+```json
+{
+  "file": "./inventory.xlsx",
+  "deleted": "Q4",
+  "sheets": ["Sheet1"],
+  "truncated": false
+}
+```
+
+---
+
+## sheets rename
+
+Rename a tab in an `.xlsx` workbook.
+
+```
+aai-cli excel sheets rename <FILE> <TITLE> <NEW_TITLE> [--force]
+```
+
+| Argument / Flag | Required | Description |
+|---|---|---|
+| `FILE` | **yes** | Path to the `.xlsx` workbook |
+| `TITLE` | **yes** | Current tab title |
+| `NEW_TITLE` | **yes** | New tab title. Must not collide with another tab |
+| `--force` | no | Rename even if formulas reference the old title, and override the rewrite guard |
+
+Unlike Google Sheets, renaming here does **not** rewrite formulas pointing at the old title, so the command is refused when any exist:
+
+```json
+{
+  "code": "invalid_input",
+  "message": "refusing to rename this tab: 2 formula references to \"Source\" would be left pointing at a tab that no longer exists (Report!A1, Report!B2). Pass --force to do it anyway, then fix the references yourself.",
+  "operation": "sheets.rename",
+  "service": "excel"
+}
+```
+
+Renaming a tab to its current title succeeds and reports `"unchanged": true`.
 
 ---
 
