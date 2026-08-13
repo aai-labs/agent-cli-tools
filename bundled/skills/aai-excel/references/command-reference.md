@@ -203,7 +203,7 @@ Delete a tab from an `.xlsx` workbook.
 aai-cli excel sheets delete <FILE> <TITLE> [--force]
 ```
 
-Refused when the tab is the workbook's last one, or when a formula or defined name still references it. `--force` overrides the reference check (the rewrite guard too) but leaves those references broken.
+Refused when the tab is the workbook's last one, or when a formula still references it. `--force` overrides the reference check (the rewrite guard too) but leaves those formulas broken.
 
 **Example**
 

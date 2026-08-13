@@ -328,9 +328,15 @@ fn open_for_tab_edit(
 
 /// Find formulas and defined names pointing at `title`, as `Sheet!A1` locations.
 ///
-/// Renaming or deleting a tab leaves these references untouched — umya rewrites neither —
-/// so the workbook keeps opening fine while the numbers in it quietly go wrong. That is
-/// worth refusing by default, in the same way a rewrite that would drop a chart is.
+/// Renaming or deleting a tab leaves cell formulas untouched, so the workbook keeps
+/// opening fine while the numbers in it quietly go wrong. That is worth refusing by
+/// default, in the same way a rewrite that would drop a chart is.
+///
+/// Defined names are deliberately *not* checked. umya rewrites them to the new tab name
+/// on rename, and drops the ones belonging to a deleted tab while leaving the rest alone,
+/// so they are never stranded. Including them made every tab carrying an autofilter
+/// unrenameable, because Excel stores that as a hidden `_xlnm._FilterDatabase` name the
+/// user never wrote and could not act on.
 ///
 /// The match is deliberately literal: a reference is the tab name followed by `!`, either
 /// bare or single-quoted (with any inner quote doubled, as Excel writes it). A formula
@@ -365,16 +371,6 @@ fn references_to_sheet(book: &Workbook, title: &str) -> Vec<String> {
                 col_to_letters(coordinate.col_num()),
                 coordinate.row_num()
             ));
-        }
-        for name in sheet.defined_names() {
-            if mentions(&name.address()) {
-                found.push(format!("{} (defined name {:?})", sheet.name(), name.name()));
-            }
-        }
-    }
-    for name in book.defined_names() {
-        if mentions(&name.address()) {
-            found.push(format!("workbook defined name {:?}", name.name()));
         }
     }
     found
@@ -1814,6 +1810,32 @@ mod tests {
         };
         assert_eq!(references_to_sheet(&book, "My Sheet"), ["Report!A1"]);
         assert!(references_to_sheet(&book, "Sheet").is_empty());
+    }
+
+    /// Excel records an autofilter as a hidden `_xlnm._FilterDatabase` defined name scoped
+    /// to the sheet. umya rewrites it on rename, so it must not count as a stranded
+    /// reference — otherwise no filtered tab could ever be renamed without `--force`.
+    #[test]
+    fn an_autofilter_does_not_make_a_tab_unrenameable() {
+        let file = temp_dir().join("autofilter.xlsx");
+        let _ = std::fs::remove_file(&file);
+        let mut book = umya_spreadsheet::new_file_empty_worksheet();
+        book.new_sheet("Sales").expect("sales");
+        book.new_sheet("Blank").expect("blank");
+        {
+            let sheet = book.sheet_by_name_mut("Sales").expect("sales sheet");
+            sheet.cell_mut("A1").set_value_string("Region");
+            sheet.set_auto_filter("A1:B9");
+        }
+        write(&book, &file, OP).expect("write");
+
+        let reopened = open(&file, OP).expect("open");
+        assert!(
+            references_to_sheet(&reopened, "Sales").is_empty(),
+            "an autofilter must not read as a formula reference"
+        );
+        sheets_rename(&file, "Sales", "Revenue", false).expect("rename must be allowed");
+        assert_eq!(tab_names(&file), ["Revenue", "Blank"]);
     }
 
     /// A tab named `Data` must not be considered referenced by `OtherData!A1` — the match

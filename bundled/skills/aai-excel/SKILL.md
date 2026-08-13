@@ -19,7 +19,7 @@ A `.csv`/`.tsv` file is a single sheet named after the file (`sales.csv` → `sa
 
 Tab names follow Excel's rules: at most 31 characters, and never `: \ / ? * [ ]`. A workbook must keep at least one tab.
 
-**Renaming or deleting a tab does not update formulas that point at it.** If any formula or defined name references the tab, the command is **refused** with the offending cells listed; either fix those references first, or pass `--force` and repair them afterwards.
+**Renaming or deleting a tab does not update formulas that point at it.** If any formula references the tab, the command is **refused** with the offending cells listed; either fix those formulas first, or pass `--force` and repair them afterwards. Named ranges and autofilters are handled correctly and never block the command.
 
 **Editing an `.xlsx` rewrites the whole workbook**, which cannot preserve charts, pivot tables, form controls, external links, custom XML or sensitivity labels. Writes to such a workbook are **refused** with a message naming what would be lost; pass `--force` only if losing those is genuinely acceptable, or copy the values into a new file instead. Plain data workbooks are unaffected.
 
