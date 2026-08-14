@@ -54,7 +54,6 @@ pub struct Profile {
     pub mail_folder: Option<String>,
     pub sent_folder: Option<String>,
     pub caldav_url: Option<String>,
-    pub project_id: Option<String>,
 }
 
 pub struct Context {
