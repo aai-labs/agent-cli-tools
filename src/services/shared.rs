@@ -194,7 +194,6 @@ pub(crate) fn slack_base(profile: &Profile) -> String {
 }
 
 pub(crate) fn openpanel_base(profile: &Profile) -> String {
-pub(crate) fn posthog_base(profile: &Profile) -> String {
     profile
         .base_url
         .as_deref()
@@ -202,11 +201,15 @@ pub(crate) fn posthog_base(profile: &Profile) -> String {
         .unwrap_or_else(|| "https://api.openpanel.dev".to_string())
 }
 
-pub(crate) fn openpanel_project_id<'a>(
+pub(crate) fn posthog_base(profile: &Profile) -> String {
+    profile
+        .base_url
+        .as_deref()
+        .map(trim_url)
         .unwrap_or_else(|| "https://us.i.posthog.com".to_string())
 }
 
-pub(crate) fn posthog_project_id<'a>(
+pub(crate) fn openpanel_project_id<'a>(
     profile: &'a Profile,
     arg: Option<&'a str>,
     operation: &'static str,
@@ -216,6 +219,16 @@ pub(crate) fn posthog_project_id<'a>(
             "openpanel",
             operation,
             format!("openpanel.{operation} requires --project-id or profile.project_id"),
+        )
+    })
+}
+
+pub(crate) fn posthog_project_id<'a>(
+    profile: &'a Profile,
+    arg: Option<&'a str>,
+    operation: &'static str,
+) -> Result<&'a str, AppError> {
+    arg.or(profile.project_id.as_deref()).ok_or_else(|| {
         AppError::service_config(
             "posthog",
             operation,
