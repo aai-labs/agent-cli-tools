@@ -4001,6 +4001,9 @@ pub struct OpenpanelProfileGet {
     pub project_id: Option<String>,
     #[arg(long, default_value_t = 20)]
     pub event_limit: u32,
+}
+
+#[derive(Debug, Args)]
 pub struct PosthogCommand {
     #[command(subcommand)]
     pub resource: PosthogResource,
