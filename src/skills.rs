@@ -519,7 +519,7 @@ mod tests {
         let packages = load_packages().expect("load bundled skills");
         let reports = validate_packages(&packages);
 
-        assert_eq!(reports.len(), 11);
+        assert_eq!(reports.len(), 12);
         assert!(
             reports.iter().all(|report| report.valid),
             "invalid reports: {reports:#?}"
