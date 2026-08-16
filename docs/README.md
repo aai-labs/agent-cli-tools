@@ -29,6 +29,7 @@ Service-level CLI docs live under `docs/services/`:
 - [Pipedrive](services/pipedrive.md)
 - [Apollo](services/apollo.md)
 - [Google Sheets](services/sheets.md)
+- [OpenPanel](services/openpanel.md)
 
 Atlassian docs include REST entrypoints, auth/API-token docs, OAuth scopes, webhooks, rate limits, and Jira ADF references. Start with:
 

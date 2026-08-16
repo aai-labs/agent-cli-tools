@@ -45,6 +45,7 @@ pub struct Profile {
     pub user_id: Option<String>,
     pub account_id: Option<String>,
     pub calendar_id: Option<String>,
+    pub project_id: Option<String>,
     pub from_address: Option<String>,
     pub smtp_host: Option<String>,
     pub smtp_port: Option<u16>,
@@ -53,7 +54,6 @@ pub struct Profile {
     pub mail_folder: Option<String>,
     pub sent_folder: Option<String>,
     pub caldav_url: Option<String>,
-    pub project_id: Option<String>,
 }
 
 pub struct Context {
