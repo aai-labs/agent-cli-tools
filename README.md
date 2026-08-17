@@ -19,6 +19,8 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks saf
 | Google Sheets | Spreadsheet listing plus sheet value reads/writes | [docs/services/sheets.md](docs/services/sheets.md) | [Google Sheets API](https://developers.google.com/sheets/api/reference/rest) |
 | Google Drive | Files and folders, blob and Google-native content reads, shared drives, sharing (read-only), storage quota, plus file upload | [docs/services/drive.md](docs/services/drive.md) | [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3) |
 | Slack | Channel metadata, files, bookmarks, links, channel canvas download (read-only, bot token) | [docs/services/slack.md](docs/services/slack.md) | [Slack Web API](https://docs.slack.dev/reference/methods) |
+| Slack | Channel metadata, files, bookmarks, links, channel canvas download (read-only, bot token) | [docs/services/slack.md](docs/services/slack.md) | [Slack Web API](https://docs.slack.dev/reference/methods) |
+| OpenPanel | Projects, raw event export, insights (metrics, pages, referrers, devices, geo), profiles (read-only, client ID/secret) | [docs/services/openpanel.md](docs/services/openpanel.md) | [OpenPanel API docs](https://openpanel.dev/docs/api) |
 
 Project features that are not provider services:
 

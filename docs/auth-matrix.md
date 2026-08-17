@@ -19,6 +19,7 @@ This project should support credentials supplied by users or agents rather than 
 
 - User OAuth token: Delegated user access for Gmail, Calendar, Sheets, and Drive. Scopes determine whether the CLI can read, send, or modify resources.
 - Drive scopes: `drive.readonly` covers every implemented Drive command except `files upload`, which needs `drive.file` (files the app itself created) or full `drive`. `drive.metadata.readonly` is enough for `files list`/`files get`/`folders`/`drives`/`permissions` but **not** for `files download` — metadata scopes cannot fetch content. Drive also enforces its own per-file rule for `permissions.list`: a plain reader gets `403 insufficientFilePermissions` there even with a sufficient scope, so treat that 403 as file access, not token scope.
+- User OAuth token: Delegated user access for Gmail and Calendar. Scopes determine whether the CLI can read, send, or modify resources.
 - Service account: Server-to-server identity. For Gmail and user calendars in a Workspace domain, service accounts generally require domain-wide delegation plus user impersonation.
 - API key: Not sufficient for private Gmail/Calendar user data and should not be used for the planned operations.
 
@@ -44,6 +45,16 @@ This project should support credentials supplied by users or agents rather than 
 ## CLI Implications
 
 - Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `github_app`, `oauth_user`, or `service_account`.
+## Openpanel
+
+- Client ID/secret (`auth_type = "openpanel_client_credentials"`): the only implemented model, sent as `openpanel-client-id` and `openpanel-client-secret` headers. Set `client_id` (not a secret) and `api_token_secret` (the client secret) on the profile.
+- Client type matters: OpenPanel clients are typed `write`, `read`, or `root` server-side. `events export`, `insights *`, and `profiles *` all need a `read` or `root` client; `projects list`/`get` (the Manage API) needs a `root` client specifically. A `write` client (the default created with a new project) fails every command in this integration with `401` (verified live — the provider returns 401, not 403, for both the Export/Insights and Manage refusals).
+- Optional `project_id` profile field: `insights *` and `profiles *` require a project ID in the URL; set `profile.project_id` to avoid passing `--project-id` on every call.
+- OAuth install flow: not applicable — OpenPanel has no OAuth flow for the REST API, only static client credentials created in the dashboard under Settings → Clients.
+
+## CLI Implications
+
+- Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `openpanel_client_credentials`, `github_app`, `oauth_user`, or `service_account`.
 - Never infer service-account semantics from a token string alone.
 - Keep provider profiles isolated; do not reuse an Atlassian token across Jira, Confluence, and Bitbucket unless the provider docs explicitly support it.
 - Prefer env var overrides for secrets and config-file fields for non-secret metadata such as site URL, workspace, region, account email, and default scopes.

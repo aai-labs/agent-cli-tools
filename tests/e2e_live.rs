@@ -1854,4 +1854,79 @@ fn google_drive_read_export_and_upload() {
         permissions["permissions"].as_array().is_some(),
         "{permissions:#}"
     );
+#[ignore = "requires live OpenPanel root/read client credentials and a seeded project"]
+fn openpanel_projects_insights_and_profiles_read() {
+    let Some(project_id) = env_or_skip("AAI_E2E_OPENPANEL_PROJECT") else {
+        return;
+    };
+
+    let projects = cli_required(
+        "AAI_E2E_OPENPANEL_ROOT_PROFILE",
+        &["openpanel", "projects", "list"],
+    );
+    assert!(projects["data"].as_array().is_some());
+
+    let project = cli_required(
+        "AAI_E2E_OPENPANEL_ROOT_PROFILE",
+        &["openpanel", "projects", "get", &project_id],
+    );
+    assert_eq!(str_at(&project, &["data", "id"]), project_id);
+
+    let metrics = cli_required(
+        "AAI_E2E_OPENPANEL_READ_PROFILE",
+        &[
+            "openpanel",
+            "insights",
+            "metrics",
+            "--project-id",
+            &project_id,
+            "--range",
+            "7d",
+        ],
+    );
+    assert!(metrics.is_object());
+
+    let pages = cli_required(
+        "AAI_E2E_OPENPANEL_READ_PROFILE",
+        &[
+            "openpanel",
+            "insights",
+            "pages",
+            "--project-id",
+            &project_id,
+            "--range",
+            "7d",
+            "--limit",
+            "5",
+        ],
+    );
+    assert!(pages.is_array() || pages.is_object());
+
+    let events = cli_required(
+        "AAI_E2E_OPENPANEL_READ_PROFILE",
+        &[
+            "openpanel",
+            "events",
+            "export",
+            "--project-id",
+            &project_id,
+            "--limit",
+            "5",
+        ],
+    );
+    assert!(events["data"].as_array().is_some());
+
+    let profiles = cli_required(
+        "AAI_E2E_OPENPANEL_READ_PROFILE",
+        &[
+            "openpanel",
+            "profiles",
+            "list",
+            "--project-id",
+            &project_id,
+            "--limit",
+            "5",
+        ],
+    );
+    assert!(profiles.is_array() || profiles.is_object());
 }

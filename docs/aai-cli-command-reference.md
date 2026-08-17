@@ -332,6 +332,53 @@ base_url = "https://api.apollo.io/api/v1"
 ```
 
 Apollo's documented API-key health check is outside the main `/api/v1` base and is exposed as `apollo health`. Generic `apollo request` paths remain relative to `profile.base_url`.
+## Apollo
+
+Apollo profiles use API-key auth only:
+
+```toml
+[profiles.apollo-work]
+provider = "apollo"
+auth_type = "apollo_api_key"
+api_token_secret = "apollo.api_token"
+# Optional; defaults to https://api.apollo.io/api/v1
+base_url = "https://api.apollo.io/api/v1"
+```
+
+Apollo's documented API-key health check is outside the main `/api/v1` base and is exposed as `apollo health`. Generic `apollo request` paths remain relative to `profile.base_url`.
+
+## Openpanel
+
+OpenPanel is a read-only integration: projects, raw event export, aggregated insights, and profile search. There are no write endpoints. Every command needs a client ID/secret profile — see the [auth matrix](../auth-matrix.md#openpanel). `insights`/`profiles` commands additionally need a project ID, via `--project-id` or `profile.project_id`.
+
+```bash
+aai-cli openpanel projects list
+aai-cli openpanel projects get <project-id>
+
+aai-cli openpanel events export [--project-id ID] [--event NAME]... [--profile-id ID] [--start DATE] [--end DATE] [--limit N] [--includes profile,meta] [--filters JSON]
+
+aai-cli openpanel insights metrics [--project-id ID] [--start-date DATE] [--end-date DATE] [--range 7d] [--filters JSON]
+aai-cli openpanel insights pages [--project-id ID] [--start-date DATE] [--end-date DATE] [--range 7d] [--filters JSON] [--cursor N] [--limit N]
+aai-cli openpanel insights referrers [--breakdown referrer-name|referrer|referrer-type|utm-source|utm-medium|utm-campaign|utm-term|utm-content] [date/cursor/limit flags as above]
+aai-cli openpanel insights devices [--breakdown device|brand|model|browser|browser-version|os|os-version] [date/cursor/limit flags as above]
+aai-cli openpanel insights geo [--breakdown country|region|city] [date/cursor/limit flags as above]
+
+aai-cli openpanel profiles list [--project-id ID] [--name X] [--email X] [--country X] [--city X] [--device X] [--browser X] [--inactive-days N] [--min-sessions N] [--performed-event NAME] [--filters JSON] [--sort-order asc|desc] [--limit N]
+aai-cli openpanel profiles get <profile-id> [--project-id ID] [--event-limit N]
+
+aai-cli openpanel request get /manage/projects
+aai-cli openpanel request get /export/events --query projectId=proj_abc123 --query limit=1
+```
+
+`events export`'s `--project-id` is optional — omit it when the profile's client is already scoped to a single project; it's otherwise required. `--event` may be repeated for multiple event names. `events export` paginates internally: `--limit` (default 50) is the total row count wanted, fetched across as many `page`s as needed (provider page size capped at 1000); the response carries the last page's `meta` plus an aggregated `data` array and a `has_more` flag.
+
+`insights`/`profiles` all require a project ID in the URL, so `--project-id` is effectively mandatory unless `profile.project_id` is set.
+
+`insights referrers`/`devices`/`geo` map their `--breakdown` value to the provider's snake_case dimension name (e.g. `--breakdown referrer-name` requests the `referrer_name` breakdown) and accept `--cursor`/`--limit`/`--filters`, unlike the newer `/traffic/*` endpoints — see [docs/services/openpanel.md](../services/openpanel.md) for why the older per-dimension routes were used. In practice the provider ignores `--cursor`/`--limit` on these routes and on `insights pages`, returning every breakdown row for the range — in no dependable order — so "top N" means sorting and slicing client-side. Only `--filters` takes effect, and only `events export` truly paginates (and only above `--limit 1000`, since the page size is `min(--limit, 1000)`). A `{ "name": null, ... }` row in any breakdown is the bucket for traffic with no value for that dimension, not an empty result.
+
+`--filters` on any command is a raw JSON array of provider chart-event filters, passed through unvalidated beyond well-formed JSON.
+
+`request` calls an uncommon endpoint directly with profile auth applied; OpenPanel exposes no write endpoints in this integration's supported surface, so `--allow-write`/`post`/`put`/`patch`/`delete` have no practical use here.
 
 ```bash
 aai-cli apollo health

@@ -8,6 +8,7 @@ use serde_json::Value;
 use crate::{config::Profile, error::AppError};
 
 pub(crate) fn multipart_boundary() -> String {
+fn multipart_boundary() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -461,6 +462,25 @@ fn apply_auth(
                 })?;
             Ok(request.header("x-api-key", token))
         }
+        "openpanel_client_credentials" | "openpanel-client-credentials" => {
+            let client_id = profile.client_id.as_deref().ok_or_else(|| {
+                AppError::auth(service, operation, "profile is missing client_id")
+            })?;
+            let client_secret = profile
+                .api_token
+                .as_deref()
+                .or(profile.token.as_deref())
+                .ok_or_else(|| {
+                    AppError::auth(
+                        service,
+                        operation,
+                        "profile is missing api_token or token (the client secret)",
+                    )
+                })?;
+            Ok(request
+                .header("openpanel-client-id", client_id)
+                .header("openpanel-client-secret", client_secret))
+        }
         _ => {
             let token = profile
                 .token
@@ -526,6 +546,36 @@ mod tests {
         .unwrap();
 
         assert_eq!(request.headers()["x-api-key"], "apollo-token");
+        assert!(!request.headers().contains_key("authorization"));
+    }
+
+    #[test]
+    fn openpanel_client_credentials_uses_both_headers() {
+        let client = Client::new();
+        let profile = Profile {
+            auth_type: Some("openpanel_client_credentials".to_string()),
+            client_id: Some("018f0000-0000-0000-0000-000000000000".to_string()),
+            api_token: Some("openpanel-secret".to_string()),
+            ..Profile::default()
+        };
+        let request = apply_auth(
+            client.request(Method::GET, "https://api.openpanel.dev/manage/projects"),
+            "openpanel",
+            "projects.list",
+            &profile,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+
+        assert_eq!(
+            request.headers()["openpanel-client-id"],
+            "018f0000-0000-0000-0000-000000000000"
+        );
+        assert_eq!(
+            request.headers()["openpanel-client-secret"],
+            "openpanel-secret"
+        );
         assert!(!request.headers().contains_key("authorization"));
     }
 
