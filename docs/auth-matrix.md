@@ -17,7 +17,8 @@ This project should support credentials supplied by users or agents rather than 
 
 ## Google Workspace
 
-- User OAuth token: Delegated user access for Gmail and Calendar. Scopes determine whether the CLI can read, send, or modify resources.
+- User OAuth token: Delegated user access for Gmail, Calendar, Sheets, and Drive. Scopes determine whether the CLI can read, send, or modify resources.
+- Drive scopes: `drive.readonly` covers every implemented Drive command except `files upload`, which needs `drive.file` (files the app itself created) or full `drive`. `drive.metadata.readonly` is enough for `files list`/`files get`/`folders`/`drives`/`permissions` but **not** for `files download` — metadata scopes cannot fetch content. Drive also enforces its own per-file rule for `permissions.list`: a plain reader gets `403 insufficientFilePermissions` there even with a sufficient scope, so treat that 403 as file access, not token scope.
 - Service account: Server-to-server identity. For Gmail and user calendars in a Workspace domain, service accounts generally require domain-wide delegation plus user impersonation.
 - API key: Not sufficient for private Gmail/Calendar user data and should not be used for the planned operations.
 

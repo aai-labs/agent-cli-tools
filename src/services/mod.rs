@@ -2,6 +2,7 @@ pub(crate) mod apollo;
 pub(crate) mod bitbucket;
 pub(crate) mod calendar;
 pub(crate) mod confluence;
+pub(crate) mod drive;
 pub(crate) mod email;
 pub(crate) mod excel;
 pub(crate) mod generic_request;
@@ -29,6 +30,7 @@ pub async fn dispatch(ctx: &Context, command: Command) -> Result<Value, AppError
         Command::Pipedrive(command) => pipedrive::dispatch(&client, ctx, command).await,
         Command::Apollo(command) => apollo::dispatch(&client, ctx, command).await,
         Command::Sheets(command) => sheets::dispatch(&client, ctx, command).await,
+        Command::Drive(command) => drive::dispatch(&client, ctx, command).await,
         Command::Slack(command) => slack::dispatch(&client, ctx, command).await,
         Command::Excel(_) => unreachable!("excel commands are dispatched before context loading"),
         Command::Posthog(command) => posthog::dispatch(&client, ctx, command).await,

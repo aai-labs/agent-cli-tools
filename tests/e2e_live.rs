@@ -1746,3 +1746,112 @@ fn slack_channel_read_and_canvas_download() {
         let _ = std::fs::remove_file(&dl_path);
     }
 }
+
+#[test]
+#[ignore = "requires live Google Drive credentials"]
+fn google_drive_read_export_and_upload() {
+    let profile = "AAI_E2E_DRIVE_PROFILE";
+
+    let about = cli_required(profile, &["drive", "about", "get"]);
+    assert!(about["storageQuota"].is_object(), "{about:#}");
+    assert!(about["exportFormats"].is_object(), "{about:#}");
+
+    // An account with no shared drives returns an empty array, not an error, so the
+    // assertion is on the shape rather than on the account having one.
+    let drives = cli_required(profile, &["drive", "drives", "list", "--limit", "5"]);
+    assert!(drives["drives"].as_array().is_some(), "{drives:#}");
+
+    let files = cli_required(profile, &["drive", "files", "list", "--limit", "5"]);
+    assert!(files["files"].as_array().is_some(), "{files:#}");
+    assert!(
+        files["_aai"]["pagination"]["returned_count"].is_u64(),
+        "{files:#}"
+    );
+
+    let folders = cli_required(profile, &["drive", "folders", "list", "--limit", "5"]);
+    for folder in folders["files"].as_array().expect("folders array") {
+        assert_eq!(
+            folder["mimeType"], "application/vnd.google-apps.folder",
+            "{folder:#}"
+        );
+    }
+
+    // Google-native documents hold no bytes, so this branch proves the export path
+    // rather than the alt=media one.
+    if let Some(native_id) = env_or_skip("AAI_E2E_DRIVE_NATIVE_DOC") {
+        let export_path = std::env::temp_dir().join(unique("aai-e2e-drive-export"));
+        let exported = cli_required(
+            profile,
+            &[
+                "drive",
+                "files",
+                "download",
+                &native_id,
+                "--output",
+                export_path.to_str().unwrap(),
+            ],
+        );
+        assert!(
+            str_at(&exported, &["mime_type"]).starts_with("application/vnd.google-apps."),
+            "{exported:#}"
+        );
+        assert!(exported["exported_mime_type"].is_string(), "{exported:#}");
+        assert!(!std::fs::read(&export_path).unwrap().is_empty());
+        let _ = std::fs::remove_file(&export_path);
+    }
+
+    // The one write. aai-cli has no Drive delete by design, so this branch only runs
+    // against a folder the operator is willing to keep debris in: the uploaded file is
+    // named with the shared `aai-e2e-` prefix and must be removed by hand or by a
+    // folder-level cleanup.
+    let Some(parent) = env_or_skip("AAI_E2E_DRIVE_UPLOAD_PARENT") else {
+        return;
+    };
+    let body = "aai-cli drive live test\n";
+    let name = format!("{}.txt", unique("aai-e2e-drive"));
+    let source = std::env::temp_dir().join(&name);
+    std::fs::write(&source, body).expect("write upload source");
+
+    let uploaded = cli_required(
+        profile,
+        &[
+            "drive",
+            "files",
+            "upload",
+            source.to_str().unwrap(),
+            "--parent",
+            &parent,
+        ],
+    );
+    let _ = std::fs::remove_file(&source);
+    let file_id = str_at(&uploaded, &["id"]).to_string();
+    assert_eq!(str_at(&uploaded, &["name"]), name);
+
+    let fetched = cli_required(profile, &["drive", "files", "get", &file_id]);
+    assert_eq!(str_at(&fetched, &["id"]), file_id);
+
+    let download_path = std::env::temp_dir().join(unique("aai-e2e-drive-download"));
+    let downloaded = cli_required(
+        profile,
+        &[
+            "drive",
+            "files",
+            "download",
+            &file_id,
+            "--output",
+            download_path.to_str().unwrap(),
+        ],
+    );
+    assert_eq!(str_at(&downloaded, &["file_id"]), file_id);
+    // An ordinary blob is streamed byte-for-byte, never exported.
+    assert!(downloaded["exported_mime_type"].is_null(), "{downloaded:#}");
+    let round_tripped = std::fs::read(&download_path).expect("read downloaded file");
+    assert_eq!(String::from_utf8(round_tripped).unwrap(), body);
+    let _ = std::fs::remove_file(&download_path);
+
+    let permissions = cli_required(profile, &["drive", "permissions", "list", &file_id]);
+    assert!(
+        permissions["permissions"].as_array().is_some(),
+        "{permissions:#}"
+    );
+}

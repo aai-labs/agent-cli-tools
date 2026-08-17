@@ -17,6 +17,7 @@ The goal is not to replace full SDKs. The goal is to make common agent tasks saf
 | Pipedrive | Leads, persons, organizations, deals, labels, activities, notes, synced email history | [docs/services/pipedrive.md](docs/services/pipedrive.md) | [Pipedrive API](https://developers.pipedrive.com/docs/api/v1), [Pipedrive API v2](https://developers.pipedrive.com/docs/api/v2) |
 | Apollo | People and organization search/enrichment, contacts, accounts, deals, tasks, calls, outreach, conversations, analytics | [docs/services/apollo.md](docs/services/apollo.md) | [Apollo API docs](https://docs.apollo.io/docs/apollo-api-overview), [Apollo OpenAPI](https://docs.apollo.io/openapi/apollo-rest-api.json) |
 | Google Sheets | Spreadsheet listing plus sheet value reads/writes | [docs/services/sheets.md](docs/services/sheets.md) | [Google Sheets API](https://developers.google.com/sheets/api/reference/rest) |
+| Google Drive | Files and folders, blob and Google-native content reads, shared drives, sharing (read-only), storage quota, plus file upload | [docs/services/drive.md](docs/services/drive.md) | [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3) |
 | Slack | Channel metadata, files, bookmarks, links, channel canvas download (read-only, bot token) | [docs/services/slack.md](docs/services/slack.md) | [Slack Web API](https://docs.slack.dev/reference/methods) |
 
 Project features that are not provider services:

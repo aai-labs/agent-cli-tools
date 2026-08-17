@@ -7,7 +7,7 @@ use serde_json::Value;
 
 use crate::{config::Profile, error::AppError};
 
-fn multipart_boundary() -> String {
+pub(crate) fn multipart_boundary() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -20,6 +20,28 @@ fn multipart_boundary() -> String {
 pub struct ApiClient {
     client: Client,
     no_redirect_client: Client,
+}
+
+/// A request whose body is already-encoded bytes rather than a JSON value.
+///
+/// Providers that take pre-encoded payloads — multipart/related upload bodies, raw
+/// media bytes — need a content type and occasionally extra headers alongside the
+/// body, so they travel together instead of as five positional arguments.
+pub struct BytesRequest {
+    pub method: Method,
+    pub url: String,
+    pub content_type: String,
+    pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
+}
+
+/// A parsed response plus the `Location` header.
+///
+/// Upload protocols that hand back a session URI put it in `Location` and leave the
+/// body empty, so the header cannot be dropped the way `request` drops it.
+pub struct RawResponse {
+    pub body: Value,
+    pub location: Option<String>,
 }
 
 impl ApiClient {
@@ -193,6 +215,72 @@ impl ApiClient {
                 status,
                 format!("provider returned HTTP {}", status.as_u16()),
                 details,
+            ))
+        }
+    }
+
+    /// Send an already-encoded byte body and parse the JSON reply.
+    ///
+    /// `upload` below builds one specific multipart/form-data shape for Atlassian.
+    /// This is the general form: the caller owns the encoding, this owns auth,
+    /// execution, and error mapping.
+    pub async fn request_bytes(
+        &self,
+        service: &'static str,
+        operation: &'static str,
+        profile: &Profile,
+        request: BytesRequest,
+    ) -> Result<RawResponse, AppError> {
+        let token = crate::oauth::resolve_token(profile, &self.client, service, operation).await?;
+        let effective = crate::config::Profile {
+            token: Some(token),
+            ..profile.clone()
+        };
+        let mut builder = self
+            .client
+            .request(request.method, &request.url)
+            .header("Content-Type", request.content_type)
+            .header("Accept", "application/json")
+            .body(request.body);
+        for (name, value) in request.headers {
+            builder = builder.header(name, value);
+        }
+        builder = apply_auth(builder, service, operation, &effective)?;
+
+        let response = builder.send().await.map_err(|err| {
+            AppError::internal(service, operation, format!("request failed: {err}"))
+        })?;
+        let status = response.status();
+        let location = response
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string);
+        let text = response.text().await.map_err(|err| {
+            AppError::internal(
+                service,
+                operation,
+                format!("failed to read response: {err}"),
+            )
+        })?;
+        let parsed = if text.trim().is_empty() {
+            Value::Object(serde_json::Map::new())
+        } else {
+            serde_json::from_str(&text).unwrap_or_else(|_| Value::String(text.clone()))
+        };
+
+        if status.is_success() {
+            Ok(RawResponse {
+                body: parsed,
+                location,
+            })
+        } else {
+            Err(AppError::api(
+                service,
+                operation,
+                status,
+                format!("provider returned HTTP {}", status.as_u16()),
+                Some(parsed),
             ))
         }
     }
