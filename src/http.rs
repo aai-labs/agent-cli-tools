@@ -8,7 +8,6 @@ use serde_json::Value;
 use crate::{config::Profile, error::AppError};
 
 pub(crate) fn multipart_boundary() -> String {
-fn multipart_boundary() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)

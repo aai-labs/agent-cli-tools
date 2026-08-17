@@ -1854,6 +1854,9 @@ fn google_drive_read_export_and_upload() {
         permissions["permissions"].as_array().is_some(),
         "{permissions:#}"
     );
+}
+
+#[test]
 #[ignore = "requires live OpenPanel root/read client credentials and a seeded project"]
 fn openpanel_projects_insights_and_profiles_read() {
     let Some(project_id) = env_or_skip("AAI_E2E_OPENPANEL_PROJECT") else {
