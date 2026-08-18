@@ -13,6 +13,7 @@ How to provision Google sheets, Gmail and Zoho Mail REST for use with `aai-cli`.
    > If you skip this step the tool will return a `SERVICE_DISABLED` 403 error even with valid credentials.
 3. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**
 4. Application type: **Desktop app** → give it a name → Create
+   > Must be **Desktop app**, not **Web application**. Only a Desktop client may use a `http://localhost:<port>` redirect without registering it. A Web client rejects the flow below with `redirect_uri_mismatch` unless you add the exact redirect URI under **Authorized redirect URIs** first.
 5. Note your `client_id` and `client_secret`
 
 ### Get a refresh token (one-time, lasts until revoked)
@@ -20,10 +21,18 @@ How to provision Google sheets, Gmail and Zoho Mail REST for use with `aai-cli`.
 Run this URL in a browser (replace `CLIENT_ID`):
 
 ```
-https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://mail.google.com/&access_type=offline&prompt=consent
+https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=http%3A%2F%2Flocalhost%3A8080&response_type=code&scope=https%3A%2F%2Fmail.google.com%2F&access_type=offline&prompt=consent
 ```
 
-Sign in → Allow → copy the authorization code shown on screen.
+Paste it into the address bar as a single line — clicking a wrapped link in a terminal often sends only the first line, which Google rejects with `400: Required parameter is missing: response_type`.
+
+Sign in → Allow → the browser lands on a "can't connect" page at `localhost:8080`. That is expected; nothing is listening. The code is in the address bar:
+
+```
+http://localhost:8080/?code=AUTH_CODE&scope=...
+```
+
+Copy the `code` value (URL-decode `%2F` back to `/` if the browser shows it encoded). It is single-use and expires in ~10 minutes.
 
 Exchange it for tokens (replace `CLIENT_ID`, `CLIENT_SECRET`, `AUTH_CODE`):
 
@@ -32,7 +41,7 @@ curl -X POST https://oauth2.googleapis.com/token \
   -d client_id=CLIENT_ID \
   -d client_secret=CLIENT_SECRET \
   -d code=AUTH_CODE \
-  -d redirect_uri=urn:ietf:wg:oauth:2.0:oob \
+  -d redirect_uri=http://localhost:8080 \
   -d grant_type=authorization_code
 ```
 
@@ -126,6 +135,7 @@ curl -H "Authorization: Zoho-oauthtoken ACCESS_TOKEN" \
    > If you skip this step the tool will return a `SERVICE_DISABLED` 403 error even with valid credentials.
 3. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**
 4. Application type: **Desktop app** → give it a name → Create
+   > Must be **Desktop app**, not **Web application** — see the note in the Gmail section above.
 5. Note your `client_id` and `client_secret`
 
 ### Get a refresh token (one-time, lasts until revoked)
@@ -133,10 +143,12 @@ curl -H "Authorization: Zoho-oauthtoken ACCESS_TOKEN" \
 Run this URL in a browser (replace `CLIENT_ID`):
 
 ```
-https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/spreadsheets%20https://www.googleapis.com/auth/drive.metadata.readonly&access_type=offline&prompt=consent
+https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=http%3A%2F%2Flocalhost%3A8080&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fspreadsheets%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.metadata.readonly&access_type=offline&prompt=consent
 ```
 
-Sign in → Allow → copy the authorization code shown on screen.
+Paste it into the address bar as a single line — clicking a wrapped link in a terminal often sends only the first line, which Google rejects with `400: Required parameter is missing: response_type`.
+
+Sign in → Allow → the browser lands on a "can't connect" page at `localhost:8080`. That is expected; nothing is listening. Copy the `code` value out of the address bar (`http://localhost:8080/?code=AUTH_CODE&scope=...`). It is single-use and expires in ~10 minutes.
 
 Exchange it for tokens (replace `CLIENT_ID`, `CLIENT_SECRET`, `AUTH_CODE`):
 
@@ -145,7 +157,7 @@ curl -X POST https://oauth2.googleapis.com/token \
   -d client_id=CLIENT_ID \
   -d client_secret=CLIENT_SECRET \
   -d code=AUTH_CODE \
-  -d redirect_uri=urn:ietf:wg:oauth:2.0:oob \
+  -d redirect_uri=http://localhost:8080 \
   -d grant_type=authorization_code
 ```
 

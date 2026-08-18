@@ -15,6 +15,8 @@ const COLLECTION_KEYS: &[&str] = &[
     "links",
     "bookmarks",
     "fields",
+    "drives",
+    "permissions",
 ];
 
 pub(crate) fn annotate(value: Value, command_args: &[String]) -> Value {
@@ -254,6 +256,17 @@ fn query_parameters(url: &str) -> Vec<(String, String)> {
 }
 
 fn looks_like_collection_command(args: &[String]) -> bool {
+    // Some resource names double as collection actions — `github prs files` is a
+    // listing, but `drive files get` and `drive files download` address one file. An
+    // explicit single-item action settles it, so it is checked first. This only
+    // decides the *guess*; a response that actually contains a collection key is
+    // still counted by `returned_count`.
+    if args
+        .iter()
+        .any(|arg| matches!(arg.as_str(), "get" | "download" | "upload"))
+    {
+        return false;
+    }
     args.iter().any(|arg| {
         matches!(
             arg.as_str(),
@@ -465,6 +478,39 @@ mod tests {
         );
         assert_eq!(output["_aai"]["pagination"]["status"], "not_applicable");
         assert_eq!(output["_aai"]["pagination"]["has_more"], false);
+    }
+
+    #[test]
+    fn a_single_file_action_is_not_mistaken_for_a_file_listing() {
+        // "files" is a collection keyword for `github prs files`, but here it is the
+        // resource name and `download` is the action.
+        let output = annotate(
+            json!({"output": "./report.docx", "bytes": 24713, "file_id": "1XyZ"}),
+            &strings(&[
+                "aai-cli",
+                "drive",
+                "files",
+                "download",
+                "1XyZ",
+                "--output",
+                "./report.docx",
+            ]),
+        );
+        assert_eq!(output["_aai"]["pagination"]["status"], "not_applicable");
+        assert_eq!(output["_aai"]["pagination"]["has_more"], false);
+    }
+
+    #[test]
+    fn a_listing_that_shares_the_resource_name_is_still_a_collection() {
+        let output = annotate(
+            json!({"files": [{"id": "1XyZ"}], "nextPageToken": "next"}),
+            &strings(&["aai-cli", "drive", "files", "list", "--limit", "1"]),
+        );
+        assert_eq!(output["_aai"]["pagination"]["status"], "more_available");
+        assert_eq!(
+            output["_aai"]["pagination"]["next_command"],
+            "aai-cli drive files list --limit 2"
+        );
     }
 
     #[test]

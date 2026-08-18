@@ -35,6 +35,8 @@ pub enum Command {
     Apollo(ApolloCommand),
     /// Read and write Google Sheets spreadsheets and cell data.
     Sheets(SheetsCommand),
+    /// Read Google Drive files, folders, shared drives, and sharing; upload file content.
+    Drive(DriveCommand),
     /// Read and write local spreadsheets: .xlsx/.xlsm and .csv/.tsv, plus read-only
     /// .xls/.xlsb/.ods. Needs no profile or credentials.
     Excel(ExcelCommand),
@@ -2934,6 +2936,75 @@ mod tests {
     }
 
     #[test]
+    fn drive_files_list_parses_scoping_flags() {
+        let cli = Cli::try_parse_from([
+            "aai-cli",
+            "drive",
+            "files",
+            "list",
+            "--parent",
+            "1AbC",
+            "--drive-id",
+            "0XyZ",
+            "--name-contains",
+            "runbook",
+            "--include-trashed",
+            "--limit",
+            "10",
+        ])
+        .expect("parse drive files list");
+        let Command::Drive(drive) = cli.command else {
+            panic!("expected drive command");
+        };
+        let DriveResource::Files(files) = drive.resource else {
+            panic!("expected files resource");
+        };
+        let DriveFilesAction::List(args) = files.action else {
+            panic!("expected list action");
+        };
+        assert_eq!(args.parent.as_deref(), Some("1AbC"));
+        assert_eq!(args.drive_id.as_deref(), Some("0XyZ"));
+        assert_eq!(args.name_contains.as_deref(), Some("runbook"));
+        assert!(args.include_trashed);
+        assert_eq!(args.limit, 10);
+    }
+
+    #[test]
+    fn drive_files_download_requires_an_output_path() {
+        // Content must never land on stdout, so there is no default for --output.
+        Cli::try_parse_from(["aai-cli", "drive", "files", "download", "1AbC"])
+            .expect_err("download without --output must fail");
+    }
+
+    #[test]
+    fn drive_exposes_reads_and_only_the_upload_write() {
+        let mut command = Cli::command();
+        let drive = command.find_subcommand_mut("drive").expect("drive command");
+        let mut help = Vec::new();
+        drive.write_long_help(&mut help).unwrap();
+        let help = String::from_utf8(help).unwrap();
+
+        for resource in ["files", "folders", "drives", "permissions", "about"] {
+            assert!(help.contains(resource), "drive help lacks {resource}");
+        }
+
+        // Upload is the only write. Everything that would mutate Drive state — most
+        // importantly sharing — has no command at all, so an agent cannot reach it.
+        for absent in [
+            vec!["drive", "files", "delete", "1AbC"],
+            vec!["drive", "files", "trash", "1AbC"],
+            vec!["drive", "files", "update", "1AbC"],
+            vec!["drive", "permissions", "create", "1AbC"],
+            vec!["drive", "permissions", "delete", "1AbC", "1XyZ"],
+        ] {
+            let mut args = vec!["aai-cli"];
+            args.extend(absent.iter().copied());
+            Cli::try_parse_from(args)
+                .expect_err(&format!("{absent:?} must not be a supported command"));
+        }
+    }
+
+    #[test]
     fn pipedrive_history_commands_are_discoverable_in_help() {
         let mut command = Cli::command();
         let pipedrive = command
@@ -3467,6 +3538,227 @@ pub struct ValuesClearArgs {
     pub spreadsheet_id: String,
     /// A1 notation range, e.g. 'Sheet1'!A1:D5
     pub range: String,
+}
+
+#[derive(Debug, Args)]
+#[command(
+    after_help = "Examples:\n  aai-cli drive files list --parent 1AbC... --limit 20\n  aai-cli drive files download 1XyZ... --output ./report.docx\n  aai-cli drive files upload ./notes.md --parent 1AbC...\n  aai-cli drive permissions list 1XyZ..."
+)]
+pub struct DriveCommand {
+    #[command(subcommand)]
+    pub resource: DriveResource,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DriveResource {
+    /// List and read file metadata, download content, and upload new files.
+    Files(DriveFilesCommand),
+    /// List and read folders. A folder is a file with the Drive folder MIME type.
+    Folders(DriveFoldersCommand),
+    /// List and read shared drives.
+    Drives(DriveDrivesCommand),
+    /// Read who a file is shared with. Sharing itself is deliberately not writable.
+    Permissions(DrivePermissionsCommand),
+    /// Read storage quota and the conversions Drive supports.
+    About(DriveAboutCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFilesCommand {
+    #[command(subcommand)]
+    pub action: DriveFilesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DriveFilesAction {
+    /// List file metadata. Shared-drive content is included.
+    List(DriveFilesListArgs),
+    /// Get metadata for one file.
+    Get(DriveFilesGetArgs),
+    /// Download file content to --output. Google-native docs are exported instead.
+    Download(DriveFilesDownloadArgs),
+    /// Upload a local file to Drive as a new file.
+    Upload(DriveFilesUploadArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFilesListArgs {
+    /// Only list direct children of this folder ID.
+    #[arg(long)]
+    pub parent: Option<String>,
+    /// Restrict the search to one shared drive ID.
+    #[arg(long)]
+    pub drive_id: Option<String>,
+    /// Only list files whose name contains this text.
+    #[arg(long)]
+    pub name_contains: Option<String>,
+    /// Only list files with this exact MIME type.
+    #[arg(long)]
+    pub mime_type: Option<String>,
+    /// Raw Drive query clause, ANDed with the other filters. See Drive's search-for-files guide.
+    #[arg(long)]
+    pub q: Option<String>,
+    /// Drive sort spec, e.g. 'modifiedTime desc' or 'folder,name'.
+    #[arg(long)]
+    pub order_by: Option<String>,
+    /// Per-file field projection, e.g. 'id,name,size'. Replaces the default projection.
+    #[arg(long)]
+    pub fields: Option<String>,
+    /// Include trashed files. They are excluded by default.
+    #[arg(long)]
+    pub include_trashed: bool,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Continue from a previous response's nextPageToken.
+    #[arg(long)]
+    pub page_token: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFilesGetArgs {
+    pub file_id: String,
+    /// Field projection. Replaces the default projection.
+    #[arg(long)]
+    pub fields: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFilesDownloadArgs {
+    pub file_id: String,
+    /// Path to write the file content to. Content never goes to stdout.
+    #[arg(long)]
+    pub output: String,
+    /// Export target MIME type for Google-native docs. Ignored for ordinary blobs.
+    #[arg(long)]
+    pub mime_type: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFilesUploadArgs {
+    /// Path to the local file to upload.
+    pub file: String,
+    /// Name for the created Drive file. Defaults to the local file name.
+    #[arg(long)]
+    pub name: Option<String>,
+    /// Folder ID (or shared drive ID) to create the file in.
+    #[arg(long)]
+    pub parent: Option<String>,
+    /// Content MIME type. Guessed from the file extension when omitted.
+    #[arg(long)]
+    pub mime_type: Option<String>,
+    /// Description stored on the Drive file.
+    #[arg(long)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFoldersCommand {
+    #[command(subcommand)]
+    pub action: DriveFoldersAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DriveFoldersAction {
+    /// List folders, optionally scoped to a parent folder or shared drive.
+    List(DriveFoldersListArgs),
+    /// Get metadata for one folder.
+    Get(DriveFoldersGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFoldersListArgs {
+    /// Only list folders directly inside this folder ID.
+    #[arg(long)]
+    pub parent: Option<String>,
+    /// Restrict the search to one shared drive ID.
+    #[arg(long)]
+    pub drive_id: Option<String>,
+    /// Only list folders whose name contains this text.
+    #[arg(long)]
+    pub name_contains: Option<String>,
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Continue from a previous response's nextPageToken.
+    #[arg(long)]
+    pub page_token: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveFoldersGetArgs {
+    pub folder_id: String,
+    /// Field projection. Replaces the default projection.
+    #[arg(long)]
+    pub fields: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveDrivesCommand {
+    #[command(subcommand)]
+    pub action: DriveDrivesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DriveDrivesAction {
+    /// List shared drives the caller is a member of.
+    List(DriveDrivesListArgs),
+    /// Get metadata for one shared drive.
+    Get(DriveDrivesGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct DriveDrivesListArgs {
+    #[arg(long, default_value_t = 50)]
+    pub limit: u32,
+    /// Continue from a previous response's nextPageToken.
+    #[arg(long)]
+    pub page_token: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveDrivesGetArgs {
+    pub drive_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct DrivePermissionsCommand {
+    #[command(subcommand)]
+    pub action: DrivePermissionsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DrivePermissionsAction {
+    /// List the permissions on a file: who can see it and with what role.
+    List(DrivePermissionsListArgs),
+    /// Get one permission by ID.
+    Get(DrivePermissionsGetArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct DrivePermissionsListArgs {
+    pub file_id: String,
+    #[arg(long, default_value_t = 100)]
+    pub limit: u32,
+    /// Continue from a previous response's nextPageToken.
+    #[arg(long)]
+    pub page_token: Option<String>,
+}
+
+#[derive(Debug, Args)]
+pub struct DrivePermissionsGetArgs {
+    pub file_id: String,
+    pub permission_id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct DriveAboutCommand {
+    #[command(subcommand)]
+    pub action: DriveAboutAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DriveAboutAction {
+    /// Get the caller's storage quota and Drive's supported import/export conversions.
+    Get,
 }
 
 #[derive(Debug, Args)]

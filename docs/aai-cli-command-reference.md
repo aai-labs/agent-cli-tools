@@ -271,6 +271,67 @@ aai-cli slack canvas download <channel-id> --output PATH
 
 `canvas download` resolves the channel's canvas, downloads it via `url_private_download`, and writes it to `--output`. Like the GitHub Actions and Bitbucket Pipelines download commands, it returns JSON metadata (`output`, `bytes`, `canvas_id`, `title`) and never prints content to stdout. Canvas content is written as an HTML fragment (Slack's internal Quip-document format), not markdown. A channel with no canvas returns `not_found`. `files download` and `canvas download` share the same download mechanism internally — the only difference is how each resolves the file ID to download.
 
+## Google Drive
+
+Drive is read-first with exactly one write, `files upload`. Sharing, renames, moves, trashing, deleting, revisions, and comments are deliberately absent — an agent cannot change who can see a file.
+
+Drive profiles are ordinary Google REST profiles; `profile.base_url` overrides the default `https://www.googleapis.com` and is almost never needed.
+
+```toml
+[profiles.google-drive-work]
+provider = "google"
+auth_type = "bearer_token"
+token_secret = "google.drive_access_token"
+```
+
+Scopes: `drive.readonly` for every read, `drive.file` or `drive` for `files upload`. `drive.metadata.readonly` is not enough for `files download`.
+
+```bash
+aai-cli drive files list [--parent ID] [--drive-id ID] [--name-contains TEXT] [--mime-type MIME] [--q CLAUSE] [--order-by SPEC] [--fields PROJECTION] [--include-trashed] [--limit N] [--page-token TOKEN]
+aai-cli drive files get <file-id> [--fields PROJECTION]
+aai-cli drive files download <file-id> --output PATH [--mime-type MIME]
+aai-cli drive files upload <file> [--name NAME] [--parent ID] [--mime-type MIME] [--description TEXT]
+aai-cli drive folders list [--parent ID] [--drive-id ID] [--name-contains TEXT] [--limit N] [--page-token TOKEN]
+aai-cli drive folders get <folder-id> [--fields PROJECTION]
+aai-cli drive drives list [--limit N] [--page-token TOKEN]
+aai-cli drive drives get <drive-id>
+aai-cli drive permissions list <file-id> [--limit N] [--page-token TOKEN]
+aai-cli drive permissions get <file-id> <permission-id>
+aai-cli drive about get
+```
+
+Every request sends an explicit `fields` projection. Drive's default response is only `kind,id,name,mimeType,resourceKey`, which omits size, timestamps, parents, and links. `--fields` replaces the projection: on `files list` it is the *per-file* projection (the `nextPageToken,incompleteSearch,files(…)` wrapper is always supplied so aggregation keeps working); on `files get` and `folders get` it is the whole projection.
+
+Every listing sends `supportsAllDrives=true`, `includeItemsFromAllDrives=true`, and `corpora=allDrives`, so shared-drive content is present. Omitting those returns HTTP 200 with shared-drive items silently missing. `--drive-id` narrows to one shared drive (`corpora=drive&driveId=…`). Listings also add `trashed = false` unless `--include-trashed` is passed.
+
+`--parent`, `--mime-type`, `--name-contains`, and `--q` are combined into one Drive query with `and`; `--q` is a raw clause for filters with no flag, e.g. `--q "modifiedTime > '2026-08-01T00:00:00'"`. Values interpolated into the query are escaped so a quote in a name cannot break out of its clause.
+
+`folders list` and `folders get` are `files.list`/`files.get` with `mimeType = 'application/vnd.google-apps.folder'` applied — a folder is not a separate Drive resource. `folders list` orders by name.
+
+`files download` looks up the file's MIME type first, then picks the mechanism. Ordinary blobs stream through `files.get?alt=media`; `application/vnd.google-apps.*` documents hold no bytes of their own and go through `files.export`, defaulting to Docs→docx, Sheets→xlsx, Slides→pptx, Drawings→png, Apps Script→script+json, and everything else→pdf. `--mime-type` overrides the export target and is ignored for blobs; `about get`'s `exportFormats` lists the legal targets. Exports are capped at 10 MB by Google and native documents report no `size`, so that cap can only appear as an `exportSizeLimitExceeded` error at download time. Like the Slack and GitHub Actions download commands, content is written to `--output` and never printed to stdout; the command returns `{output, bytes, file_id, name, mime_type, exported_mime_type}`, with `exported_mime_type: null` for a blob. Downloading a folder or a shortcut is `invalid_input`, and the shortcut error names the target ID to download instead.
+
+`files upload` creates a new file from local bytes and returns the created Drive file resource. The upload protocol follows the payload size and is not a flag: a `multipart/related` metadata+media upload up to Drive's 5 MB limit, a resumable session above it. Content type is guessed from the file extension unless `--mime-type` is given. Upload never converts to a Google format and never replaces an existing file — re-running it creates a second file with the same name, which Drive allows.
+
+`permissions list` answers "who can see this file" and has no write counterpart. Drive requires more than read access for it: a plain reader gets `403 insufficientFilePermissions` even when `files get` on the same file succeeded.
+
+`about get` returns quota plus `exportFormats`. Sizes and quota values are decimal **strings**, and a missing `storageQuota.limit` means unlimited.
+
+For cell-level work on a Google Sheet, use `aai-cli sheets` rather than downloading the file.
+
+## Apollo
+
+Apollo profiles use API-key auth only:
+
+```toml
+[profiles.apollo-work]
+provider = "apollo"
+auth_type = "apollo_api_key"
+api_token_secret = "apollo.api_token"
+# Optional; defaults to https://api.apollo.io/api/v1
+base_url = "https://api.apollo.io/api/v1"
+```
+
+Apollo's documented API-key health check is outside the main `/api/v1` base and is exposed as `apollo health`. Generic `apollo request` paths remain relative to `profile.base_url`.
 ## Apollo
 
 Apollo profiles use API-key auth only:
