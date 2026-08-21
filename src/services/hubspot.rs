@@ -62,7 +62,10 @@ pub(crate) async fn dispatch(
         HubspotResource::Events(command) => events(client, ctx, command).await,
         HubspotResource::Conversations(command) => conversations(client, ctx, command).await,
         HubspotResource::Request(args) => {
-            let cap = capability_for_path(&args.path);
+            let cap = capability_for_path(&args.path, args.method);
+            if is_custom_channels_path(&args.path) {
+                reject_legacy_custom_channels(ctx.profile(), "request", cap)?;
+            }
             generic_request::dispatch(client, ctx, "hubspot", hubspot_base(ctx.profile()), args)
                 .await
                 .map_err(|err| enrich_auth_error(ctx.profile(), "request", cap, err))
@@ -555,12 +558,21 @@ where
                 .into_iter()
                 .take((limit as usize).saturating_sub(values.len())),
         );
+        let cursor_advanced = cursor_advanced(after.as_deref(), next_after.as_deref());
         after = next_after;
-        if values.len() >= limit as usize || after.is_none() || count < per_page as usize {
+        if values.len() >= limit as usize
+            || after.is_none()
+            || count < per_page as usize
+            || !cursor_advanced
+        {
             break;
         }
     }
     Ok(aggregate_results(first, values, after))
+}
+
+fn cursor_advanced(current: Option<&str>, next: Option<&str>) -> bool {
+    next != current
 }
 
 fn empty_results() -> Value {
@@ -624,12 +636,13 @@ fn crm_capability(object: &str) -> Capability {
     }
 }
 
-fn capability_for_path(path: &str) -> Capability {
+fn capability_for_path(path: &str, method: GenericHttpMethod) -> Capability {
     let normalized = path.trim_start_matches('/');
+    let is_read = matches!(method, GenericHttpMethod::Get | GenericHttpMethod::Head);
     if normalized.starts_with("files/") {
         Capability {
             endpoint: "/files/*",
-            required_scopes: HIDDEN_FILES_SCOPES,
+            required_scopes: FILES_SCOPES,
             caveat: Some("Most file calls need files; hidden or deleted file reads may also need files.ui_hidden.read."),
         }
     } else if normalized.starts_with("events/") {
@@ -641,7 +654,11 @@ fn capability_for_path(path: &str) -> Capability {
     } else if normalized.starts_with("conversations/v3/custom-channels") {
         Capability {
             endpoint: "/conversations/v3/custom-channels/*",
-            required_scopes: CUSTOM_CHANNEL_WRITE_SCOPES,
+            required_scopes: if is_read {
+                CUSTOM_CHANNEL_READ_SCOPES
+            } else {
+                CUSTOM_CHANNEL_WRITE_SCOPES
+            },
             caveat: Some(
                 "HubSpot custom channel endpoints are not supported for legacy private apps.",
             ),
@@ -649,7 +666,11 @@ fn capability_for_path(path: &str) -> Capability {
     } else if normalized.starts_with("conversations/") {
         Capability {
             endpoint: "/conversations/*",
-            required_scopes: CONVERSATIONS_WRITE_SCOPES,
+            required_scopes: if is_read {
+                CONVERSATIONS_READ_SCOPES
+            } else {
+                CONVERSATIONS_WRITE_SCOPES
+            },
             caveat: Some("Read calls need conversations.read; write flows usually also need conversations.write."),
         }
     } else if normalized.starts_with("crm/") {
@@ -659,6 +680,7 @@ fn capability_for_path(path: &str) -> Capability {
                 "crm.objects.contacts.read",
                 "crm.objects.companies.read",
                 "crm.objects.deals.read",
+                "crm.objects.tickets.read",
             ],
             caveat: Some("Specific CRM object scopes and account permissions vary by endpoint."),
         }
@@ -669,6 +691,11 @@ fn capability_for_path(path: &str) -> Capability {
             caveat: Some("HubSpot may require endpoint-specific scopes or account tier access."),
         }
     }
+}
+
+fn is_custom_channels_path(path: &str) -> bool {
+    path.trim_start_matches('/')
+        .starts_with("conversations/v3/custom-channels")
 }
 
 fn reject_legacy_custom_channels(
@@ -781,29 +808,71 @@ mod tests {
     #[test]
     fn capability_hints_cover_named_hubspot_surfaces() {
         assert_eq!(
-            capability_for_path("/files/v3/files").required_scopes,
-            HIDDEN_FILES_SCOPES
+            capability_for_path("/files/v3/files", GenericHttpMethod::Get).required_scopes,
+            FILES_SCOPES
         );
         assert_eq!(
-            capability_for_path("/events/v3/events/contact.view").required_scopes,
+            capability_for_path("/events/v3/events/contact.view", GenericHttpMethod::Get)
+                .required_scopes,
             EVENT_OCCURRENCE_SCOPES
         );
         assert_eq!(
-            capability_for_path("/conversations/v3/conversations/threads").required_scopes,
-            CONVERSATIONS_WRITE_SCOPES
+            capability_for_path(
+                "/conversations/v3/conversations/threads",
+                GenericHttpMethod::Get
+            )
+            .required_scopes,
+            CONVERSATIONS_READ_SCOPES
         );
         assert_eq!(
-            capability_for_path("/crm/v3/objects/contacts").required_scopes,
+            capability_for_path("/crm/v3/objects/contacts", GenericHttpMethod::Get).required_scopes,
             &[
                 "crm.objects.contacts.read",
                 "crm.objects.companies.read",
-                "crm.objects.deals.read"
+                "crm.objects.deals.read",
+                "crm.objects.tickets.read"
             ]
         );
         assert_eq!(
-            capability_for_path("/conversations/v3/custom-channels").required_scopes,
+            capability_for_path("/conversations/v3/custom-channels", GenericHttpMethod::Post)
+                .required_scopes,
             CUSTOM_CHANNEL_WRITE_SCOPES
         );
+    }
+
+    #[test]
+    fn generic_read_capabilities_do_not_require_write_scopes() {
+        assert_eq!(
+            capability_for_path("/conversations/v3/custom-channels", GenericHttpMethod::Get)
+                .required_scopes,
+            CUSTOM_CHANNEL_READ_SCOPES
+        );
+        assert_eq!(
+            capability_for_path(
+                "/conversations/v3/conversations/threads",
+                GenericHttpMethod::Head
+            )
+            .required_scopes,
+            CONVERSATIONS_READ_SCOPES
+        );
+    }
+
+    #[test]
+    fn custom_channel_path_detection_covers_generic_request_paths() {
+        assert!(is_custom_channels_path(
+            "/conversations/v3/custom-channels/channel-1"
+        ));
+        assert!(!is_custom_channels_path(
+            "/conversations/v3/conversations/threads"
+        ));
+    }
+
+    #[test]
+    fn pagination_cursor_must_advance_before_requesting_another_page() {
+        assert!(cursor_advanced(Some("page-1"), Some("page-2")));
+        assert!(!cursor_advanced(Some("page-1"), Some("page-1")));
+        assert!(cursor_advanced(None, Some("page-1")));
+        assert!(cursor_advanced(Some("page-1"), None));
     }
 
     #[test]
