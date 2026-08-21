@@ -35,6 +35,14 @@ This project should support credentials supplied by users or agents rather than 
 - Key scope and plan access: Apollo API keys can be limited by endpoint access and account plan. Treat `403` as insufficient key scope, missing plan access, or a master-key-only endpoint.
 - Partner OAuth: Apollo documents OAuth bearer tokens for partner integrations, but this CLI does not implement Apollo OAuth acquisition or refresh in this pass.
 
+## HubSpot
+
+- Service key: Implemented as `auth_type = "hubspot_service_key"` with `token_secret`. It authenticates HubSpot REST API requests, but service keys are not a replacement for developer-platform authentication such as webhooks or UI extensions.
+- Legacy private app token: Implemented as `auth_type = "hubspot_legacy_private_app"` with `token_secret`. It uses the same bearer header shape but must remain distinct because some endpoint families have different support.
+- Scope and tier access: HubSpot `401` and `403` responses should be returned as structured `auth_error` JSON with `details.provider`, `details.auth_type`, `details.endpoint`, `details.required_scopes`, and `details.remediation`. Do not pretend the CLI can validate Enterprise/account-tier entitlement locally.
+- Custom channels: HubSpot documents conversations custom channel endpoints as unsupported for legacy private apps. The CLI should return `unsupported_auth` before the request when `hubspot_legacy_private_app` is used for `conversations custom-channels`.
+- Common non-CRM scopes: files need `files`; hidden/deleted file reads may need `files.ui_hidden.read`; event occurrence reads need `business-intelligence`; custom behavioral event sends need `analytics.behavioral_events.send`; conversations reads need `conversations.read`; conversations writes usually need `conversations.write`; visitor identification token creation needs `conversations.visitor_identification.tokens.create`.
+
 ## Slack
 
 - Bot token (`xoxb-`): Primary and only implemented model. Profiles use `auth_type = "bearer_token"` with `token_secret`, sent as a standard `Authorization: Bearer` header — no Slack-specific auth code was needed since `bearer_token` is already this CLI's default auth branch.
@@ -42,9 +50,6 @@ This project should support credentials supplied by users or agents rather than 
 - Internal apps only: this CLI assumes the Slack app/bot is installed only in its own workspace and never has public distribution enabled. Slack throttles `conversations.history`/`conversations.replies` to 1 request/minute for apps commercially distributed outside the Marketplace; internal apps keep normal Tier 2/3 limits ([details](https://docs.slack.dev/changelog/2025/06/03/rate-limits-clarity/)).
 - OAuth install flow: not implemented. This CLI does not acquire or refresh Slack OAuth tokens — a bot token must be created and supplied by the user, same as every other provider in this matrix.
 
-## CLI Implications
-
-- Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `github_app`, `oauth_user`, or `service_account`.
 ## Openpanel
 
 - Client ID/secret (`auth_type = "openpanel_client_credentials"`): the only implemented model, sent as `openpanel-client-id` and `openpanel-client-secret` headers. Set `client_id` (not a secret) and `api_token_secret` (the client secret) on the profile.
@@ -54,7 +59,7 @@ This project should support credentials supplied by users or agents rather than 
 
 ## CLI Implications
 
-- Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `openpanel_client_credentials`, `github_app`, `oauth_user`, or `service_account`.
+- Store auth type explicitly in each profile: `basic_api_token`, `bearer_token`, `apollo_api_key`, `hubspot_service_key`, `hubspot_legacy_private_app`, `openpanel_client_credentials`, `github_app`, `oauth_user`, or `service_account`.
 - Never infer service-account semantics from a token string alone.
 - Keep provider profiles isolated; do not reuse an Atlassian token across Jira, Confluence, and Bitbucket unless the provider docs explicitly support it.
 - Prefer env var overrides for secrets and config-file fields for non-secret metadata such as site URL, workspace, region, account email, and default scopes.

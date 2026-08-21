@@ -32,6 +32,7 @@ Validation enforces these provider/auth/reference combinations:
 - Pipedrive: `pipedrive_personal_token` with `api_token_secret`
 - Apollo: `apollo_api_key` with `api_token_secret`
 - GitHub: `bearer_token` with `token_secret`
+- HubSpot: `hubspot_service_key` or `hubspot_legacy_private_app` with `token_secret`
 - Slack: `bearer_token` with `token_secret`
 - Jira, Confluence, and Bitbucket: `basic_api_token` with `api_token_secret`
 
@@ -48,11 +49,52 @@ aai-cli <service> request patch <relative-path> --allow-write [--json <path|->] 
 aai-cli <service> request delete <relative-path> --allow-write [--json <path|->] [--query key=value ...]
 ```
 
-Supported services: `jira`, `confluence`, `bitbucket`, `github`, `pipedrive`, `apollo`, `slack`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
+Supported services: `jira`, `confluence`, `bitbucket`, `github`, `hubspot`, `pipedrive`, `apollo`, `slack`, and REST-backed `email` and `calendar` profiles. Generic requests reject SMTP/IMAP and CalDAV profiles.
 
 The endpoint path must be relative to the configured provider base. Absolute URLs, redirects, embedded queries/fragments, and backslashes are rejected to prevent sending profile authentication to another origin. GET and HEAD reject `--json`; writes require `--allow-write`. Query arguments are repeatable and must use `key=value`.
 
 The command returns one provider response and does not aggregate pagination. Follow `_aai.pagination.next_command` when present, use its continuation parameters explicitly, or use a typed list/search command.
+
+## HubSpot
+
+Profiles use bearer-style HubSpot tokens:
+
+```toml
+[profiles.hubspot-work]
+provider = "hubspot"
+auth_type = "hubspot_service_key" # or "hubspot_legacy_private_app"
+token_secret = "hubspot.token"
+```
+
+Typed commands cover common read and send flows:
+
+```bash
+aai-cli hubspot health
+aai-cli hubspot crm contacts|companies|deals|tickets list [--limit N] [--after CURSOR] [--properties CSV]
+aai-cli hubspot crm contacts|companies|deals|tickets get <id> [--properties CSV] [--archived]
+aai-cli hubspot crm contacts|companies|deals|tickets search [--json <path|->] [--limit N]
+aai-cli hubspot files list [--limit N] [--after CURSOR] [--folder-id ID]
+aai-cli hubspot files get <id> [--hidden-or-deleted]
+aai-cli hubspot events occurrences list <event-type> [--limit N] [--after CURSOR]
+aai-cli hubspot events custom send --json <path|-|inline>
+aai-cli hubspot conversations inboxes list [--limit N] [--after CURSOR]
+aai-cli hubspot conversations threads list [--limit N] [--after CURSOR]
+aai-cli hubspot conversations threads get <id>
+aai-cli hubspot conversations visitor-identification tokens create --json <path|-|inline>
+aai-cli hubspot conversations custom-channels list|get|create ...
+```
+
+Recommended scopes depend on the command:
+
+- CRM objects: the matching object scopes, such as `crm.objects.contacts.read`, `crm.objects.companies.read`, `crm.objects.deals.read`, and `crm.objects.tickets.read`; account tier and object permissions also apply.
+- Files: `files`; hidden or deleted file reads may also need `files.ui_hidden.read`.
+- Event occurrence reads: `business-intelligence`; account tier can still limit access.
+- Custom behavioral event sends: `analytics.behavioral_events.send`.
+- Conversations inbox/thread reads: `conversations.read`; write flows usually also need `conversations.write`.
+- Conversations custom channels: `conversations.custom_channels.read` and `conversations.custom_channels.write`; HubSpot does not support these endpoints for legacy private app tokens, so the CLI returns `unsupported_auth` before sending the request.
+- Visitor identification tokens: `conversations.visitor_identification.tokens.create`.
+
+For HubSpot `401` and `403` responses, errors keep HubSpot's response under `details.provider` and add `details.auth_type`, `details.endpoint`, `details.required_scopes`, and `details.remediation`. Service-key failures on developer-platform features and tier-gated Enterprise endpoints are surfaced as structured failures with scope/auth/tier hints rather than panics or raw provider dumps.
 
 ## Jira
 
@@ -510,7 +552,7 @@ Provider response fields remain at their original locations, except bare provide
 
 When `next_command` is present, run it to retrieve more results. Generic requests preserve existing query filters while replacing or adding continuation parameters. Typed commands that aggregate to `--limit` may suggest rerunning with a larger limit; this retrieves the previous results plus additional results rather than only the next page. If `status` is `unknown`, increase `--limit` or use a generic authenticated request with the provider's documented pagination parameters.
 
-For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, Apollo, and Slack list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
+For implemented Jira, Confluence, GitHub, Bitbucket, Pipedrive, Apollo, HubSpot, and Slack list/search commands, `aai-cli` may follow provider pagination and aggregate results until it reaches `--limit` or the provider has no next page.
 
 Covered operations:
 
@@ -546,6 +588,11 @@ Covered operations:
 - `apollo emails search`
 - `apollo news search`
 - `apollo conversations search`
+- `hubspot crm contacts|companies|deals|tickets list`
+- `hubspot crm contacts|companies|deals|tickets search`
+- `hubspot files list`
+- `hubspot events occurrences list`
+- `hubspot conversations inboxes|threads|custom-channels list`
 - `slack channels list`
 - `slack links list`
 
