@@ -94,3 +94,11 @@ auth_type = "pipedrive_personal_token"
 api_token_env = "PIPEDRIVE_API_TOKEN"
 # Optional; defaults to https://api.pipedrive.com.
 base_url = "https://api.pipedrive.com"
+
+[profiles.google-drive-work]
+provider = "google"
+auth_type = "bearer_token"
+token_env = "GOOGLE_DRIVE_ACCESS_TOKEN"
+# token_secret = "google.drive_access_token"
+# Scopes: drive.readonly covers every read; files upload needs drive.file or drive.
+# drive.metadata.readonly is NOT enough for files download.

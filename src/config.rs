@@ -45,6 +45,7 @@ pub struct Profile {
     pub user_id: Option<String>,
     pub account_id: Option<String>,
     pub calendar_id: Option<String>,
+    pub project_id: Option<String>,
     pub from_address: Option<String>,
     pub smtp_host: Option<String>,
     pub smtp_port: Option<u16>,
@@ -167,16 +168,31 @@ fn apply_env_overrides(profile: &mut Profile, profile_name: &str) {
         .collect::<String>();
 
     if profile.token.is_none() {
-        profile.token =
-            env_value(&format!("AAI_{}_TOKEN", normalized)).or_else(|| env_value("AAI_TOKEN"));
+        profile.token = env_value(&format!("AAI_{}_TOKEN", normalized))
+            .or_else(|| env_value("AAI_TOKEN"))
+            .or_else(|| env_value("POSTHOG_API_KEY"))
+            .or_else(|| env_value("POSTHOG_PERSONAL_API_KEY"));
     }
     if profile.api_token.is_none() {
         profile.api_token = env_value(&format!("AAI_{}_API_TOKEN", normalized))
-            .or_else(|| env_value("AAI_API_TOKEN"));
+            .or_else(|| env_value("AAI_API_TOKEN"))
+            .or_else(|| env_value("POSTHOG_API_KEY"))
+            .or_else(|| env_value("POSTHOG_PERSONAL_API_KEY"));
     }
     if profile.password.is_none() {
         profile.password = env_value(&format!("AAI_{}_PASSWORD", normalized))
             .or_else(|| env_value("AAI_PASSWORD"));
+    }
+    if profile.project_id.is_none() {
+        profile.project_id = env_value(&format!("AAI_{}_PROJECT_ID", normalized))
+            .or_else(|| env_value("AAI_PROJECT_ID"))
+            .or_else(|| env_value("POSTHOG_PROJECT_ID"));
+    }
+    if profile.base_url.is_none() {
+        profile.base_url = env_value(&format!("AAI_{}_BASE_URL", normalized))
+            .or_else(|| env_value("AAI_BASE_URL"))
+            .or_else(|| env_value("POSTHOG_HOST"))
+            .or_else(|| env_value("POSTHOG_BASE_URL"));
     }
 }
 

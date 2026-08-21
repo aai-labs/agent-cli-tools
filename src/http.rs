@@ -7,7 +7,7 @@ use serde_json::Value;
 
 use crate::{config::Profile, error::AppError};
 
-fn multipart_boundary() -> String {
+pub(crate) fn multipart_boundary() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -20,6 +20,28 @@ fn multipart_boundary() -> String {
 pub struct ApiClient {
     client: Client,
     no_redirect_client: Client,
+}
+
+/// A request whose body is already-encoded bytes rather than a JSON value.
+///
+/// Providers that take pre-encoded payloads — multipart/related upload bodies, raw
+/// media bytes — need a content type and occasionally extra headers alongside the
+/// body, so they travel together instead of as five positional arguments.
+pub struct BytesRequest {
+    pub method: Method,
+    pub url: String,
+    pub content_type: String,
+    pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
+}
+
+/// A parsed response plus the `Location` header.
+///
+/// Upload protocols that hand back a session URI put it in `Location` and leave the
+/// body empty, so the header cannot be dropped the way `request` drops it.
+pub struct RawResponse {
+    pub body: Value,
+    pub location: Option<String>,
 }
 
 impl ApiClient {
@@ -193,6 +215,72 @@ impl ApiClient {
                 status,
                 format!("provider returned HTTP {}", status.as_u16()),
                 details,
+            ))
+        }
+    }
+
+    /// Send an already-encoded byte body and parse the JSON reply.
+    ///
+    /// `upload` below builds one specific multipart/form-data shape for Atlassian.
+    /// This is the general form: the caller owns the encoding, this owns auth,
+    /// execution, and error mapping.
+    pub async fn request_bytes(
+        &self,
+        service: &'static str,
+        operation: &'static str,
+        profile: &Profile,
+        request: BytesRequest,
+    ) -> Result<RawResponse, AppError> {
+        let token = crate::oauth::resolve_token(profile, &self.client, service, operation).await?;
+        let effective = crate::config::Profile {
+            token: Some(token),
+            ..profile.clone()
+        };
+        let mut builder = self
+            .client
+            .request(request.method, &request.url)
+            .header("Content-Type", request.content_type)
+            .header("Accept", "application/json")
+            .body(request.body);
+        for (name, value) in request.headers {
+            builder = builder.header(name, value);
+        }
+        builder = apply_auth(builder, service, operation, &effective)?;
+
+        let response = builder.send().await.map_err(|err| {
+            AppError::internal(service, operation, format!("request failed: {err}"))
+        })?;
+        let status = response.status();
+        let location = response
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string);
+        let text = response.text().await.map_err(|err| {
+            AppError::internal(
+                service,
+                operation,
+                format!("failed to read response: {err}"),
+            )
+        })?;
+        let parsed = if text.trim().is_empty() {
+            Value::Object(serde_json::Map::new())
+        } else {
+            serde_json::from_str(&text).unwrap_or_else(|_| Value::String(text.clone()))
+        };
+
+        if status.is_success() {
+            Ok(RawResponse {
+                body: parsed,
+                location,
+            })
+        } else {
+            Err(AppError::api(
+                service,
+                operation,
+                status,
+                format!("provider returned HTTP {}", status.as_u16()),
+                Some(parsed),
             ))
         }
     }
@@ -384,6 +472,25 @@ fn apply_auth(
                 .ok_or_else(|| AppError::auth(service, operation, "profile is missing token"))?;
             Ok(request.bearer_auth(token))
         }
+        "openpanel_client_credentials" | "openpanel-client-credentials" => {
+            let client_id = profile.client_id.as_deref().ok_or_else(|| {
+                AppError::auth(service, operation, "profile is missing client_id")
+            })?;
+            let client_secret = profile
+                .api_token
+                .as_deref()
+                .or(profile.token.as_deref())
+                .ok_or_else(|| {
+                    AppError::auth(
+                        service,
+                        operation,
+                        "profile is missing api_token or token (the client secret)",
+                    )
+                })?;
+            Ok(request
+                .header("openpanel-client-id", client_id)
+                .header("openpanel-client-secret", client_secret))
+        }
         _ => {
             let token = profile
                 .token
@@ -449,6 +556,36 @@ mod tests {
         .unwrap();
 
         assert_eq!(request.headers()["x-api-key"], "apollo-token");
+        assert!(!request.headers().contains_key("authorization"));
+    }
+
+    #[test]
+    fn openpanel_client_credentials_uses_both_headers() {
+        let client = Client::new();
+        let profile = Profile {
+            auth_type: Some("openpanel_client_credentials".to_string()),
+            client_id: Some("018f0000-0000-0000-0000-000000000000".to_string()),
+            api_token: Some("openpanel-secret".to_string()),
+            ..Profile::default()
+        };
+        let request = apply_auth(
+            client.request(Method::GET, "https://api.openpanel.dev/manage/projects"),
+            "openpanel",
+            "projects.list",
+            &profile,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+
+        assert_eq!(
+            request.headers()["openpanel-client-id"],
+            "018f0000-0000-0000-0000-000000000000"
+        );
+        assert_eq!(
+            request.headers()["openpanel-client-secret"],
+            "openpanel-secret"
+        );
         assert!(!request.headers().contains_key("authorization"));
     }
 

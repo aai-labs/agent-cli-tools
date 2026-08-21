@@ -68,6 +68,11 @@ pub(crate) fn dispatch(command: ExcelCommand) -> Result<Value, AppError> {
         },
         ExcelResource::Sheets(cmd) => match cmd.action {
             ExcelSheetsAction::List(args) => sheets_list(&args.file),
+            ExcelSheetsAction::Add(args) => sheets_add(&args.file, &args.title, args.force),
+            ExcelSheetsAction::Delete(args) => sheets_delete(&args.file, &args.title, args.force),
+            ExcelSheetsAction::Rename(args) => {
+                sheets_rename(&args.file, &args.title, &args.new_title, args.force)
+            }
         },
         ExcelResource::Values(cmd) => match cmd.action {
             ExcelValuesAction::Get(args) => values_get(&args.file, &args.range),
@@ -253,6 +258,291 @@ fn sheets_list(file: &Path) -> Result<Value, AppError> {
         })
         .collect();
     Ok(json!({ "file": file.display().to_string(), "sheets": sheets }))
+}
+
+/// Reject a tab title Excel would refuse to open, with a message naming the rule.
+///
+/// umya only checks for duplicates, so an invalid title writes a file that then fails to
+/// open — the failure lands far from the command that caused it.
+fn validate_tab_title(title: &str, operation: &'static str) -> Result<(), AppError> {
+    const FORBIDDEN: &[char] = &[':', '\\', '/', '?', '*', '[', ']'];
+    const MAX_TITLE: usize = 31;
+
+    if title.trim().is_empty() {
+        return Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            "sheet name cannot be empty",
+        ));
+    }
+    // Excel counts characters, not bytes.
+    let length = title.chars().count();
+    if length > MAX_TITLE {
+        return Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            format!("sheet name is {length} characters; Excel allows at most {MAX_TITLE}"),
+        ));
+    }
+    if let Some(bad) = title.chars().find(|c| FORBIDDEN.contains(c)) {
+        return Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            format!("sheet name cannot contain {bad:?}; Excel forbids : \\ / ? * [ ]"),
+        ));
+    }
+    if title.starts_with('\'') || title.ends_with('\'') {
+        return Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            "sheet name cannot start or end with an apostrophe",
+        ));
+    }
+    Ok(())
+}
+
+/// Shared entry for the three tab mutations: only a real .xlsx can have tabs added,
+/// removed, or renamed, and the rewrite guard applies to all three.
+fn open_for_tab_edit(
+    file: &Path,
+    force: bool,
+    operation: &'static str,
+) -> Result<Workbook, AppError> {
+    match Backend::for_path(file) {
+        Backend::ReadOnly => Err(read_only_is_write_blocked(operation, file)),
+        Backend::Delimited(_) => Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            format!(
+                "{} is a delimited file: it holds a single sheet named after the file, so it has no tabs to change. \
+                 Create an .xlsx instead.",
+                file.display()
+            ),
+        )),
+        Backend::Xlsx => {
+            guard_rewrite(file, force, operation)?;
+            open(file, operation)
+        }
+    }
+}
+
+/// Find formulas and defined names pointing at `title`, as `Sheet!A1` locations.
+///
+/// Renaming or deleting a tab leaves cell formulas untouched, so the workbook keeps
+/// opening fine while the numbers in it quietly go wrong. That is worth refusing by
+/// default, in the same way a rewrite that would drop a chart is.
+///
+/// Defined names are deliberately *not* checked. umya rewrites them to the new tab name
+/// on rename, and drops the ones belonging to a deleted tab while leaving the rest alone,
+/// so they are never stranded. Including them made every tab carrying an autofilter
+/// unrenameable, because Excel stores that as a hidden `_xlnm._FilterDatabase` name the
+/// user never wrote and could not act on.
+///
+/// The match is deliberately literal: a reference is the tab name followed by `!`, either
+/// bare or single-quoted (with any inner quote doubled, as Excel writes it). A formula
+/// that merely mentions the name inside a string is a false positive, which costs the
+/// caller a `--force` — the opposite mistake costs them their data.
+fn references_to_sheet(book: &Workbook, title: &str) -> Vec<String> {
+    let quoted = format!("'{}'!", title.replace('\'', "''"));
+    let bare = format!("{title}!");
+    // A bare reference cannot be a fragment of a longer name, so require the character
+    // before it to be something that can legally precede a sheet reference.
+    let mentions = |text: &str| -> bool {
+        if text.contains(&quoted) {
+            return true;
+        }
+        text.match_indices(&bare).any(|(at, _)| {
+            at == 0
+                || !matches!(text.as_bytes()[at - 1],
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'.' | b'\'')
+        })
+    };
+
+    let mut found = Vec::new();
+    for sheet in book.sheet_collection() {
+        for cell in sheet.cells() {
+            if !cell.is_formula() || !mentions(cell.formula()) {
+                continue;
+            }
+            let coordinate = cell.coordinate();
+            found.push(format!(
+                "{}!{}{}",
+                sheet.name(),
+                col_to_letters(coordinate.col_num()),
+                coordinate.row_num()
+            ));
+        }
+    }
+    found
+}
+
+/// Refuse an operation that would strand references, unless the caller insisted.
+fn guard_references(
+    book: &Workbook,
+    title: &str,
+    force: bool,
+    operation: &'static str,
+    consequence: &str,
+) -> Result<(), AppError> {
+    if force {
+        return Ok(());
+    }
+    let found = references_to_sheet(book, title);
+    if found.is_empty() {
+        return Ok(());
+    }
+    const SHOWN: usize = 5;
+    let shown = found
+        .iter()
+        .take(SHOWN)
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join(", ");
+    let rest = found.len().saturating_sub(SHOWN);
+    let more = if rest > 0 {
+        format!(" and {rest} more")
+    } else {
+        String::new()
+    };
+    Err(AppError::invalid_input(
+        SERVICE,
+        operation,
+        format!(
+            "refusing to {consequence}: {} formula reference{} to {title:?} would be left pointing at a tab that no longer exists ({shown}{more}). \
+             Pass --force to do it anyway, then fix the references yourself.",
+            found.len(),
+            if found.len() == 1 { "" } else { "s" }
+        ),
+    ))
+}
+
+/// Pull the selected tab back into range after a delete.
+///
+/// The active tab is stored as a bare index and written out verbatim, so deleting a tab
+/// at or before it can leave the workbook pointing past the end — which Excel reports as
+/// a file needing repair. Nothing else renumbers it: sheetId and r:id are re-emitted
+/// positionally by the writer, but this index is not.
+fn clamp_active_tab(book: &mut Workbook) {
+    let last = book.sheet_collection().len().saturating_sub(1) as u32;
+    if book.workbook_view().active_tab() > last {
+        book.workbook_view_mut().set_active_tab(last);
+    }
+}
+
+fn tab_summary(book: &Workbook) -> Vec<String> {
+    book.sheet_collection()
+        .iter()
+        .map(|sheet| sheet.name().to_string())
+        .collect()
+}
+
+fn sheets_add(file: &Path, title: &str, force: bool) -> Result<Value, AppError> {
+    let operation = "sheets.add";
+    validate_tab_title(title, operation)?;
+    let mut book = open_for_tab_edit(file, force, operation)?;
+    if has_sheet(&book, title) {
+        return Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            format!("workbook already has a tab named {title:?}; tab names must be unique"),
+        ));
+    }
+    book.new_sheet(title).map_err(|err| {
+        AppError::invalid_input(
+            SERVICE,
+            operation,
+            format!("could not add sheet {title:?}: {err}"),
+        )
+    })?;
+    write(&book, file, operation)?;
+    Ok(json!({
+        "file": file.display().to_string(),
+        "added": title,
+        "sheets": tab_summary(&book),
+    }))
+}
+
+fn sheets_delete(file: &Path, title: &str, force: bool) -> Result<Value, AppError> {
+    let operation = "sheets.delete";
+    let mut book = open_for_tab_edit(file, force, operation)?;
+    if !has_sheet(&book, title) {
+        return Err(unknown_sheet(&book, title, operation));
+    }
+    // An .xlsx with no worksheets is not a valid workbook — Excel refuses to open it —
+    // and umya's remove is a bare retain that would happily produce one.
+    if book.sheet_collection().len() == 1 {
+        return Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            format!(
+                "cannot delete {title:?}: it is the only tab, and a workbook must keep at least one"
+            ),
+        ));
+    }
+    guard_references(&book, title, force, operation, "delete this tab")?;
+    book.remove_sheet_by_name(title).map_err(|err| {
+        AppError::internal(
+            SERVICE,
+            operation,
+            format!("could not delete sheet {title:?}: {err}"),
+        )
+    })?;
+    clamp_active_tab(&mut book);
+    write(&book, file, operation)?;
+    Ok(json!({
+        "file": file.display().to_string(),
+        "deleted": title,
+        "sheets": tab_summary(&book),
+    }))
+}
+
+fn sheets_rename(
+    file: &Path,
+    title: &str,
+    new_title: &str,
+    force: bool,
+) -> Result<Value, AppError> {
+    let operation = "sheets.rename";
+    validate_tab_title(new_title, operation)?;
+    let mut book = open_for_tab_edit(file, force, operation)?;
+    let Some(index) = book
+        .sheet_collection()
+        .iter()
+        .position(|sheet| sheet.name() == title)
+    else {
+        return Err(unknown_sheet(&book, title, operation));
+    };
+    if new_title == title {
+        return Ok(json!({
+            "file": file.display().to_string(),
+            "renamed": title,
+            "to": new_title,
+            "unchanged": true,
+            "sheets": tab_summary(&book),
+        }));
+    }
+    if has_sheet(&book, new_title) {
+        return Err(AppError::invalid_input(
+            SERVICE,
+            operation,
+            format!("workbook already has a tab named {new_title:?}; tab names must be unique"),
+        ));
+    }
+    guard_references(&book, title, force, operation, "rename this tab")?;
+    book.set_sheet_name(index, new_title).map_err(|err| {
+        AppError::internal(
+            SERVICE,
+            operation,
+            format!("could not rename sheet {title:?}: {err}"),
+        )
+    })?;
+    write(&book, file, operation)?;
+    Ok(json!({
+        "file": file.display().to_string(),
+        "renamed": title,
+        "to": new_title,
+        "sheets": tab_summary(&book),
+    }))
 }
 
 fn values_get(file: &Path, range: &str) -> Result<Value, AppError> {
@@ -1357,6 +1647,225 @@ mod tests {
         }
         writer.finish().expect("finish zip");
         path
+    }
+
+    // ── sheet tabs ────────────────────────────────────────────────────────────
+
+    /// A workbook with the given tabs, written to a uniquely named temp path.
+    fn workbook_with(name: &str, tabs: &[&str]) -> std::path::PathBuf {
+        let path = temp_dir().join(name);
+        let _ = std::fs::remove_file(&path);
+        workbook_create(&path, Some(&tabs.join(",")), false).expect("create workbook");
+        path
+    }
+
+    fn tab_names(file: &std::path::Path) -> Vec<String> {
+        sheets_list(file).expect("list")["sheets"]
+            .as_array()
+            .expect("sheets array")
+            .iter()
+            .map(|sheet| sheet["title"].as_str().expect("title").to_string())
+            .collect()
+    }
+
+    #[test]
+    fn tabs_can_be_added_deleted_and_renamed() {
+        let file = workbook_with("lifecycle.xlsx", &["Alpha", "Beta"]);
+
+        sheets_add(&file, "Gamma", false).expect("add");
+        assert_eq!(tab_names(&file), ["Alpha", "Beta", "Gamma"]);
+
+        sheets_delete(&file, "Beta", false).expect("delete");
+        assert_eq!(tab_names(&file), ["Alpha", "Gamma"]);
+
+        sheets_rename(&file, "Alpha", "Renamed", false).expect("rename");
+        assert_eq!(tab_names(&file), ["Renamed", "Gamma"]);
+    }
+
+    /// The tab operations rewrite the whole workbook, so the cells on every *other* tab
+    /// have to come back out unchanged.
+    #[test]
+    fn editing_tabs_preserves_the_data_on_the_others() {
+        let file = workbook_with("preserve.xlsx", &["Data", "Notes"]);
+        values_update(&file, "'Data'!A1:B1", r#"[["a",1]]"#, false).expect("seed");
+
+        sheets_add(&file, "Extra", false).expect("add");
+        sheets_delete(&file, "Notes", false).expect("delete");
+        sheets_rename(&file, "Extra", "Moved", false).expect("rename");
+
+        let read = values_get(&file, "'Data'!A1:B1").expect("read");
+        assert_eq!(values_of(&read), &vec![json!(["a", 1.0])]);
+    }
+
+    #[test]
+    fn the_last_tab_cannot_be_deleted() {
+        let file = workbook_with("only.xlsx", &["Sheet1"]);
+        let err = sheets_delete(&file, "Sheet1", false).expect_err("must refuse");
+        assert!(err.to_string().contains("only tab"), "{err}");
+        // The refusal must leave the workbook alone, not half-written.
+        assert_eq!(tab_names(&file), ["Sheet1"]);
+    }
+
+    #[test]
+    fn duplicate_tab_names_are_refused() {
+        let file = workbook_with("dupes.xlsx", &["One", "Two"]);
+        assert!(sheets_add(&file, "Two", false).is_err());
+        assert!(sheets_rename(&file, "One", "Two", false).is_err());
+    }
+
+    #[test]
+    fn renaming_a_tab_to_its_own_name_is_a_no_op() {
+        let file = workbook_with("samename.xlsx", &["One", "Two"]);
+        let response = sheets_rename(&file, "One", "One", false).expect("no-op rename");
+        assert_eq!(response["unchanged"], json!(true));
+        assert_eq!(tab_names(&file), ["One", "Two"]);
+    }
+
+    #[test]
+    fn deleting_an_unknown_tab_names_the_ones_that_exist() {
+        let file = workbook_with("missing.xlsx", &["One", "Two"]);
+        let err = sheets_delete(&file, "Nope", false).expect_err("must refuse");
+        assert!(err.to_string().contains("One, Two"), "{err}");
+    }
+
+    #[test]
+    fn tab_titles_excel_would_reject_are_refused() {
+        for bad in ["", "   ", "A/B", "A:B", "A[1]", "'quoted'", &"x".repeat(32)] {
+            assert!(
+                validate_tab_title(bad, OP).is_err(),
+                "expected {bad:?} to be rejected"
+            );
+        }
+        for good in ["Sheet1", "Q1 2026", "a-b_c", &"x".repeat(31)] {
+            assert!(
+                validate_tab_title(good, OP).is_ok(),
+                "expected {good:?} to be accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn delimited_and_read_only_files_have_no_tabs_to_edit() {
+        let csv = write_csv("notabs.csv", "a,b\n1,2\n");
+        let err = sheets_add(&csv, "New", false).expect_err("csv must refuse");
+        assert!(err.to_string().contains("delimited file"), "{err}");
+
+        let xls = fixture("legacy.xls");
+        let err = sheets_add(&xls, "New", false).expect_err("xls must refuse");
+        assert!(err.to_string().contains("read-only"), "{err}");
+    }
+
+    // ── stranded references ───────────────────────────────────────────────────
+    //
+    // umya rewrites neither formulas nor defined names when a tab moves, so a rename or
+    // delete can leave a workbook that still opens but quietly computes the wrong thing.
+
+    /// Seed `Report` with formulas pointing at `Source`, bypassing set_cell (which stores
+    /// strings, not formulas).
+    fn workbook_with_formula(name: &str, formula: &str) -> std::path::PathBuf {
+        let path = temp_dir().join(name);
+        let _ = std::fs::remove_file(&path);
+        let mut book = umya_spreadsheet::new_file_empty_worksheet();
+        book.new_sheet("Source").expect("source");
+        book.new_sheet("Report").expect("report");
+        book.sheet_by_name_mut("Report")
+            .expect("report sheet")
+            .cell_mut("A1")
+            .set_formula(formula);
+        write(&book, &path, OP).expect("write");
+        path
+    }
+
+    #[test]
+    fn renaming_a_referenced_tab_is_refused_and_force_overrides() {
+        let file = workbook_with_formula("refs.xlsx", "Source!A1");
+
+        let err = sheets_rename(&file, "Source", "Origin", false).expect_err("must refuse");
+        assert!(err.to_string().contains("would be left pointing"), "{err}");
+        assert!(err.to_string().contains("Report!A1"), "{err}");
+        assert_eq!(tab_names(&file), ["Source", "Report"]);
+
+        sheets_rename(&file, "Source", "Origin", true).expect("force renames anyway");
+        assert_eq!(tab_names(&file), ["Origin", "Report"]);
+    }
+
+    #[test]
+    fn deleting_a_referenced_tab_is_refused() {
+        let file = workbook_with_formula("refs-delete.xlsx", "SUM(Source!A1:A9)");
+        let err = sheets_delete(&file, "Source", false).expect_err("must refuse");
+        assert!(err.to_string().contains("would be left pointing"), "{err}");
+    }
+
+    #[test]
+    fn quoted_references_are_found_and_unrelated_names_are_not() {
+        let book = {
+            let mut book = umya_spreadsheet::new_file_empty_worksheet();
+            book.new_sheet("My Sheet").expect("sheet");
+            book.new_sheet("Report").expect("report");
+            book.sheet_by_name_mut("Report")
+                .expect("report")
+                .cell_mut("A1")
+                .set_formula("'My Sheet'!A1");
+            book
+        };
+        assert_eq!(references_to_sheet(&book, "My Sheet"), ["Report!A1"]);
+        assert!(references_to_sheet(&book, "Sheet").is_empty());
+    }
+
+    /// Excel records an autofilter as a hidden `_xlnm._FilterDatabase` defined name scoped
+    /// to the sheet. umya rewrites it on rename, so it must not count as a stranded
+    /// reference — otherwise no filtered tab could ever be renamed without `--force`.
+    #[test]
+    fn an_autofilter_does_not_make_a_tab_unrenameable() {
+        let file = temp_dir().join("autofilter.xlsx");
+        let _ = std::fs::remove_file(&file);
+        let mut book = umya_spreadsheet::new_file_empty_worksheet();
+        book.new_sheet("Sales").expect("sales");
+        book.new_sheet("Blank").expect("blank");
+        {
+            let sheet = book.sheet_by_name_mut("Sales").expect("sales sheet");
+            sheet.cell_mut("A1").set_value_string("Region");
+            sheet.set_auto_filter("A1:B9");
+        }
+        write(&book, &file, OP).expect("write");
+
+        let reopened = open(&file, OP).expect("open");
+        assert!(
+            references_to_sheet(&reopened, "Sales").is_empty(),
+            "an autofilter must not read as a formula reference"
+        );
+        sheets_rename(&file, "Sales", "Revenue", false).expect("rename must be allowed");
+        assert_eq!(tab_names(&file), ["Revenue", "Blank"]);
+    }
+
+    /// A tab named `Data` must not be considered referenced by `OtherData!A1` — the match
+    /// has to respect the reference boundary, not just find the substring.
+    #[test]
+    fn a_longer_tab_name_is_not_mistaken_for_a_reference() {
+        let mut book = umya_spreadsheet::new_file_empty_worksheet();
+        book.new_sheet("Data").expect("data");
+        book.new_sheet("Report").expect("report");
+        book.sheet_by_name_mut("Report")
+            .expect("report")
+            .cell_mut("A1")
+            .set_formula("OtherData!A1");
+        assert!(references_to_sheet(&book, "Data").is_empty());
+    }
+
+    #[test]
+    fn deleting_a_tab_pulls_the_active_one_back_into_range() {
+        let file = workbook_with("active.xlsx", &["One", "Two", "Three"]);
+        {
+            let mut book = open(&file, OP).expect("open");
+            book.set_active_sheet(2);
+            write(&book, &file, OP).expect("write");
+        }
+        sheets_delete(&file, "Three", false).expect("delete");
+        let book = open(&file, OP).expect("reopen");
+        assert!(
+            (book.workbook_view().active_tab() as usize) < book.sheet_collection().len(),
+            "active tab must stay in range"
+        );
     }
 
     // ── rewrite guard ─────────────────────────────────────────────────────────

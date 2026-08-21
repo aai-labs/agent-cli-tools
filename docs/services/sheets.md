@@ -2,7 +2,7 @@
 
 ## CLI Scope
 
-Sheets commands cover spreadsheet listing plus reading and writing sheet cell data. Use the full command reference for exact flags:
+Sheets commands cover spreadsheet creation and listing, sheet tab management (add, delete, rename), plus reading and writing sheet cell data. Use the full command reference for exact flags:
 
 - [aai-cli command reference](../aai-cli-command-reference.md)
 - [Token refresh notes](../token-refresh.md)
