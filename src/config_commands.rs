@@ -25,11 +25,17 @@ const DIRECT_SECRET_FIELDS: &[&str] = &[
     "api_token_env",
     "password",
     "password_env",
+    "gateway_token",
+    "gateway_token_env",
 ];
 
 const ALLOWED_PROFILE_FIELDS: &[&str] = &[
     "provider",
     "transport",
+    "credential_source",
+    "gateway_url",
+    "gateway_profile_id",
+    "gateway_token_secret",
     "auth_type",
     "base_url",
     "site_url",
@@ -213,6 +219,14 @@ fn profile_patch(args: ConfigProfileSet) -> Result<TomlMap<String, TomlValue>, A
     set_string(&mut patch, "provider", args.provider);
     set_string(&mut patch, "auth_type", args.auth_type);
     set_string(&mut patch, "base_url", args.base_url);
+    set_string(&mut patch, "credential_source", args.credential_source);
+    set_string(&mut patch, "gateway_url", args.gateway_url);
+    set_string(&mut patch, "gateway_profile_id", args.gateway_profile_id);
+    set_string(
+        &mut patch,
+        "gateway_token_secret",
+        args.gateway_token_secret,
+    );
     set_string(&mut patch, "api_token_secret", args.api_token_secret);
     set_string(&mut patch, "token_secret", args.token_secret);
     set_string(&mut patch, "password_secret", args.password_secret);
@@ -294,6 +308,38 @@ fn validate_profile_table(
     })?;
     let provider = required_string(profile, "provider", operation)?;
     let auth_type = required_string(profile, "auth_type", operation)?;
+    if profile.get("credential_source").and_then(TomlValue::as_str) == Some("gateway") {
+        for field in ["gateway_url", "gateway_profile_id", "gateway_token_secret"] {
+            required_string(profile, field, operation)?;
+        }
+        for field in [
+            "token_secret",
+            "api_token_secret",
+            "password_secret",
+            "refresh_token_secret",
+            "client_secret_secret",
+        ] {
+            if profile.contains_key(field) {
+                return Err(AppError::invalid_input(
+                    "config",
+                    operation,
+                    format!("gateway profile must not contain local credential field {field}"),
+                ));
+            }
+        }
+        let gateway_url = profile
+            .get("gateway_url")
+            .and_then(TomlValue::as_str)
+            .unwrap_or_default();
+        if !gateway_url.starts_with("https://") && !gateway_url.starts_with("http://127.0.0.1") {
+            return Err(AppError::invalid_input(
+                "config",
+                operation,
+                "gateway_url must use https (loopback http is allowed for development)",
+            ));
+        }
+        return Ok(());
+    }
     match provider {
         "pipedrive" => require_auth(
             profile,
@@ -575,6 +621,10 @@ mod tests {
             provider: None,
             auth_type: None,
             base_url: None,
+            credential_source: None,
+            gateway_url: None,
+            gateway_profile_id: None,
+            gateway_token_secret: None,
             api_token_secret: None,
             token_secret: None,
             password_secret: None,

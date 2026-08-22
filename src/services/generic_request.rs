@@ -18,6 +18,13 @@ pub(crate) async fn dispatch(
     args: GenericRequest,
 ) -> Result<Value, AppError> {
     let operation = "request";
+    if ctx.profile().credential_source.as_deref() == Some("gateway") {
+        return Err(AppError::invalid_input(
+            service,
+            operation,
+            "generic requests are not available for gateway profiles; use a typed operation",
+        ));
+    }
     let method = method(args.method);
     validate_options(&method, args.allow_write, args.json.is_some(), service)?;
     let mut url = relative_url(&base_url, &args.path, service)?;
@@ -182,5 +189,34 @@ mod tests {
         let error = validate_options(&Method::GET, false, true, "github").unwrap_err();
         assert_eq!(error.code, "invalid_input");
         assert!(error.message.contains("do not accept --json"));
+    }
+
+    #[tokio::test]
+    async fn gateway_profiles_reject_generic_requests() {
+        let context = Context {
+            profile: crate::config::Profile {
+                credential_source: Some("gateway".into()),
+                ..crate::config::Profile::default()
+            },
+            secrets_file: std::path::PathBuf::new(),
+            key_file: std::path::PathBuf::new(),
+        };
+        let error = dispatch(
+            &ApiClient::new().unwrap(),
+            &context,
+            "github",
+            "https://api.github.com".into(),
+            GenericRequest {
+                method: GenericHttpMethod::Get,
+                path: "/items".into(),
+                query: Vec::new(),
+                json: None,
+                allow_write: false,
+            },
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(error.code, "invalid_input");
+        assert!(error.message.contains("not available for gateway"));
     }
 }
