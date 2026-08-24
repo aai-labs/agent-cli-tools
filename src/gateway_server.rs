@@ -371,7 +371,11 @@ fn bearer(headers: &HeaderMap) -> Option<String> {
     headers
         .get(header::AUTHORIZATION)
         .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.strip_prefix("Bearer "))
+        .and_then(|value| {
+            let (scheme, credentials) = value.split_once(' ')?;
+            scheme.eq_ignore_ascii_case("Bearer").then_some(credentials)
+        })
+        .filter(|value| !value.is_empty())
         .map(str::to_string)
 }
 
@@ -536,6 +540,7 @@ fn redact(bytes: &[u8], profile: &Profile, content_type: Option<&HeaderValue>) -
     let mut text = String::from_utf8_lossy(bytes).into_owned();
     for secret in [
         profile.token.as_deref(),
+        profile.refresh_token.as_deref(),
         profile.api_token.as_deref(),
         profile.client_secret.as_deref(),
         profile.password.as_deref(),
@@ -980,5 +985,32 @@ mod tests {
         document.tokens.get_mut("test").unwrap().enabled = false;
         assert!(find_token(&document, "wrong").is_none());
         assert!(!find_token(&document, token).unwrap().enabled);
+    }
+
+    #[test]
+    fn bearer_scheme_is_case_insensitive() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_static("bEaReR secret"),
+        );
+        assert_eq!(bearer(&headers).as_deref(), Some("secret"));
+    }
+
+    #[test]
+    fn redaction_covers_refresh_tokens() {
+        let profile = Profile {
+            refresh_token: Some("refresh-secret".into()),
+            ..Profile::default()
+        };
+        let content_type = HeaderValue::from_static("application/json");
+        assert_eq!(
+            redact(
+                br#"{"refresh_token":"refresh-secret"}"#,
+                &profile,
+                Some(&content_type),
+            ),
+            br#"{"refresh_token":"[REDACTED]"}"#
+        );
     }
 }

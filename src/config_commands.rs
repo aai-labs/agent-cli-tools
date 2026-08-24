@@ -331,7 +331,7 @@ fn validate_profile_table(
             .get("gateway_url")
             .and_then(TomlValue::as_str)
             .unwrap_or_default();
-        if !gateway_url.starts_with("https://") && !gateway_url.starts_with("http://127.0.0.1") {
+        if !config::gateway_url_is_allowed(gateway_url) {
             return Err(AppError::invalid_input(
                 "config",
                 operation,
@@ -747,6 +747,33 @@ token_secret = "github.token"
             profile.insert("auth_type".into(), TomlValue::String(auth_type.into()));
             assert!(validate_profile_table(&profile, "profiles.validate").is_err());
             profile.insert(secret_field.into(), TomlValue::String("reference".into()));
+            validate_profile_table(&profile, "profiles.validate").unwrap();
+        }
+    }
+
+    #[test]
+    fn gateway_validation_accepts_all_supported_loopback_hosts() {
+        for gateway_url in [
+            "http://127.0.0.1:8787",
+            "http://localhost:8787",
+            "http://[::1]:8787",
+        ] {
+            let mut profile = TomlMap::new();
+            profile.insert("provider".into(), TomlValue::String("github".into()));
+            profile.insert("auth_type".into(), TomlValue::String("bearer_token".into()));
+            profile.insert(
+                "credential_source".into(),
+                TomlValue::String("gateway".into()),
+            );
+            profile.insert("gateway_url".into(), TomlValue::String(gateway_url.into()));
+            profile.insert(
+                "gateway_profile_id".into(),
+                TomlValue::String("github-work".into()),
+            );
+            profile.insert(
+                "gateway_token_secret".into(),
+                TomlValue::String("gateway.agent-token".into()),
+            );
             validate_profile_table(&profile, "profiles.validate").unwrap();
         }
     }

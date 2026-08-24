@@ -534,7 +534,7 @@ impl ApiClient {
         }
         let endpoint = format!("{}{}", gateway_url.trim_end_matches('/'), EXECUTE_PATH);
         let response = self
-            .client
+            .no_redirect_client
             .post(endpoint)
             .bearer_auth(token)
             .multipart(form)
@@ -920,6 +920,46 @@ mod tests {
         server.join().unwrap();
 
         assert_eq!(error.code, "provider_api_error");
+        assert_eq!(error.status, Some(302));
+    }
+
+    #[tokio::test]
+    async fn gateway_requests_do_not_follow_gateway_redirects() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0_u8; 4096];
+            let _ = stream.read(&mut request).unwrap();
+            stream
+                .write_all(
+                    b"HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:9/redirected\r\nContent-Length: 0\r\n\r\n",
+                )
+                .unwrap();
+        });
+        let client = ApiClient::new().unwrap();
+        let profile = Profile {
+            credential_source: Some("gateway".into()),
+            gateway_url: Some(format!("http://{address}")),
+            gateway_profile_id: Some("profile".into()),
+            gateway_token: Some("proxy-token".into()),
+            ..Profile::default()
+        };
+
+        let error = client
+            .request(
+                "github",
+                "items.list",
+                &profile,
+                Method::GET,
+                "http://provider.test/items".into(),
+                None,
+            )
+            .await
+            .unwrap_err();
+        server.join().unwrap();
+
+        assert_eq!(error.code, "gateway_error");
         assert_eq!(error.status, Some(302));
     }
 

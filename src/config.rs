@@ -256,10 +256,7 @@ fn validate_gateway_profile(profile: &Profile) -> Result<(), AppError> {
         .gateway_url
         .as_deref()
         .ok_or_else(|| AppError::config("gateway profile is missing gateway_url"))?;
-    let parsed = url::Url::parse(gateway_url)
-        .map_err(|err| AppError::config(format!("invalid gateway_url: {err}")))?;
-    let loopback = matches!(parsed.host_str(), Some("localhost" | "127.0.0.1" | "[::1]"));
-    if parsed.scheme() != "https" && !(parsed.scheme() == "http" && loopback) {
+    if !gateway_url_is_allowed(gateway_url) {
         return Err(AppError::config(
             "gateway_url must use https (loopback http is allowed for development)",
         ));
@@ -275,6 +272,17 @@ fn validate_gateway_profile(profile: &Profile) -> Result<(), AppError> {
         }
     }
     Ok(())
+}
+
+pub(crate) fn gateway_url_is_allowed(value: &str) -> bool {
+    let Ok(parsed) = url::Url::parse(value) else {
+        return false;
+    };
+    let loopback = matches!(
+        parsed.host_str(),
+        Some("localhost" | "127.0.0.1" | "::1" | "[::1]")
+    );
+    parsed.scheme() == "https" || (parsed.scheme() == "http" && loopback)
 }
 
 #[cfg(test)]
@@ -366,6 +374,10 @@ token_secret = "github.token"
         assert!(validate_gateway_profile(&profile).is_err());
         let mut loopback = profile;
         loopback.gateway_url = Some("http://127.0.0.1:8787".into());
+        validate_gateway_profile(&loopback).unwrap();
+        loopback.gateway_url = Some("http://localhost:8787".into());
+        validate_gateway_profile(&loopback).unwrap();
+        loopback.gateway_url = Some("http://[::1]:8787".into());
         validate_gateway_profile(&loopback).unwrap();
     }
 
