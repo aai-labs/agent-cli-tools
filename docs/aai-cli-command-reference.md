@@ -134,9 +134,14 @@ aai-cli jira ideas get <idea-key-or-id>
 aai-cli jira ideas create [--json <path|->] [--project KEY] [--type NAME] [--summary TEXT] [--description TEXT]
 aai-cli jira ideas update <idea-key-or-id> [--json <path|->] [--summary TEXT] [--description TEXT]
 aai-cli jira ideas fields <project-key-or-id> [--type NAME] [--limit N]
+aai-cli jira ideas parse-url <product-discovery-or-browse-url>
+aai-cli jira ideas transitions list <idea-key-or-id>
+aai-cli jira ideas transitions perform <idea-key-or-id> --transition <id-or-name> [--json <path|->]
 ```
 
 Ideas are Jira issues in Product Discovery projects; `ideas list` always scopes its JQL to `projectType = product_discovery` and accepts the same filter flags as `issues list` (except `--type` and `--sprint`). `ideas create` defaults the issue type name to `Idea`; override with `--type` when the project renames it.
+
+Use `ideas parse-url` before acting on a supplied Product Discovery URL. The opaque id in `/ideas/view/<id>` identifies a saved view, not an idea; an existing selected idea appears in the `selectedIssue` query parameter. Use `ideas transitions` for workflow status changes because Jira does not apply transitions through ordinary issue updates.
 
 Project-specific idea fields (Impact, Effort, ratings, and other Product Discovery custom fields) are custom fields. Discover them with `ideas fields`, which resolves the project's idea issue type (pass `--type` when the project exposes several) and returns each field's `fieldId`, `schema`, `operations`, and trimmed `allowedValues`, plus the resolved `issueType`. Set those fields through `--json`:
 

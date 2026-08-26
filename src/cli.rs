@@ -378,6 +378,10 @@ pub enum JiraIdeasAction {
     Update(JiraIdeasUpdate),
     /// Discover the fields available on a Product Discovery project's idea type.
     Fields(JiraIdeasFields),
+    /// Parse a Product Discovery view or idea URL into its project, view, and issue parts.
+    ParseUrl(JiraIdeasParseUrl),
+    /// List or perform workflow transitions for an idea.
+    Transitions(JiraIdeaTransitionsCommand),
 }
 
 #[derive(Debug, Args)]
@@ -433,6 +437,36 @@ pub struct JiraIdeasFields {
     pub issue_type: Option<String>,
     #[arg(long, default_value_t = 200)]
     pub limit: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeasParseUrl {
+    pub url: String,
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeaTransitionsCommand {
+    #[command(subcommand)]
+    pub action: JiraIdeaTransitionsAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum JiraIdeaTransitionsAction {
+    /// List workflow transitions currently available for an idea.
+    List(IdArg),
+    /// Perform a workflow transition by id or exact name (case-insensitive).
+    Perform(JiraIdeaTransitionPerform),
+}
+
+#[derive(Debug, Args)]
+pub struct JiraIdeaTransitionPerform {
+    pub id: String,
+    /// Available transition id or name, for example 31 or Research.
+    #[arg(long)]
+    pub transition: String,
+    /// Optional Jira transition body; --transition overrides its transition.id.
+    #[arg(long)]
+    pub json: Option<String>,
 }
 
 #[derive(Debug, Args)]
@@ -3278,6 +3312,60 @@ mod tests {
 
         assert!(help.contains("ideas"));
         assert!(help.contains("Product Discovery"));
+    }
+
+    #[test]
+    fn jira_ideas_parse_url_accepts_a_view_url() {
+        let cli = Cli::try_parse_from([
+            "aai-cli",
+            "jira",
+            "ideas",
+            "parse-url",
+            "https://example.atlassian.net/jira/polaris/projects/MDP/ideas/view/123",
+        ])
+        .expect("parse jira ideas parse-url");
+        let Command::Jira(jira) = cli.command else {
+            panic!("expected jira command");
+        };
+        let JiraResource::Ideas(ideas) = jira.resource else {
+            panic!("expected ideas resource");
+        };
+        let JiraIdeasAction::ParseUrl(args) = ideas.action else {
+            panic!("expected parse-url action");
+        };
+        assert!(args.url.contains("/projects/MDP/"));
+    }
+
+    #[test]
+    fn jira_ideas_transition_parses_name_and_json() {
+        let cli = Cli::try_parse_from([
+            "aai-cli",
+            "jira",
+            "ideas",
+            "transitions",
+            "perform",
+            "MDP-42",
+            "--transition",
+            "Research",
+            "--json",
+            r#"{"fields":{"customfield_10011":{"id":"10"}}}"#,
+        ])
+        .expect("parse jira idea transition");
+        let Command::Jira(jira) = cli.command else {
+            panic!("expected jira command");
+        };
+        let JiraResource::Ideas(ideas) = jira.resource else {
+            panic!("expected ideas resource");
+        };
+        let JiraIdeasAction::Transitions(command) = ideas.action else {
+            panic!("expected transitions action");
+        };
+        let JiraIdeaTransitionsAction::Perform(args) = command.action else {
+            panic!("expected transition perform action");
+        };
+        assert_eq!(args.id, "MDP-42");
+        assert_eq!(args.transition, "Research");
+        assert!(args.json.is_some());
     }
 
     #[test]

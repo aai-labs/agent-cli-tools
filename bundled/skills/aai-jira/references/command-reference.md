@@ -47,7 +47,7 @@ Exit code is non-zero on any error.
 ## Resources
 
 - [Issues](#issues) — `issues list`, `get`, `create`, `update`, `comments` list/get/create, `attachments` list/download/upload
-- [Ideas](#ideas-jira-product-discovery) — `ideas list`, `get`, `create`, `update`, `fields` (Jira Product Discovery)
+- [Ideas](#ideas-jira-product-discovery) — `ideas parse-url`, `list`, `get`, `create`, `update`, `fields`, and `transitions` (Jira Product Discovery)
 - [Projects](#projects) — `projects list`, `get`
 - [Sprints](#sprints) — `sprints list`, `get`, `create`, `issues add`
 - [Boards](#boards) — `boards list`, `get`
@@ -511,6 +511,28 @@ Commands under `aai-cli jira ideas`. Product Discovery ideas are Jira issues in 
 
 Find Product Discovery projects with `aai-cli jira projects list --type product_discovery`.
 
+### ideas parse-url
+
+Parse a Jira Product Discovery view URL or a canonical Jira browse URL before deciding whether the user supplied a project/view destination or an existing idea. This command does not treat the opaque view id as an issue id.
+
+```
+aai-cli jira ideas parse-url <URL>
+```
+
+For `/jira/polaris/projects/MDP/ideas/view/24ea4b72-...`, the result is:
+
+```json
+{
+  "issueKey": null,
+  "projectKey": "MDP",
+  "siteUrl": "https://example.atlassian.net",
+  "targetType": "product_discovery_view",
+  "viewId": "24ea4b72-..."
+}
+```
+
+When the URL contains `?selectedIssue=MDP-42`, `targetType` is `product_discovery_idea` and `issueKey` is `MDP-42`. A `/browse/MDP-42` URL returns `targetType: jira_issue`. A bare view URL is a destination context: use its `projectKey` for a requested create operation, but do not pass its `viewId` to `ideas get` or `ideas update`.
+
 ### ideas list
 
 Search ideas across Product Discovery projects. The query is always scoped to `projectType = product_discovery`, so it is valid with no filter flags; add flags to narrow it. Filters are AND-joined.
@@ -543,6 +565,7 @@ aai-cli jira ideas list --project BAW --fields key,summary,status,customfield_10
   "issues": [
     {
       "fields": {
+        "customfield_10011": { "id": "10", "value": "High" },
         "summary": "Faster onboarding",
         "status": { "name": "Discovery", "statusCategory": { "name": "In Progress" } }
       },
@@ -554,7 +577,7 @@ aai-cli jira ideas list --project BAW --fields key,summary,status,customfield_10
 }
 ```
 
-Fields requested via `--fields` outside the default trim allowlist (such as `customfield_*`) are returned by the API but stripped from the trimmed list output; use `ideas get` to read custom field values.
+Fields explicitly requested with `--fields`, including `customfield_*`, are preserved in each result's `fields` object. Unrequested fields and UI-only response noise remain trimmed.
 
 ### ideas get
 
@@ -647,6 +670,23 @@ aai-cli jira ideas update BAW-12 --json '{"fields":{"customfield_10011":{"id":"1
 ```
 
 An empty `{}` response means success.
+
+### ideas transitions
+
+List the workflow transitions currently available for an idea, then perform one by its id or exact name (matched case-insensitively). Jira workflow status is changed through the transitions endpoint, not through `ideas update`.
+
+```
+aai-cli jira ideas transitions list <IDEA_KEY_OR_ID>
+aai-cli jira ideas transitions perform <IDEA_KEY_OR_ID> --transition <ID_OR_NAME>
+                                [--json JSON_OR_PATH]
+```
+
+```bash
+aai-cli jira ideas transitions list MDP-42
+aai-cli jira ideas transitions perform MDP-42 --transition Research
+```
+
+Numeric transition ids are sent directly. A name is resolved against the currently available transitions; an unknown or ambiguous name produces a structured `invalid_input` error listing the available ids and names. Use `--json` for fields required by a transition screen; `--transition` overrides any `transition.id` in that payload. An empty `{}` response means the transition succeeded.
 
 ### ideas fields
 

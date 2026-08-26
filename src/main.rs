@@ -51,6 +51,17 @@ async fn run() -> Result<serde_json::Value, AppError> {
             services::excel::dispatch(command)?,
             &command_args,
         )),
+        // URL parsing is deterministic local work. Keep it usable before an agent has
+        // selected or configured the Jira profile it will use for the resulting target.
+        cli::Command::Jira(cli::JiraCommand {
+            resource:
+                cli::JiraResource::Ideas(cli::JiraIdeasCommand {
+                    action: cli::JiraIdeasAction::ParseUrl(args),
+                }),
+        }) => Ok(pagination::annotate(
+            services::jira::parse_idea_url(&args.url)?,
+            &command_args,
+        )),
         command => {
             let ctx = config::Context::load(
                 cli.config.as_deref(),
