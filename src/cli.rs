@@ -53,6 +53,69 @@ pub enum Command {
     Openpanel(OpenpanelCommand),
     /// Read PostHog projects, queries, insights, persons, cohorts, dashboards, and annotations.
     Posthog(PosthogCommand),
+    /// Manage and use a remote credential gateway.
+    Gateway(GatewayCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct GatewayCommand {
+    #[command(subcommand)]
+    pub action: GatewayAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GatewayAction {
+    Profiles(GatewayProfilesCommand),
+    Tokens(GatewayTokensCommand),
+}
+
+#[derive(Debug, Args)]
+pub struct GatewayProfilesCommand {
+    #[command(subcommand)]
+    pub action: GatewayProfilesAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GatewayProfilesAction {
+    List,
+    Get(GatewayId),
+    Create(GatewayJson),
+    Replace(GatewayJsonId),
+    Remove(GatewayId),
+}
+
+#[derive(Debug, Args)]
+pub struct GatewayTokensCommand {
+    #[command(subcommand)]
+    pub action: GatewayTokensAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GatewayTokensAction {
+    List,
+    Create(GatewayJson),
+    Update(GatewayJsonId),
+    Remove(GatewayId),
+}
+
+#[derive(Debug, Args)]
+pub struct GatewayId {
+    pub id: String,
+}
+
+#[derive(Debug, Args)]
+pub struct GatewayJson {
+    /// JSON object inline, from a file, or - for stdin.
+    #[arg(long)]
+    pub json: String,
+}
+
+#[derive(Debug, Args)]
+pub struct GatewayJsonId {
+    pub id: String,
+    /// JSON object inline, from a file, or - for stdin.
+    #[arg(long)]
+    pub json: String,
 }
 
 #[derive(Debug, Args)]
@@ -102,6 +165,7 @@ pub struct ConfigCommand {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum ConfigResource {
     /// Inspect, create, update, validate, or remove profiles.
     Profiles(ConfigProfilesCommand),
@@ -116,6 +180,7 @@ pub struct ConfigProfilesCommand {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum ConfigProfilesAction {
     List,
     Get(ConfigProfileName),
@@ -141,6 +206,14 @@ pub struct ConfigProfileSet {
     pub auth_type: Option<String>,
     #[arg(long)]
     pub base_url: Option<String>,
+    #[arg(long)]
+    pub credential_source: Option<String>,
+    #[arg(long)]
+    pub gateway_url: Option<String>,
+    #[arg(long)]
+    pub gateway_profile_id: Option<String>,
+    #[arg(long)]
+    pub gateway_token_secret: Option<String>,
     #[arg(long)]
     pub api_token_secret: Option<String>,
     #[arg(long)]
