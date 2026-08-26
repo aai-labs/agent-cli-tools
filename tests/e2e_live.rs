@@ -364,6 +364,18 @@ fn jira_idea_crud_and_field_discovery() {
         "product_discovery"
     );
 
+    let transitions = cli_required(
+        "AAI_E2E_JIRA_PROFILE",
+        &["jira", "ideas", "transitions", "list", &idea_key],
+    );
+    assert!(
+        transitions
+            .get("transitions")
+            .and_then(Value::as_array)
+            .is_some(),
+        "expected available idea transitions array: {transitions:#}"
+    );
+
     let updated_summary = format!("{summary}-updated");
     let _ = cli_required(
         "AAI_E2E_JIRA_PROFILE",
